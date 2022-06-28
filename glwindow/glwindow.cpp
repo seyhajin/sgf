@@ -400,7 +400,7 @@ void GLWindow::singleStep() {
 	updateEvents();
 	if (!m_glfwWindow) return;
 
-	pollAsyncEvents();
+	pollAppEvents();
 
 	updating.emit();
 

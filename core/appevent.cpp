@@ -21,7 +21,7 @@ std::condition_variable g_dequeCondVar;
 } // namespace
 
 // Post event from an external thread to main thread
-void postAsyncEvent(AppEventFunc func, void* context) {
+void postAppEvent(AppEventFunc func, void* context) {
 	{
 		std::lock_guard<std::mutex> lock(g_dequeMutex);
 
@@ -31,7 +31,7 @@ void postAsyncEvent(AppEventFunc func, void* context) {
 }
 
 // Discard events with context
-void discardAsyncEvents(void* context) {
+void discardAppEvents(void* context) {
 	{
 		std::lock_guard<std::mutex> lock(g_dequeMutex);
 
@@ -42,7 +42,7 @@ void discardAsyncEvents(void* context) {
 	}
 }
 
-void pollAsyncEvents() {
+void pollAppEvents() {
 
 	uint n;
 	{
@@ -60,7 +60,7 @@ void pollAsyncEvents() {
 	}
 }
 
-void waitAsyncEvents() {
+void waitAppEvents() {
 
 	uint n;
 	{
