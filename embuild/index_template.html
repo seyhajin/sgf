@@ -1,0 +1,86 @@
+<!doctype html>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>WebAssembly App</title>
+	<style>
+		*{
+			margin: 0;
+			border: 0;
+			width: 100%;
+			height: 100%;
+			padding: none;
+			overflow: hide;
+		}
+		body{
+			background-color: DeepSkyBlue;
+		}
+		canvas{
+			display: block;
+		}
+		.hidden{
+			display: none;
+		}
+	</style>
+</head>
+
+<body>
+
+<div class="hidden">
+	<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()" />
+</div>
+
+<script type="text/javascript">
+
+const canvasEl = document.getElementById("canvas");
+
+const ready = function(){
+	canvasEl.parentElement.style.display = "block";
+	canvasEl.focus();
+};
+
+var Module = {
+
+	preRun: [() => {
+		ready();
+	}],
+
+	postRun: [],
+
+	canvas: (function() {
+
+		var canvas = canvasEl;
+
+		// As a default initial behavior, pop up an alert when webgl context is lost. To make your
+		// application robust, you may want to override this behavior before shipping!
+		// See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+		canvas.addEventListener("webglcontextlost", function(e) {
+//			alert('WebGL context lost. You will need to reload the page.');
+			console.log("WebGL context lost.");
+			e.preventDefault();
+		}, false);
+
+		return canvas;
+	})(),
+
+	setStatus: function(text) {
+		console.log(text);
+	}
+};
+
+function onResize(event){
+	var canvas = canvasEl;
+	if(canvas.width == canvas.clientWidth && canvas.height == canvas.clientHeight) return;
+	Browser.setCanvasSize(canvas.clientWidth, canvas.clientHeight, false);
+}
+
+window.addEventListener('resize', onResize, false);
+
+</script>
+
+{{{ SCRIPT }}}
+
+</body>
+</html>
