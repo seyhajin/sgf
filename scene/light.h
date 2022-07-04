@@ -12,11 +12,6 @@ public:
 	Property<float> intensity{1};
 	Property<float> radius{1};
 	Property<float> range{100};
-
-	Light(Entity* parent = nullptr);
-
-private:
-	void onSetEnabled(bool enabled) override;
 };
 
 } // namespace sgf

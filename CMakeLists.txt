@@ -10,7 +10,7 @@
 
 cmake_minimum_required(VERSION 3.8)
 
-project(blitz-world)
+project("Simple Game Framework")
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
@@ -35,8 +35,10 @@ endif ()
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     set(DEBUG 1)
+    add_compile_definitions(DEBUG=1)
 else ()
     set(RELEASE 1)
+    add_compile_definitions(RELEASE=1)
 endif ()
 
 if (OS_EMSCRIPTEN)
@@ -76,7 +78,8 @@ if (OS_LINUX AND DEBUG)
     set(SANITIZER_OPTIONS -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
     add_compile_options(${SANITIZER_OPTIONS})
     add_link_options(${SANITIZER_OPTIONS})
-    message("### SANITIZER_OPTIONS=${SANITIZER_OPTIONS}")
+    add_compile_definitions(ASAN_ENABLED=1)
+    message("### Address sanitizer enabled: ${SANITIZER_OPTIONS}")
 endif ()
 
 # Output html for emscripten builds

@@ -3,43 +3,63 @@
 
 using namespace sgf;
 
+namespace {
+
+GLWindow* window;
+GraphicsDevice* device;
+Scene* scene;
+Camera* camera;
+ModelRenderer* boxRenderer;
+ModelInstance* boxInstance;
+
+} // namespace
+
 int main() {
 
 	uint width = 1280;
 	uint height = 720;
 
-	auto window = new GLWindow("Skirmish 2022!", width, height);
+	window = new GLWindow("Blitz World!", width, height);
 
-#ifndef USE_OPENGLES
-	auto debugFunc = [](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,
-						const void* userParam) { debug() << "OpenGL Debug:" << message; };
-	glDebugMessageCallback(debugFunc, nullptr);
-	glEnable(GL_DEBUG_OUTPUT);
-#endif
+	device = new GLGraphicsDevice();
 
-	new GLGraphicsDevice();
+	// ***** Initialize scene *****
+	//
+	scene = new Scene(device);
+	scene->clearColor = Vec4f(0, .25, .5f, 1);
+	scene->ambientLightColor = Vec3f(0, 0, 0);
+	scene->directionalLightVector = Vec3f(1, 1, -1).normalized();
+	scene->directionalLightColor = Vec3f(1);
 
-	new Scene();
+	// ***** Initialize camera *****
+	//
+	camera = new PerspectiveCamera();
+	// camera = new OrthographicCamera();
+	window->sizeChanged.connect([](CVec2i size) { //
+		camera->viewport = Recti(Vec2i(0), size);
+	});
+	camera->viewport = Recti(Vec2i(0), window->size());
+	camera->setPosition(Vec3f(0, 1, -1));
+	camera->lookAt(Vec3f(0, 0, 0));
+	scene->addCamera(camera);
 
-	activeScene()->clearColor = Vec4f(0, 1, .5f, 1);
-	activeScene()->ambientLightColor = Vec3f(1, 1, 0);
+	// ***** Add box renderer to scene *****
+	//
+	auto boxMesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
+	auto boxModel = createModel(boxMesh);
+	boxRenderer = new ModelRenderer(boxModel);
+	scene->addRenderer(boxRenderer);
 
-	auto camera = new Camera();
+	// ***** Add a new box instance *****
+	//
+	boxInstance = new ModelInstance();
+	boxRenderer->addInstance(boxInstance);
+	boxInstance->color = Vec4(1, 1, 0, 1);
 
-	camera->viewport = Recti(0, 0, width, height);
-	camera->setEnabled(true);
-
-	camera->position() += camera->rotation().k * -5;
-	camera->updateWorldMatrix();
-
-	debug() << "### camera:" << camera->worldMatrix();
-
-	float yaw = 0;
-
-	window->run([width, height, &yaw] {
-		activeScene()->debugRenderer()->clear();
-		activeScene()->debugRenderer()->modelMatrix = Mat3f::rotation({yaw += .01f, yaw / 2l, 0});
-		activeScene()->debugRenderer()->addBox(Boxf(-1, 1));
-		activeScene()->render(Vec2i(width, height));
+	// ***** Begin main loop *****
+	//
+	window->run([] {
+		boxInstance->rotate({.007f, .01f, 0});
+		scene->render(window->size());
 	});
 }

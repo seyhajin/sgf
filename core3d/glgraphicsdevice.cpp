@@ -21,80 +21,99 @@ struct IdMap {
 	}
 };
 
-IdMap uniformBufferIds;
-IdMap uniformIds;
+IdMap bufferIds;
 IdMap textureIds;
+IdMap uniformIds;
 
 GLuint glNullVertexArray;
 
 } // namespace
 
-// ***** GLUniformBuffer *****
+// ***** GLGraphicsBuffer *****
 
-void GLUniformBuffer::updateData(uint offset, uint size, const void* data) {
-	assert(offset + size <= this->size);
-
-	glAssert();
-	glBindBuffer(GL_UNIFORM_BUFFER, glBuffer);
-	glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
-	glAssert();
-}
-
-// ***** GLVertexBuffer *****
-
-void GLVertexBuffer::updateData(uint firstVertex, uint numVertices, const void* data) {
-	assert(firstVertex + numVertices <= length);
+void GLGraphicsBuffer::updateData(uint loffset, uint lsize, const void* data) {
+	assert(loffset + lsize <= this->size);
 
 	glAssert();
-	glBindBuffer(GL_ARRAY_BUFFER, glBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, firstVertex * bytesPerVertex, numVertices * bytesPerVertex, data);
+
+	glBindBuffer(glTarget, glBuffer);
+	glBufferSubData(glTarget, loffset, lsize, data);
+
 	glAssert();
 }
 
-// ***** GLIndexBuffer *****
+void* GLGraphicsBuffer::lockData(uint loffset, uint lsize) {
+	assert(!loffset && size && !m_locked);
 
-void GLIndexBuffer::updateData(uint firstIndex, uint numIndices, const void* data) {
-	assert(firstIndex + numIndices <= length);
+	void* p = nullptr;
 
 	glAssert();
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glBuffer);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, firstIndex * bytesPerIndex, numIndices * bytesPerIndex, data);
+
+#ifndef OS_EMSCRIPTEN
+	glBindBuffer(glTarget, glBuffer);
+	p = glMapBufferRange(glTarget, loffset, lsize, GL_MAP_WRITE_BIT);
+	m_mapped = (p != nullptr);
+#endif
+
+	if (!m_mapped) {
+		if (lsize > m_lockedData.size()) m_lockedData.resize(lsize);
+		p = m_lockedData.data();
+	}
+
+	m_lockedOffset = loffset;
+	m_lockedSize = lsize;
+	m_locked = true;
+
+	glAssert();
+
+	return p;
+}
+
+void GLGraphicsBuffer::unlockData() {
+	assert(m_locked);
+
+	glAssert();
+
+#ifndef OS_EMSCRIPTEN
+	if (m_mapped) glUnmapBuffer(glTarget);
+#endif
+
+	if (!m_mapped) updateData(m_lockedOffset, m_lockedSize,m_lockedData.data());
+
+	m_mapped = false;
+	m_locked = false;
+
 	glAssert();
 }
 
 // ***** GLGraphicsContext *****
 
-void GLGraphicsContext::setUniformBuffer(CString name, UniformBuffer* uniformBuffer) {
-	uint id = uniformBufferIds.get(name);
-	if (uniformBuffer == m_uniformBuffers[id]) return;
-	m_uniformBuffers[id] = static_cast<GLUniformBuffer*>(uniformBuffer);
+void GLGraphicsContext::setUniformBuffer(CString name, GraphicsBuffer* graphicsBuffer) {
+	assert(graphicsBuffer->type == BufferType::uniform);
+	uint id = bufferIds.get(name);
+	if (graphicsBuffer == m_uniformBuffers[id]) return;
+	m_uniformBuffers[id] = static_cast<GLGraphicsBuffer*>(graphicsBuffer);
 	m_dirty |= Dirty::uniformBlockBindings;
 }
 
-void GLGraphicsContext::setTextureUniform(CString name, Texture* texture) {
+void GLGraphicsContext::setTexture(CString name, Texture* texture) {
 	uint id = textureIds.get(name);
 	if (texture == m_textures[id]) return;
 	m_textures[id] = static_cast<GLTexture*>(texture);
 	m_dirty |= Dirty::textureBindings;
 }
 
-void GLGraphicsContext::setSimpleUniform(CString name, CAny any) {
+void GLGraphicsContext::setUniform(CString name, CAny any) {
 	uint id = uniformIds.get(name);
-	if (m_uniforms[id] == any) return;
+	if (any == m_uniforms[id]) return;
 	m_uniforms[id] = any;
 	m_dirty |= Dirty::uniformBindings;
 }
 
-void GLGraphicsContext::setVertexBuffer(VertexBuffer* vertexBuffer) {
-	if (vertexBuffer == m_vertexBuffer) return;
-	m_vertexBuffer = static_cast<GLVertexBuffer*>(vertexBuffer);
-	m_dirty |= Dirty::vertexBuffer;
-}
-
-void GLGraphicsContext::setIndexBuffer(IndexBuffer* indexBuffer) {
-	if (indexBuffer == m_indexBuffer) return;
-	m_indexBuffer = static_cast<GLIndexBuffer*>(indexBuffer);
-	m_dirty |= Dirty::indexBuffer;
+void GLGraphicsContext::setVertexState(VertexState* state) {
+	if (state == m_vertexState) return;
+	m_vertexState = static_cast<GLVertexState*>(state);
+	m_dirty |= Dirty::vertexState;
 }
 
 void GLGraphicsContext::setFrameBuffer(FrameBuffer* frameBuffer) {
@@ -146,27 +165,20 @@ void GLGraphicsContext::validate() {
 		glAssert();
 	}
 
-	if (bool(m_dirty & Dirty::vertexBuffer)) {
-		glBindVertexArray(m_vertexBuffer ? m_vertexBuffer->glVertexArray : glNullVertexArray);
-		m_dirty |= Dirty::indexBuffer;
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::indexBuffer)) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer ? m_indexBuffer->glBuffer : 0);
+	if (bool(m_dirty & Dirty::vertexState)) {
+		glBindVertexArray(m_vertexState ? m_vertexState->glVertexArray : glNullVertexArray);
 		glAssert();
 	}
 
 	if (bool(m_dirty & Dirty::shader)) {
 		glUseProgram(m_shader ? m_shader->glProgram : 0);
-		m_dirty |= Dirty::bindings;
+		m_dirty |= Dirty::uniformBlockBindings | Dirty::textureBindings | Dirty::uniformBindings;
 		glAssert();
 	}
 
 	if (bool(m_dirty & Dirty::uniformBlockBindings) && m_shader) {
 		for (uint id : m_shader->uniformBlocks) {
 			auto buffer = m_uniformBuffers[id].value();
-			assert(buffer);
 			glBindBufferBase(GL_UNIFORM_BUFFER, id, buffer->glBuffer);
 		}
 		glAssert();
@@ -252,7 +264,6 @@ void GLGraphicsContext::validate() {
 		}
 		glAssert();
 	}
-
 	m_dirty = Dirty::none;
 }
 
@@ -275,22 +286,26 @@ void GLGraphicsContext::clear(CVec4f color) {
 	glAssert();
 }
 
-void GLGraphicsContext::drawIndexedGeometry(uint order, uint firstVertex, uint numVertices, uint numInstances) {
+void GLGraphicsContext::drawIndexedGeometry(uint order, uint firstIndex, uint numIndices, uint numInstances) {
+
 	static constexpr GLenum modes[] = {GL_NONE, GL_POINTS, GL_LINES, GL_TRIANGLES};
-	static constexpr GLenum types[] = {GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT};
+	static constexpr GLenum types[] = {GL_NONE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT};
 	static constexpr uint size[] = {1, 2, 4};
 
 	assert(order > 0 && order < 4);
 
-	auto type = types[int(m_indexBuffer->format)];
-	auto ptr = reinterpret_cast<void*>(bytesPerIndex(m_indexBuffer->format) * firstVertex);
+	auto indexFormat = m_vertexState->layout.indexFormat;
+	assert(indexFormat != IndexFormat::none);
+
+	auto type = types[uint(indexFormat)];
+	auto ptr = reinterpret_cast<void*>(bytesPerIndex(indexFormat) * firstIndex);
 
 	validate();
 
 	if (numInstances > 1) {
-		glDrawElementsInstanced(modes[order], int(numVertices), type, ptr, int(numInstances));
+		glDrawElementsInstanced(modes[order], int(numIndices), type, ptr, int(numInstances));
 	} else {
-		glDrawElements(modes[order], int(numVertices), type, ptr);
+		glDrawElements(modes[order], int(numIndices), type, ptr);
 	}
 
 	glAssert();
@@ -315,6 +330,16 @@ void GLGraphicsContext::drawGeometry(uint order, uint firstVertex, uint numVerti
 // ***** GLGraphicsDevice *****
 
 GLGraphicsDevice::GLGraphicsDevice() {
+
+#ifndef USE_OPENGLES
+#if 0
+	auto debugFunc = [](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,
+						const void* userParam) { debug() << message; };
+	glDebugMessageCallback(debugFunc, nullptr);
+	glEnable(GL_DEBUG_OUTPUT);
+#endif
+#endif
+
 	glGenVertexArrays(1, &glNullVertexArray);
 	glBindVertexArray(glNullVertexArray);
 }
@@ -369,71 +394,65 @@ Texture* GLGraphicsDevice::createTexture(uint width, uint height, TextureFormat 
 	return new GLTexture(this, width, height, format, flags, glTexture);
 }
 
-UniformBuffer* GLGraphicsDevice::createUniformBuffer(uint size, const void* data) {
-
-	glAssert();
-
+GraphicsBuffer* GLGraphicsDevice::createGraphicsBuffer(BufferType type, uint size, const void* data) {
+	GLenum glTarget;
+	switch (type) {
+	case BufferType::uniform:
+		glTarget = GL_UNIFORM_BUFFER;
+		break;
+	case BufferType::vertex:
+		glTarget = GL_ARRAY_BUFFER;
+		break;
+	case BufferType::index:
+		glTarget = GL_ELEMENT_ARRAY_BUFFER;
+		break;
+	}
 	GLuint glBuffer;
 	glGenBuffers(1, &glBuffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, glBuffer);
-	glBufferData(GL_UNIFORM_BUFFER, size, data, data ? GL_STATIC_DRAW : GL_STREAM_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	glBindBuffer(glTarget, glBuffer);
+	glBufferData(glTarget, size, data, data ? GL_STATIC_DRAW : GL_STREAM_DRAW);
 
-	glAssert();
-
-	return new GLUniformBuffer(this, size, glBuffer);
+	return new GLGraphicsBuffer(this, type, size, glTarget, glBuffer);
 }
 
-VertexBuffer* GLGraphicsDevice::createVertexBuffer(uint length, VertexFormat format, const void* data) {
-
+VertexState* GLGraphicsDevice::createVertexState(CVector<GraphicsBuffer*> vertexBuffers, GraphicsBuffer* indexBuffer,
+												 VertexLayout layout) {
 	glAssert();
-
-	GLenum glAttribTypes[] = {GL_NONE,	GL_FLOAT, GL_FLOAT,			GL_FLOAT,
-							  GL_FLOAT, GL_BYTE,  GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE};
-
-	uint stride = bytesPerVertex(format);
-
-	GLuint glBuffer;
-	glGenBuffers(1, &glBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, glBuffer);
-	glBufferData(GL_ARRAY_BUFFER, length * stride, data, data ? GL_STATIC_DRAW : GL_STREAM_DRAW);
 
 	GLuint glVertexArray;
 	glGenVertexArrays(1, &glVertexArray);
 	glBindVertexArray(glVertexArray);
 
-	int index = 0;
-	const char* ptr = nullptr;
-	for (auto attrib : format) {
-		auto size = channelsPerAttrib(attrib);
-		auto type = glAttribTypes[int(attrib)];
+	for (auto& attrib : layout.attribLayouts) {
 
-		glEnableVertexAttribArray(index);
-		glVertexAttribPointer(index, int(size), type, false, int(stride), ptr);
+		if(attrib.format==AttribFormat::none) continue;
 
-		ptr += bytesPerAttrib(attrib);
-		++index;
+		auto location = attrib.location;
+
+		auto offset = static_cast<const char*>(nullptr) + attrib.offset;
+		auto vbuffer = static_cast<GLGraphicsBuffer*>(vertexBuffers[attrib.buffer]);
+		assert(vbuffer->type == BufferType::vertex);
+
+		glEnableVertexAttribArray(location);
+		glBindBuffer(GL_ARRAY_BUFFER, vbuffer->glBuffer);
+		glVertexAttribPointer(location, int(channelsPerAttrib(attrib.format)), glAttribTypes[uint(attrib.format)],
+							  false, attrib.pitch, offset);
+		glVertexAttribDivisor(location, attrib.divisor);
 	}
-	glBindVertexArray(glNullVertexArray);
+
+	if (indexBuffer) {
+		assert(indexBuffer->type == BufferType::index);
+		auto ibuffer = static_cast<GLGraphicsBuffer*>(indexBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibuffer->glBuffer);
+		constexpr GLenum glTypes[] = {GL_NONE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT};
+	}
+
+	Vector<SharedPtr<GraphicsBuffer>> sharedBuffers;
+	for (auto vbuffer : vertexBuffers) sharedBuffers.push_back(vbuffer);
 
 	glAssert();
 
-	return new GLVertexBuffer(this, length, format, glVertexArray, glBuffer);
-}
-
-IndexBuffer* GLGraphicsDevice::createIndexBuffer(uint length, IndexFormat format, const void* data) {
-
-	glAssert();
-
-	GLuint glBuffer;
-	glGenBuffers(1, &glBuffer);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, length * bytesPerIndex(format), data, data ? GL_STATIC_DRAW : GL_STREAM_DRAW);
-
-	glAssert();
-
-	return new GLIndexBuffer(this, length, format, glBuffer);
+	return new GLVertexState(this, std::move(sharedBuffers), indexBuffer, std::move(layout), glVertexArray);
 }
 
 FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture* depthTexture) {
@@ -526,7 +545,7 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 			for (size_t i = 0; i < lines.size(); ++i) { debug() << i + 1 << " : " << lines[i]; }
 			debug() << log;
 			delete[] log;
-			panic("OOPS");
+			panic("SHADER ERROR");
 		}
 
 		return shader;
@@ -579,7 +598,7 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 		char name[256] = "";
 		glGetActiveUniformBlockName(program, i, sizeof(name), nullptr, name);
 		GLuint glIndex = glGetUniformBlockIndex(program, name);
-		uint id = uniformBufferIds.get(name);
+		uint id = bufferIds.get(name);
 
 		glUniformBlockBinding(program, glIndex, id);
 		uniformBlocks.push_back(id);

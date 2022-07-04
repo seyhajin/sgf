@@ -35,8 +35,9 @@ using uint = unsigned int;
 #endif
 
 constexpr float pi = 3.14159265359f;
-constexpr float twopi = pi * 2;
-constexpr float halfpi = pi * .5f;
+constexpr float twoPi = pi * 2.0f;
+constexpr float halfPi = pi * .5f;
+constexpr float degreesToRadians = .0174533f;
 
 using String = std::string;
 using CString = const String&;
@@ -51,7 +52,7 @@ template <class V> using StringMap = Map<String, V>;
 template <class V> using CStringMap = const StringMap<V>&;
 
 //! Erase first matching element from a vector
-template <class T, class U> bool remove(Vector<T>& vec, const U& value) {
+template <class T, class U> bool erase(Vector<T>& vec, const U& value) {
 	auto it = std::find(vec.begin(), vec.end(), value);
 	if (it == vec.end()) return false;
 	vec.erase(it);

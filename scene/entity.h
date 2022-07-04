@@ -4,71 +4,95 @@
 
 namespace sgf {
 
-class Scene;
-
 class Entity : public Object {
 public:
 	SGF_OBJECT_TYPE(Entity, Object);
 
-	explicit Entity(Entity* parent);
-
-	void setParent(Entity* parent);
-
-	Entity* parent() const {
-		return m_parent;
+	void setMatrix(CAffineMat4f matrix) {
+		m_matrix = matrix;
+		m_rotation = matrix.m.rotation();
+		m_scale = matrix.m.scale();
+		m_dirty = Dirty::rotationMatrix;
 	}
 
-	CVector<Entity*> children() const {
-		return m_children;
-	}
-
-	AffineMat4f& matrix() {
+	CAffineMat4f matrix() const {
+		if(bool(m_dirty & Dirty::rotationMatrix)){
+			assert(!bool(m_dirty & Dirty::rotation));
+			m_matrix.m = Mat3f::rotation(m_rotation);
+			m_dirty = Dirty::none;
+		}
 		return m_matrix;
+	};
+
+	void setPosition(CVec3f position) {
+		m_matrix.t = position;
 	}
 
-	CMat3f rotation() const {
-		return m_matrix.rotation();
+	CVec3f position() const {
+		return m_matrix.t;
 	}
 
-	Mat3f& rotation() {
-		return m_matrix.rotation();
+	void setRotation(CVec3f rotation) {
+		m_rotation = rotation;
+		m_dirty = Dirty::rotationMatrix;
 	}
 
-	CVec3f& position() const {
-		return m_matrix.position();
+	CVec3f rotation() const {
+		if (bool(m_dirty & Dirty::rotation)) {
+			assert(!bool(m_dirty & Dirty::rotationMatrix));
+			m_rotation = m_matrix.m.rotation();
+			m_dirty = Dirty::none;
+		}
+		return m_rotation;
 	}
 
-	Vec3f& position() {
-		return m_matrix.position();
+	void setRotatonMatrix(CMat3f rotationMatrix) {
+		m_matrix.m=rotationMatrix;
+		m_dirty = Dirty::rotation;
 	}
 
-	void updateWorldMatrix();
-
-	CAffineMat4f worldMatrix() const {
-		return m_worldMatrix;
+	CMat3f rotationMatrix() const {
+		if (bool(m_dirty & Dirty::rotationMatrix)) {
+			assert(!bool(m_dirty & Dirty::rotation));
+			m_matrix.m = Mat3f::rotation(m_rotation);
+			m_dirty &= ~Dirty::rotationMatrix;
+		}
+		return m_matrix.m;
 	}
 
-	void setEnabled(bool enabled);
-
-	bool enabled() const {
-		return m_enabled;
+	void setScale(CVec3f scale) {
+		m_scale = scale;
 	}
 
-	Scene* scene() const;
-
-protected:
-	virtual void onSetEnabled(bool enabled) {
+	CVec3f scale() const {
+		return m_scale;
 	}
 
-	virtual void onUpdateWorldMatrix() {
+	void translate(CVec3f v) {
+		m_matrix.t += m_matrix.m * v;
+	}
+
+	void rotate(CVec3f r) {
+		m_matrix.m=rotationMatrix() * Mat3f::rotation(r);
+		m_dirty = Dirty::rotation;
+	}
+
+	void lookAt(CVec3f p, CVec3f up = {0, 1, 0}) {
+		Vec3f k = p - m_matrix.t;
+		Vec3f i = up.cross(k);
+		Vec3f j = k.cross(i).normalized();
+		m_matrix.m = Mat3f(i.normalized(), j.normalized(), k.normalized());
+		m_dirty = Dirty::rotation;
 	}
 
 private:
-	Entity* m_parent;
-	Vector<Entity*> m_children;
-	AffineMat4f m_worldMatrix;
-	AffineMat4f m_matrix;
-	bool m_enabled = false;
+	enum struct Dirty { none = 0, rotation = 1, rotationMatrix = 2 };
+
+	mutable Dirty m_dirty;
+
+	mutable AffineMat4f m_matrix;
+	mutable Vec3f m_rotation;
+	Vec3f m_scale{1};
 };
 
 } // namespace sgf

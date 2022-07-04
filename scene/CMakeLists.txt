@@ -12,6 +12,26 @@ add_library(scene
         entity.h
         light.cpp
         light.h
+        material.cpp
+        material.h
+        mesh.cpp
+        mesh.h
+        meshbuilder.cpp
+        meshbuilder.h
+        meshprimitives.cpp
+        meshprimitives.h
+        meshutils.cpp
+        meshutils.h
+        model.cpp
+        model.h
+        modelinstance.cpp
+        modelinstance.h
+        modelrenderer.cpp
+        modelrenderer.h
+        orthographiccamera.cpp
+        orthographiccamera.h
+        perspectivecamera.cpp
+        perspectivecamera.h
         rendercontext.cpp
         rendercontext.h
         renderer.cpp
@@ -23,14 +43,17 @@ add_library(scene
         scene.cpp
         scene.h
         scene.hh
-        shaderloader.cpp shaderloader.h mesh.cpp mesh.h material.cpp material.h textureloader.cpp textureloader.h)
+        shaderloader.cpp
+        shaderloader.h
+        textureloader.cpp
+        textureloader.h
+        )
 
 target_link_libraries(scene core3d image)
 
 ##### scene tests #####
 
-add_executable(hellobox
-        tests/hellobox.cpp shaders/cameraparams.h)
+add_executable(hellobox tests/hellobox.cpp)
 
 target_link_libraries(hellobox scene glwindow)
 

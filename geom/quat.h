@@ -15,18 +15,14 @@ using CQuatf = CQuat<float>;
 template <class T> struct Quat {
 
 	using CQuat = const Quat<T>&;
+	using CVec3 = const Vec3<T>&;
 
-	T i = 0;
-	T j = 0;
-	T k = 0;
-	T r = 1;
+	Vec3<T> v;
+	T w = 1;
 
 	Quat() = default;
 
-	Quat(CVec3<T> v, float r) : i(v.x), j(v.y), k(v.z), r(r) {
-	}
-
-	Quat(T i, T j, T k, T r) : i(i), j(j), k(k), r(r) {
+	Quat(CVec3 v, T w) : v(v), w(w) {
 	}
 
 	Quat(CMat3<T> m) {
@@ -36,90 +32,116 @@ template <class T> struct Quat {
 
 		if (t > epsilon) {
 			t = std::sqrt(t + 1) * 2;
-			i = (m.k.y - m.j.z) / t;
-			j = (m.i.z - m.k.x) / t;
-			k = (m.j.x - m.i.y) / t;
-			r = t * .25f;
+			v = Vec3<T>((m.k.y - m.j.z) / t, (m.i.z - m.k.x) / t, (m.j.x - m.i.y) / t);
+			w = t * .25f;
 		} else if (m.i.x > m.j.y && m.i.x > m.k.z) {
 			t = std::sqrt(m.i.x - m.j.y - m.k.z + 1) * 2;
-			i = t * .25f;
-			j = (m.j.x + m.i.y) / t;
-			k = (m.i.z + m.k.x) / t;
-			r = (m.k.y - m.j.z) / t;
+			v = Vec3<T>(t * .25f, (m.j.x + m.i.y) / t, (m.i.z + m.k.x) / t);
+			w = (m.k.y - m.j.z) / t;
 		} else if (m.j.y > m.k.z) {
 			t = std::sqrt(m.j.y - m.k.z - m.i.x + 1) * 2;
-			i = (m.j.x + m.i.y) / t;
-			j = t * .25f;
-			k = (m.k.y + m.j.z) / t;
-			r = (m.i.z - m.k.x) / t;
+			v = Vec3<T>((m.j.x + m.i.y) / t, t * .25f, (m.k.y + m.j.z) / t);
+			w = (m.i.z - m.k.x) / t;
 		} else {
 			t = std::sqrt(m.k.z - m.j.y - m.i.x + 1) * 2;
-			i = (m.i.z + m.k.x) / t;
-			j = (m.k.y + m.j.z) / t;
-			k = t * .25f;
-			r = (m.j.x - m.i.y) / t;
+			v = Vec3<T>((m.i.z + m.k.x) / t, (m.k.y + m.j.z) / t, t * .25f);
+			w = (m.j.x - m.i.y) / t;
 		}
 	}
 
-	Quat operator~() const {
-		return {-i, -j, -k, r};
-	}
-
-	Vec3f operator*(CVec3<T> v) const {
-		Quat q = operator*(Quat(v, 0)) * operator~();
-		return {q.i, q.j, q.k};
-	}
-
-	Quat operator*(T s) const {
-		return {i * s, j * s, k * s, r * s};
+	Quat operator-() const {
+		return {-v, w};
 	}
 
 	Quat operator*(CQuat q) const {
-		// clang-format off
-		return {
-			r * q.i + i * q.r + j * q.k - k * q.j,
-			r * q.j + j * q.r + k * q.i - i * q.k,
-			r * q.k + k * q.r + i * q.j - j * q.i,
-			r * q.r - i * q.i - j * q.j - k * q.k
-		};
-		// clang-format on
+		return {q.v.cross(v) + q.v * w + v * q.w, w * q.w - v.dot(q.v)};
 	}
 
-	Quat operator+(CQuat q) const {
-		return {i + q.i, j + q.j, k + q.k, r + q.r};
-	}
-
-	Quat& operator*=(T s) {
-		return *this = operator*(s);
+	Vec3f operator*(CVec3 vec) const {
+		return (*this * Quat(vec, 0) * -*this).v;
 	}
 
 	Quat& operator*=(CQuat q) {
-		return *this = operator*(q);
+		return *this = *this * q;
 	}
 
-	Quat& operator+=(CQuat q) {
-		return *this = operator+(q);
-	}
-
-	Mat3<T> toMat3() const {
-		return {*this};
+	T dot(CQuat& q) const {
+		return v.dot(q.v) + w * q.w;
 	}
 
 	T length() const {
-		return std::sqrt(i * i + j * j + k * k + r * r);
+		return std::sqrt(dot(*this));
 	}
 
 	Quat normalized() const {
-		T d = 1 / length();
-		return {i * d, j * d, k * d, r * d};
+		T sc = 1 / length();
+		return {v * sc, w * sc};
 	}
 
 	void normalize() {
-		T d = 1 / length();
-		i *= d;
-		j *= d;
-		k *= d;
-		r *= d;
+		T sc = 1 / length();
+		v *= sc;
+		w *= sc;
+	}
+
+	Vec3<T> i() const {
+		T ix = 1 - (v.y * v.y + v.z * v.z) * 2;
+		T iy = (v.x * v.y - v.z * w) * 2;
+		T iz = (v.x * v.z + v.y * w) * 2;
+		return {ix, iy, iz};
+	}
+
+	Vec3<T> j() const {
+		T jx = (v.x * v.y + v.z * w) * 2;
+		T jy = 1 - (v.x * v.x + v.z * v.z) * 2;
+		T jz = (v.y * v.z - v.x * w) * 2;
+		return {jx, jy, jz};
+	}
+
+	Vec3<T> k() const {
+		T kx = (v.x * v.z - v.y * w) * 2;
+		T ky = (v.y * v.z + v.x * w) * 2;
+		T kz = 1 - (v.x * v.x + v.y * v.y) * 2;
+		return {kx, ky, kz};
+	}
+
+	T yaw() const {
+		T kx = (v.x * v.z - v.y * w) * 2;
+		T kz = 1 - (v.x * v.x + v.y * v.y) * 2;
+		return -std::atan2(kx, kz);
+	}
+
+	T pitch() const {
+		T kx = (v.x * v.z - v.y * w) * 2;
+		T ky = (v.y * v.z + v.x * w) * 2;
+		T kz = 1 - (v.x * v.x + v.y * v.y) * 2;
+		return -std::atan2(ky, sqrtf(kx * kx + kz * kz));
+	}
+
+	T roll() const {
+		T iy = (v.x * v.y - v.z * w) * 2;
+		T jy = 1 - (v.x * v.x + v.z * v.z) * 2;
+		return std::atan2(iy, jy);
+	}
+
+	Vec3<T> rotation() const {
+		return {pitch(), yaw(), roll()};
+	}
+
+	static Quat pitch(T r) {
+		return {Vec3<T>(std::sin(r / -2), 0, 0), std::cos(r / -2)};
+	}
+
+	static Quat yaw(T r) {
+		return {Vec3<T>(0, std::sin(r / 2), 0), std::cos(r / 2)};
+	}
+
+	static Quat roll(T r) {
+		return {Vec3<T>(0, 0, std::sin(r / -2)), std::cos(r / -2)};
+	}
+
+	static Quat rotation(CVec3 r) {
+		return yaw(r.y) * pitch(r.x) * roll(r.z);
 	}
 
 	friend std::ostream& operator<<(std::ostream& str, CQuat q) {
@@ -128,21 +150,13 @@ template <class T> struct Quat {
 };
 
 template <class T> Mat3<T>::Mat3(const Quat<T>& q) {
-	float ii = q.i * q.i, jj = q.j * q.j, kk = q.k * q.k;
-	float ij = q.i * q.j, ik = q.i * q.k, jk = q.j * q.k;
-	float ir = q.i * q.r, jr = q.j * q.r, kr = q.k * q.r;
+	float xx = q.v.x * q.v.x, yy = q.v.y * q.v.y, zz = q.v.z * q.v.z;
+	float xy = q.v.x * q.v.y, xz = q.v.x * q.v.z, yz = q.v.y * q.v.z;
+	float wx = q.w * q.v.x, wy = q.w * q.v.y, wz = q.w * q.v.z;
 
-	i = {1 - 2 * (jj + kk), 2 * (ij - kr), 2 * (ik + jr)};
-	j = {2 * (ij + kr), 1 - 2 * (ii + kk), 2 * (jk - ir)};
-	k = {2 * (ik - jr), 2 * (jk + ir), 1 - 2 * (ii + jj)};
-
-	assert(isUnit(i.length()));
-	assert(isUnit(j.length()));
-	assert(isUnit(k.length()));
-}
-
-template <class T> Quat<T> Mat3<T>::toQuat() const {
-	return *this;
+	i = Vec3<T>(1 - 2 * (yy + zz), 2 * (xy - wz), 2 * (xz + wy));
+	j = Vec3<T>(2 * (xy + wz), 1 - 2 * (xx + zz), 2 * (yz - wx));
+	k = Vec3<T>(2 * (xz - wy), 2 * (yz + wx), 1 - 2 * (xx + yy));
 }
 
 } // namespace sgf

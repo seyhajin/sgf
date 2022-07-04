@@ -12,7 +12,7 @@ Map<uint, SharedPtr<Texture>> g_cache;
 
 }
 
-Texture* createTexure(uint rgba) {
+Texture* createTexture(uint rgba) {
 
 	auto it = g_cache.find(rgba);
 	if (it != g_cache.end()) return it->second;
@@ -24,7 +24,7 @@ Texture* createTexure(uint rgba) {
 	return texture;
 }
 
-Texture* createTexure(CVec4f color) {
+Texture* createTexture(CVec4f color) {
 	uint rgba = (uint(color.w * 255.0f) << 24) | (uint(color.z * 255.0f) << 16) | (uint(color.y * 255.0f) << 8) |
 				uint(color.x * 255.0f);
 	return createTexture(rgba);

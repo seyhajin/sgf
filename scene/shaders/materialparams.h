@@ -14,6 +14,6 @@ struct MaterialParams {
 	Vec3f emissiveFactor;
 	float metallicFactor;
 	float roughnessFactor;
-};
+}SGF_ALIGN16;
 
 } // namespace sgf

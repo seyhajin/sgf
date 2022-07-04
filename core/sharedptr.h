@@ -131,7 +131,7 @@ private:
 		if (!shared || --shared->m_sharedRefs) return;
 
 		shared->m_sharedRefs = 1;
-		SharedPtrPool::g_instance->m_sharedPtrs.push_back(shared);
+		if(Shared::g_lonelyPtrs) Shared::g_lonelyPtrs->push_back(shared);
 	}
 };
 

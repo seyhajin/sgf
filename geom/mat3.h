@@ -26,12 +26,16 @@ template <class T> struct Mat3 {
 
 	Mat3(T s) : i(s, 0, 0), j(0, s, 0), k(0, 0, s) {
 	}
+
 	Mat3(CVec3<T> s) : i(s.x, 0, 0), j(0, s.y, 0), k(0, 0, s.z) {
 	}
+
 	Mat3(CVec3<T> i, CVec3<T> j, CVec3<T> k) : i(i), j(j), k(k) {
 	}
+
 	Mat3(T ix, T iy, T iz, T jx, T jy, T jz, T kx, T ky, T kz) : i{ix, iy, iz}, j{jx, jy, jz}, k{kx, ky, kz} {
 	}
+
 	Mat3(const Quat<T>& q);
 
 	bool operator==(CMat3 that) const {
@@ -80,26 +84,46 @@ template <class T> struct Mat3 {
 		return {i.x, j.x, k.x, i.y, j.y, k.y, i.z, j.z, k.z};
 	}
 
-	Quat<T> toQuat() const;
+	T yaw() const {
+		return k.yaw();
+	}
 
-	static Mat3 yaw(float r) {
+	T pitch() const {
+		return k.pitch();
+	}
+
+	T roll() const {
+		return std::atan2(i.y, j.y);
+	}
+
+	Vec3<T> rotation() const {
+		return {pitch(), yaw(), roll()};
+	}
+
+	Vec3<T> scale() const {
+		return {i.length(), j.length(), k.length()};
+	}
+
+	static Mat3 yaw(T r) {
 		float s = std::sin(r), c = std::cos(r);
 		return {c, 0, s, 0, 1, 0, -s, 0, c};
 	}
 
-	static Mat3 pitch(float r) {
+	static Mat3 pitch(T r) {
 		float s = std::sin(r), c = std::cos(r);
 		return {1, 0, 0, 0, c, s, 0, -s, c};
 	}
 
-	static Mat3 roll(float r) {
+	static Mat3 roll(T r) {
 		float s = std::sin(r), c = std::cos(r);
 		return {c, s, 0, -s, c, -0, 0, 0, 1};
 	}
 
 	static Mat3 rotation(CVec3<T> r) {
+		// OPTIMIZE ME!
 		return yaw(r.y) * pitch(r.x) * roll(r.z);
 	}
+
 	static Mat3 scale(CVec3<T> s) {
 		return {s.x, 0, 0, 0, s.y, 0, 0, 0, s.z};
 	}

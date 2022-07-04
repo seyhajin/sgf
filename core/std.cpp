@@ -50,6 +50,12 @@ void rndinit(ranctx* x, uint seed) {
 
 } // namespace
 
+#ifdef ASAN_ENABLED
+extern "C" const char* __asan_default_options() {
+	return "abort_on_error=1:detect_leaks=0";
+}
+#endif
+
 void seedRnd(uint seed) {
 	rndinit(&r, seed);
 }

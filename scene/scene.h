@@ -8,7 +8,7 @@
 
 namespace sgf {
 
-class Scene : public Object {
+class Scene : public Object{
 public:
 	SGF_OBJECT_TYPE(Scene, Object);
 
@@ -17,7 +17,11 @@ public:
 	Property<Vec3f> directionalLightVector;
 	Property<Vec3f> directionalLightColor;
 
-	Scene();
+	explicit Scene(GraphicsDevice* graphicsDevice);
+
+	GraphicsDevice* graphicsDevice()const{
+		return m_graphicsDevice;
+	}
 
 	float renderTime() const {
 		return m_renderTime;
@@ -32,31 +36,21 @@ public:
 	void addRenderer(Renderer* renderer);
 	void removeRenderer(Renderer* renderer);
 
-	DebugRenderer* debugRenderer();
-
 	void render(CVec2i size);
 
 private:
-	Vector<RenderPass*> m_renderPasses;
-
+	GraphicsDevice* m_graphicsDevice;
 	SharedPtr<GraphicsContext> m_graphicsContext;
-	SharedPtr<UniformBuffer> m_cameraParams;
-	SharedPtr<UniformBuffer> m_sceneParams;
+	SharedPtr<GraphicsBuffer> m_cameraParams;
+	SharedPtr<GraphicsBuffer> m_sceneParams;
 
+	Vector<RenderPass*> m_renderPasses;
 	Vector<Camera*> m_cameras;
 	Vector<Light*> m_lights;
 
 	RenderContext m_renderContext;
 
-	mutable DebugRenderer* m_debugRenderer = nullptr;
 	float m_renderTime = 0;
-
-	static Scene* g_instance;
-	friend Scene* activeScene() {
-		return g_instance;
-	}
 };
-
-Scene* activeScene();
 
 }; // namespace sgf

@@ -20,6 +20,8 @@ public:
 	Property<BlendMode> blendMode;
 	Property<CullMode> cullMode;
 
+	Property<bool> flatShaded;
+
 	Material(CVec4f baseColor);
 
 	void bind(GraphicsContext* gc);
@@ -28,7 +30,10 @@ private:
 	mutable bool m_dirtyParams = true;
 
 	MaterialParams m_materialParams;
-	SharedPtr<UniformBuffer> m_uniformBuffer;
+	SharedPtr<GraphicsBuffer> m_uniformBuffer;
 };
+
+Material* matteMaterial(CVec4f color);
+Material* errorMaterial();
 
 } // namespace sgf

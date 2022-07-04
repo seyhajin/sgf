@@ -1,12 +1,20 @@
 ﻿#include "debugrenderer.h"
 
+#include "mesh.h"
 #include "shaderloader.h"
-
-//#include <core3d/core3d.hh>
 
 namespace sgf {
 
 namespace {
+
+// clang-format off
+VertexLayout vertexLayout {{
+{AttribFormat::float3, 0, 0, 0,   sizeof(Vertex)},
+{AttribFormat::float3, 0, 1, 12,  sizeof(Vertex)},
+{AttribFormat::float2, 0, 2, 24,  sizeof(Vertex)},
+{AttribFormat::float4, 0, 3, 32,  sizeof(Vertex)}
+}};
+// clang-format on
 
 ShaderLoader g_shader("shaders/debugrenderer.glsl");
 
@@ -29,37 +37,25 @@ void DebugRenderer::clear() {
 	m_currentOp.order = 0;
 }
 
-void DebugRenderer::addTriangle(CVec3f v0, CVec3f v1, CVec3f v2) {
-	// debug() << "### addTriangle" << v0 << v1 << v2;
-	m_vertices.emplace_back(modelMatrix.value() * v0, fillColor);
-	m_vertices.emplace_back(modelMatrix.value() * v1, fillColor);
-	m_vertices.emplace_back(modelMatrix.value() * v2, fillColor);
-	addPrimitive(3);
+void DebugRenderer::addTriangle(CVertex v0, CVertex v1, CVertex v2, Material* material) {
+	addVertex(v0);
+	addVertex(v1);
+	addVertex(v2);
+	addPrimitive(3, material);
 }
 
-void DebugRenderer::addLine(CVec3f v0, CVec3f v1) {
-	m_vertices.emplace_back(modelMatrix.value() * v0, lineColor);
-	m_vertices.emplace_back(modelMatrix.value() * v1, lineColor);
-	addPrimitive(2);
+void DebugRenderer::addVertex(sgf::CVertex& v) {
+	m_vertices.emplace_back(modelMatrix.value() * v.position, modelMatrix.value().m * v.normal, v.texCoords0, v.color);
 }
 
-void DebugRenderer::addBox(CBoxf box) {
-	Vec3f corners[8];
-	for (uint i = 0; i < 8; ++i) corners[i] = box.corner(i);
-
-	uint faces[] = {2, 3, 1, 0, 3, 7, 5, 1, 7, 6, 4, 5, //
-					6, 2, 0, 4, 6, 7, 3, 2, 0, 1, 5, 4};
-
-	for (uint i = 0; i < 24; i += 4) {
-		addTriangle(corners[faces[i]], corners[faces[i + 1]], corners[faces[i + 2]]);
-		addTriangle(corners[faces[i]], corners[faces[i + 2]], corners[faces[i + 3]]);
-	}
-
-	for (uint i = 0; i < 24; i += 4) {
-		addLine(corners[faces[i + 0]], corners[faces[i + 1]]);
-		addLine(corners[faces[i + 1]], corners[faces[i + 2]]);
-		addLine(corners[faces[i + 2]], corners[faces[i + 3]]);
-		addLine(corners[faces[i + 3]], corners[faces[i + 0]]);
+void DebugRenderer::addMesh(const Mesh* mesh) {
+	auto& vertices = mesh->vertices();
+	auto& materials = mesh->materials();
+	for (auto& tri : mesh->triangles()) {
+		addVertex(vertices[tri.v0]);
+		addVertex(vertices[tri.v1]);
+		addVertex(vertices[tri.v2]);
+		addPrimitive(3, materials[tri.materialId]);
 	}
 }
 
@@ -69,10 +65,11 @@ void DebugRenderer::flushPrimitives() {
 	m_currentOp.numVertices = 0;
 }
 
-void DebugRenderer::addPrimitive(uint order) {
+void DebugRenderer::addPrimitive(uint order, Material* material) {
 	if (depthMode != m_currentOp.depthMode || blendMode != m_currentOp.blendMode || cullMode != m_currentOp.cullMode ||
-		order != m_currentOp.order) {
+		order != m_currentOp.order || m_currentOp.material.value() != material) {
 		flushPrimitives();
+		m_currentOp.material = material;
 		m_currentOp.depthMode = depthMode;
 		m_currentOp.blendMode = blendMode;
 		m_currentOp.cullMode = cullMode;
@@ -93,14 +90,13 @@ void DebugRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
 	auto gc = rc.graphicsContext();
 
-	if (!m_vertexBuffer || m_vertices.size() > m_vertexBuffer->length) {
-		VertexFormat vertexFormat{AttribFormat::float3, AttribFormat::float4};
-		assert(bytesPerVertex(vertexFormat) == sizeof(Vertex));
-		m_vertexBuffer = graphicsDevice()->createVertexBuffer(m_vertices.size(), vertexFormat, nullptr);
+	if (!m_vertexBuffer || m_vertices.size() * sizeof(Vertex) > m_vertexBuffer->size) {
+		m_vertexBuffer = graphicsDevice()->createGraphicsBuffer(BufferType::vertex, m_vertices.size() * sizeof(Vertex), nullptr);
+		m_vertexState = graphicsDevice()->createVertexState({m_vertexBuffer},nullptr,vertexLayout);
 	}
-	m_vertexBuffer->updateData(0, m_vertices.size(), m_vertices.data());
+	m_vertexBuffer->updateData(0, m_vertices.size() * sizeof(Vertex), m_vertices.data());
 
-	gc->setVertexBuffer(m_vertexBuffer);
+	gc->setVertexState(m_vertexState);
 	gc->setShader(g_shader.open());
 
 	uint firstVertex = 0;

@@ -50,39 +50,37 @@ struct Vertex {
 	Vec4f color;
 };
 
-VertexFormat vertexFormat{AttribFormat::float2, AttribFormat::float4};
+//clang-format off
+VertexLayout vertexLayout{
+	{{AttribFormat::float2,0,0,0,sizeof(Vertex)},
+	 {AttribFormat::float4,0,1,8,sizeof(Vertex)}}
+};
+//clang-format on
 
 int main() {
-
-	assert(bytesPerVertex(vertexFormat) == sizeof(Vertex));
 
 	uint width = 1280;
 	uint height = 720;
 
 	auto window = new GLWindow("Skirmish 2022!", width, height);
 
-#ifndef USE_OPENGLES
-	auto debugFunc = [](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,
-						const void* userParam) { debug() << "OpenGL Debug:" << message; };
-	glDebugMessageCallback(debugFunc, nullptr);
-	glEnable(GL_DEBUG_OUTPUT);
-#endif
-
 	auto device = new GLGraphicsDevice();
 
 	auto context = device->createGraphicsContext();
 
 	Vertex vertices[] = {{{0, 1}, {1, 0, 0, 1}}, {{1, -1}, {0, 1, 0, 1}}, {{-1, -1}, {0, 0, 1, 1}}};
-	auto vbuffer = device->createVertexBuffer(3, {AttribFormat::float2, AttribFormat::float4}, vertices);
+	auto vbuffer = device->createGraphicsBuffer(BufferType::vertex, sizeof(vertices), vertices);
+
+	auto vstate = device->createVertexState({vbuffer},nullptr,vertexLayout);
 
 	ShaderParams shaderParams{1};
-	auto ubuffer = device->createUniformBuffer(sizeof(shaderParams), &shaderParams);
+	auto ubuffer = device->createGraphicsBuffer(BufferType::uniform, sizeof(shaderParams), &shaderParams);
 
 	auto shader = device->createShader(shaderSource);
 
-	context->setVertexBuffer(vbuffer);
+	context->setVertexState(vstate);
 	context->setUniformBuffer("shaderParams", ubuffer);
-	context->setSimpleUniform("color", Any(Vec4f(1, .5f, .25, 1)));
+	context->setUniform("color", Any(Vec4f(1, .5f, .25, 1)));
 	context->setShader(shader);
 
 	window->run([device, context, shader] {

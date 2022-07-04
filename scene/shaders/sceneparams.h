@@ -11,7 +11,7 @@ struct SceneParams {
 	Vec4f directionalLightVector;
 	Vec4f directionalLightColor;
 	uint numLights = 0;
-	LightParams lights[maxLights];
+	SGF_ALIGN16 LightParams lights[maxLights];
 	float renderTime = 0;
 	int debugFlags = 0;
 } SGF_ALIGN16;

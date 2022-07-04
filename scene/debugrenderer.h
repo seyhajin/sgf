@@ -2,6 +2,7 @@
 
 #include "material.h"
 #include "renderer.h"
+#include "mesh.h"
 
 namespace sgf {
 
@@ -18,20 +19,23 @@ public:
 
 	void clear();
 
-	void addTriangle(CVec3f v0, CVec3f v1, CVec3f v2);
-	void addLine(CVec3f v0, CVec3f v1);
-	void addBox(CBoxf box);
+	void addTriangle(CVertex v0, CVertex v1, CVertex v2,Material* material=nullptr);
+
+	void addMesh(const Mesh* mesh);
 
 private:
 	struct Vertex {
 		Vec3f position;
+		Vec3f normal;
+		Vec2f texCoords0;
 		Vec4f color;
 
-		Vertex(CVec3f position, CVec4f color) : position(position), color(color) {
+		Vertex(CVec3f position, CVec3f normal, CVec2f texCoords0, CVec4f color) : position(position), normal(normal), texCoords0(texCoords0), color(color) {
 		}
 	};
 
 	struct RenderOp {
+		SharedPtr<Material> material;
 		DepthMode depthMode;
 		BlendMode blendMode;
 		CullMode cullMode;
@@ -42,9 +46,12 @@ private:
 	Vector<RenderOp> m_renderOps;
 	RenderOp m_currentOp{};
 
-	SharedPtr<VertexBuffer> m_vertexBuffer;
+	SharedPtr<GraphicsBuffer> m_vertexBuffer;
+	SharedPtr<VertexState> m_vertexState;
 
-	void addPrimitive(uint order);
+	void addVertex(sgf::CVertex vertex);
+
+	void addPrimitive(uint order,Material* material);
 
 	void flushPrimitives();
 

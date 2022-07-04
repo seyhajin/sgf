@@ -1,0 +1,21 @@
+BasedOnStyle: LLVM
+
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+NamespaceIndentation: None
+
+AllowShortBlocksOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: false
+AllowShortLoopsOnASingleLine: true
+
+AccessModifierOffset: -4
+
+ColumnLimit: 120
+
+

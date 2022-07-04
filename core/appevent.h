@@ -15,11 +15,11 @@ void postAppEvent(AppEventFunc event, void* context = nullptr);
 //
 void discardAppEvents(void* context);
 
-// Should only be called on main thread.
+// Should only be called by main thread.
 //
 void pollAppEvents();
 
-// Should only be called on main thread.
+// Should only be called by main thread.
 //
 void waitAppEvents();
 

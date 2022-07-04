@@ -8,20 +8,25 @@ class Camera : public Entity {
 public:
 	SGF_OBJECT_TYPE(Camera, Entity);
 
-	Property<float> fovY{45.0f};
+	Property<Recti> viewport{{0, 0, 640, 480}};
 	Property<float> zNear{.1f};
 	Property<float> zFar{1000.0f};
-	Property<Recti> viewport{{0, 0, 640, 480}};
 
-	explicit Camera(Entity* parent = nullptr);
+	Camera();
 
 	Mat4f projectionMatrix() const;
 
-private:
-	mutable bool m_projDirty = true;
-	mutable Mat4f m_projMatrix;
+protected:
+	virtual Mat4f getProjectionMatrix() const = 0;
 
-	void onSetEnabled(bool enabled) override;
+	void invalidateProjectionMatrix(){
+		m_projDirty=true;
+	}
+
+private:
+	mutable Mat4f m_projMatrix;
+	mutable bool m_projDirty = true;
+
 };
 
 } // namespace sgf

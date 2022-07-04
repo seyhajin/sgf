@@ -31,6 +31,14 @@ constexpr GLPixelFormat glPixelFormats[] = {{GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYT
 											{GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT},
 											{GL_RGBA16F, GL_RGBA, GL_FLOAT}};
 
+
+//AttribFormat { none, float1, float2, float3, float4, sbyte4, ubyte4, ubyte2 };
+
+constexpr GLint glAttribSizes[] = {0,1,2,3,4,4,4,2};
+
+constexpr GLenum glAttribTypes[] = {GL_NONE,	GL_FLOAT, GL_FLOAT,			GL_FLOAT,
+						  GL_FLOAT, GL_BYTE,  GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE};
+
 void setGLTextureData(uint width, uint height, TextureFormat format, TextureFlags flags, const void* data);
 
 void bindGLUniform(GLenum glType, GLint glLocation, CAny value);

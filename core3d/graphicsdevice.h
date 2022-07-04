@@ -10,7 +10,9 @@ class GraphicsDevice;
 
 class GraphicsResource : public Shared {
 public:
-	SharedPtr<GraphicsDevice> const graphicsDevice;
+	SGF_OBJECT_TYPE(GraphicsResource, Shared)
+
+	GraphicsDevice* const graphicsDevice;
 
 protected:
 	GraphicsResource(GraphicsDevice* device) : graphicsDevice(device) {
@@ -21,6 +23,8 @@ protected:
 
 class Texture : public GraphicsResource {
 public:
+	SGF_OBJECT_TYPE(Texture, GraphicsResource)
+
 	uint const width;
 	uint const height;
 	TextureFormat const texelFormat;
@@ -32,49 +36,41 @@ protected:
 	}
 };
 
-// ***** UniformBuffer *****
+// ***** GraphicsBuffer *****
 
-class UniformBuffer : public GraphicsResource {
+class GraphicsBuffer : public GraphicsResource {
 public:
+	SGF_OBJECT_TYPE(GraphicsBuffer, GraphicsResource)
+
+	BufferType type;
 	uint const size;
 
 	virtual void updateData(uint offset, uint size, const void* data) = 0;
 
+	virtual void* lockData(uint offset, uint size) = 0;
+	virtual void unlockData() = 0;
+
 protected:
-	UniformBuffer(GraphicsDevice* device, uint size) : GraphicsResource(device), size(size) {
+	GraphicsBuffer(GraphicsDevice* device, BufferType type, uint size)
+		: GraphicsResource(device), type(type), size(size) {
 	}
 };
 
-// ***** VertexBuffer *****
+// ***** VertexState *****
 
-class VertexBuffer : public GraphicsResource {
+class VertexState : public GraphicsResource {
 public:
-	uint const length;
-	VertexFormat const format;
-	uint const bytesPerVertex;
+	SGF_OBJECT_TYPE(VertexState, GraphicsResource)
 
-	virtual void updateData(uint firstVertex, uint numVertices, const void* data) = 0;
+	Vector<SharedPtr<GraphicsBuffer>> const vertexBuffers;
+	SharedPtr<GraphicsBuffer> const indexBuffer;
+	VertexLayout const layout;
 
 protected:
-	VertexBuffer(GraphicsDevice* device, uint length, VertexFormat format)
-		: GraphicsResource(device), length(length), format(std::move(format)),
-		  bytesPerVertex(sgf::bytesPerVertex(this->format)) {
-	}
-};
-
-// ***** IndexBuffer *****
-
-class IndexBuffer : public GraphicsResource {
-public:
-	uint const length;
-	IndexFormat const format;
-	uint const bytesPerIndex;
-
-	virtual void updateData(uint firstIndex, uint numIndices, const void* data) = 0;
-
-protected:
-	IndexBuffer(GraphicsDevice* device, uint length, IndexFormat format)
-		: GraphicsResource(device), length(length), format(format), bytesPerIndex(sgf::bytesPerIndex(format)) {
+	VertexState(GraphicsDevice* device, Vector<SharedPtr<GraphicsBuffer>> vertexBuffers, GraphicsBuffer* indexBuffer,
+				VertexLayout layout)
+		: GraphicsResource(device), vertexBuffers(std::move(vertexBuffers)), indexBuffer(indexBuffer),
+		  layout(std::move(layout)) {
 	}
 };
 
@@ -82,6 +78,8 @@ protected:
 
 class FrameBuffer : public GraphicsResource {
 public:
+	SGF_OBJECT_TYPE(FrameBuffer, GraphicsResource)
+
 	SharedPtr<Texture> const colorTexture;
 	SharedPtr<Texture> const depthTexture;
 	uint const width;
@@ -98,6 +96,8 @@ protected:
 
 class Shader : public GraphicsResource {
 public:
+	SGF_OBJECT_TYPE(Shader, GraphicsResource)
+
 	String const source;
 
 protected:
@@ -109,22 +109,23 @@ protected:
 
 class GraphicsContext : public GraphicsResource {
 public:
+	SGF_OBJECT_TYPE(GraphicsContext, GraphicsResource)
+
+	virtual void setFrameBuffer(FrameBuffer* frameBuffer) = 0;
 	virtual void setViewport(CRecti viewport) = 0;
 	virtual void setDepthMode(DepthMode mode) = 0;
 	virtual void setBlendMode(BlendMode mode) = 0;
 	virtual void setCullMode(CullMode mode) = 0;
 
-	virtual void setFrameBuffer(FrameBuffer* frameBuffer) = 0;
-	virtual void setVertexBuffer(VertexBuffer* buffer) = 0;
-	virtual void setIndexBuffer(IndexBuffer* buffer) = 0;
+	virtual void setVertexState(VertexState* vertexState) = 0;
 
-	virtual void setUniformBuffer(CString name, UniformBuffer* buffer) = 0;
-	virtual void setTextureUniform(CString name, Texture* texture) = 0;
-	virtual void setSimpleUniform(CString name, CAny any) = 0;
+	virtual void setUniformBuffer(CString name, GraphicsBuffer* buffer) = 0;
+	virtual void setTexture(CString name, Texture* texture) = 0;
+	virtual void setUniform(CString name, CAny any) = 0;
 	virtual void setShader(Shader* shader) = 0;
 
 	virtual void clear(CVec4f color) = 0;
-	virtual void drawIndexedGeometry(uint order, uint firstVertex, uint numVertices, uint numInstances) = 0;
+	virtual void drawIndexedGeometry(uint order, uint firstIndex, uint numIndices, uint numInstances) = 0;
 	virtual void drawGeometry(uint order, uint firstVertex, uint numVertices, uint numInstances) = 0;
 
 protected:
@@ -134,14 +135,16 @@ protected:
 
 // ***** GraphicsDevice *****
 
-class GraphicsDevice : public Shared {
+class GraphicsDevice : public Object {
 public:
+	SGF_OBJECT_TYPE(GraphicsDevice, Object);
+
 	virtual Texture* createTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
 								   const void* data) = 0;
-	virtual UniformBuffer* createUniformBuffer(uint size, const void* data) = 0;
-	virtual VertexBuffer* createVertexBuffer(uint length, VertexFormat format, const void* data) = 0;
-	virtual IndexBuffer* createIndexBuffer(uint length, IndexFormat format, const void* data) = 0;
+	virtual GraphicsBuffer* createGraphicsBuffer(BufferType type, uint size, const void* data) = 0;
 	virtual FrameBuffer* createFrameBuffer(Texture* colorTexture, Texture* depthTexture) = 0;
+	virtual VertexState* createVertexState(CVector<GraphicsBuffer*> vertexBuffers, GraphicsBuffer* indexBuffer,
+										   VertexLayout layout) = 0;
 	virtual Shader* createShader(CString source) = 0;
 	virtual GraphicsContext* createGraphicsContext() = 0;
 

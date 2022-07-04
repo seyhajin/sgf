@@ -28,6 +28,8 @@ extern Property<uint> gpuIdle;
 
 class GLWindow : public Object {
 public:
+	SGF_OBJECT_TYPE(GLWindow, Object);
+
 	static constexpr uint maxGamepads = 4;
 
 	Property<bool> keyEventsEnabled{true};

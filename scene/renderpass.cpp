@@ -17,7 +17,7 @@ void RenderPass::addRenderer(Renderer* r) {
 }
 
 void RenderPass::removeRenderer(Renderer* r) {
-	remove(m_renderers, r);
+	erase(m_renderers, r);
 }
 
 void RenderPass::update() {

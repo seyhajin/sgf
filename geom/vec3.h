@@ -159,8 +159,17 @@ template <class T> struct Vec3 {
 	T dot(CVec3 v) const {
 		return x * v.x + y * v.y + z * v.z;
 	}
+
 	Vec3 cross(CVec3 v) const {
 		return {y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x};
+	}
+
+	T yaw() const {
+		return -std::atan2(x, z);
+	}
+
+	T pitch() const {
+		return -std::atan2(y, sqrtf(x * x + z * z));
 	}
 
 	friend std::ostream& operator<<(std::ostream& str, CVec3 v) {

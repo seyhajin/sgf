@@ -2,29 +2,21 @@
 
 namespace sgf {
 
-namespace {
-// so instance is never nullptr...
-SharedPtrPool g_ptrPool;
-} // namespace
-
-SharedPtrPool* SharedPtrPool::g_instance = &g_ptrPool;
-
-SharedPtrPool::SharedPtrPool() : m_prevInstance(g_instance) {
-	g_instance = this;
-}
+Vector<Shared*>* Shared::g_lonelyPtrs;
 
 SharedPtrPool::~SharedPtrPool() {
 
-	while (!m_sharedPtrs.empty()) {
+	assert(Shared::g_lonelyPtrs == &m_lonelyPtrs);
 
-		auto shared = m_sharedPtrs.back();
-		m_sharedPtrs.pop_back();
+	Shared::g_lonelyPtrs = m_prevPtrs;
 
-		// Have to be a bit careful, could cause other shared ptrs to be released
+	while (!m_lonelyPtrs.empty()) {
+
+		auto shared = m_lonelyPtrs.back();
+		m_lonelyPtrs.pop_back();
+
 		if (!--shared->m_sharedRefs) delete shared;
 	}
-
-	g_instance = m_prevInstance;
 }
 
 } // namespace sgf

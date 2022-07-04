@@ -1,0 +1,6 @@
+.vs
+.idea
+/CMakeLists.txt.user
+/CMakeSettings.json
+/cmake-build-debug
+/embuild/build

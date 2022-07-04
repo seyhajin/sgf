@@ -4,17 +4,13 @@
 
 namespace sgf {
 
-Scene* Scene::g_instance;
-
 namespace {
 
 ShaderLoader g_copyShader("shaders/fbcopy.glsl");
 
 } // namespace
 
-Scene::Scene() {
-	assert(!g_instance);
-	g_instance = this;
+Scene::Scene(GraphicsDevice* graphicsDevice) : m_graphicsDevice(graphicsDevice) {
 
 	m_renderPasses.resize(numRenderPassTypes);
 
@@ -39,14 +35,12 @@ Scene::Scene() {
 	m_renderPasses[int(RenderPassType::overlay)] =
 		new RenderPass(RenderPassType::overlay, DepthMode::compare, BlendMode::alpha, CullMode::back);
 
-	m_cameraParams = graphicsDevice()->createUniformBuffer(sizeof(CameraParams), nullptr);
+	m_graphicsContext = m_graphicsDevice->createGraphicsContext();
 
-	m_sceneParams = graphicsDevice()->createUniformBuffer(sizeof(SceneParams), nullptr);
-
-	m_graphicsContext = graphicsDevice()->createGraphicsContext();
+	m_cameraParams = m_graphicsDevice->createGraphicsBuffer(BufferType::uniform,sizeof(CameraParams), nullptr);
+	m_sceneParams = m_graphicsDevice->createGraphicsBuffer(BufferType::uniform, sizeof(SceneParams), nullptr);
 
 	m_graphicsContext->setUniformBuffer("cameraParams", m_cameraParams);
-
 	m_graphicsContext->setUniformBuffer("sceneParams", m_sceneParams);
 
 	clearColor = Vec4f(.25f, .5f, 1, 1);
@@ -65,20 +59,12 @@ void Scene::removeRenderer(Renderer* renderer) {
 	renderer->detach(this);
 }
 
-DebugRenderer* Scene::debugRenderer() {
-	if (!m_debugRenderer) {
-		m_debugRenderer = new DebugRenderer();
-		addRenderer(m_debugRenderer);
-	}
-	return m_debugRenderer;
-}
-
 void Scene::addCamera(Camera* camera) {
 	m_cameras.push_back(camera);
 }
 
 void Scene::removeCamera(Camera* camera) {
-	remove(m_cameras, camera);
+	erase(m_cameras, camera);
 }
 
 void Scene::addLight(Light* light) {
@@ -86,7 +72,7 @@ void Scene::addLight(Light* light) {
 }
 
 void Scene::removeLight(Light* light) {
-	remove(m_lights, light);
+	erase(m_lights, light);
 }
 
 void Scene::render(CVec2i size) {
@@ -118,7 +104,7 @@ void Scene::render(CVec2i size) {
 		auto& rlight = rscene.lights[i];
 		auto light = m_lights[i];
 
-		rlight.position = Vec4f(light->worldMatrix().position(), 1);
+		rlight.position = Vec4f(light->position(), 1);
 		rlight.color = Vec4f(light->color, light->intensity);
 		rlight.radius = light->radius;
 		rlight.range = light->range;
@@ -135,7 +121,7 @@ void Scene::render(CVec2i size) {
 
 		rcamera.projMatrix = camera->projectionMatrix();
 		rcamera.invProjMatrix = rcamera.projMatrix.inverse();
-		rcamera.cameraMatrix = camera->worldMatrix();
+		rcamera.cameraMatrix = camera->matrix();
 		rcamera.viewMatrix = rcamera.cameraMatrix.inverse();
 		rcamera.viewProjMatrix = rcamera.projMatrix * rcamera.viewMatrix;
 		rcamera.clipNear = camera->zNear;
@@ -159,10 +145,10 @@ void Scene::render(CVec2i size) {
 	auto sourceTexture = m_renderContext.endScene();
 
 	m_graphicsContext->setFrameBuffer(nullptr);
-	m_graphicsContext->setTextureUniform("sourceTexture", sourceTexture);
 	m_graphicsContext->setDepthMode(DepthMode::disable);
 	m_graphicsContext->setBlendMode(BlendMode::disable);
 	m_graphicsContext->setCullMode(CullMode::disable);
+	m_graphicsContext->setTexture("sourceTexture", sourceTexture);
 	m_graphicsContext->setShader(g_copyShader.open());
 
 	m_graphicsContext->drawGeometry(3, 0, 6, 1);
