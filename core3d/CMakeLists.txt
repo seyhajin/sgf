@@ -18,11 +18,11 @@ add_library(core3d
         graphicsdevice.h
         )
 
-target_link_libraries(core3d stb geom core)
+target_link_libraries(core3d glwindow stb)
 
 ##### core3d tests #####
 
 add_executable(hellotriangle
         tests/hellotriangle.cpp)
 
-target_link_libraries(hellotriangle core3d glwindow)
+target_link_libraries(hellotriangle core3d)

@@ -26,13 +26,23 @@ template <class T> struct Mat4 {
 
 	Mat4(CVec4<T> i, CVec4<T> j, CVec4<T> k, CVec4<T> t) : i(i), j(j), k(k), t(t) {
 	}
+
 	Mat4(T ix, T iy, T iz, T iw, T jx, T jy, T jz, T jw, T kx, T ky, T kz, T kw, T tx, T ty, T tz, T tw)
 		: i(ix, iy, iz, iw), j(jx, jy, jz, jw), k(kx, ky, kz, kw), t(tx, ty, tz, tw) {
 	}
 
+	Mat4(CAffineMat4<T> m) : Mat4(m.m) {
+	}
+
 	Mat4(CMat3<T> m) : i(m.i, 0), j(m.j, 0), k(m.k, 0) {
 	}
-	Mat4(CAffineMat4<T> m) : i(m.m.i, 0), j(m.m.j, 0), k(m.m.k, 0), t(m.t, 1) {
+
+	bool operator==(CMat4 that) const {
+		return i == that.i && j == that.j && k == that.k && t == that.t;
+	}
+
+	bool operator!=(CMat4 that) const {
+		return !operator==(that);
 	}
 
 	Vec4<T> operator*(CVec4<T> v) const {
@@ -47,28 +57,6 @@ template <class T> struct Mat4 {
 	Mat4& operator*=(CMat4 m) {
 		return *this = operator*(m);
 	}
-
-#if 0
-		return {i.x * m.i.x + j.x * m.i.y + k.x * m.i.z + t.x * m.i.w,
-				i.y * m.i.x + j.y * m.i.y + k.y * m.i.z + t.y * m.i.w,
-				i.z * m.i.x + j.z * m.i.y + k.z * m.i.z + t.z * m.i.w,
-				i.w * m.i.x + j.w * m.i.y + k.w * m.i.z + t.w * m.i.w,
-
-				i.x * m.j.x + j.x * m.j.y + k.x * m.j.z + t.x * m.j.w,
-				i.y * m.j.x + j.y * m.j.y + k.y * m.j.z + t.y * m.j.w,
-				i.z * m.j.x + j.z * m.j.y + k.z * m.j.z + t.z * m.j.w,
-				i.w * m.j.x + j.w * m.j.y + k.w * m.j.z + t.w * m.j.w,
-
-				i.x * m.k.x + j.x * m.k.y + k.x * m.k.z + t.x * m.k.w,
-				i.y * m.k.x + j.y * m.k.y + k.y * m.k.z + t.y * m.k.w,
-				i.z * m.k.x + j.z * m.k.y + k.z * m.k.z + t.z * m.k.w,
-				i.w * m.k.x + j.w * m.k.y + k.w * m.k.z + t.w * m.k.w,
-
-				i.x * m.t.x + j.x * m.t.y + k.x * m.t.z + t.x * m.t.w,
-				i.y * m.t.x + j.y * m.t.y + k.y * m.t.z + t.y * m.t.w,
-				i.z * m.t.x + j.z * m.t.y + k.z * m.t.z + t.z * m.t.w,
-				i.w * m.t.x + j.w * m.t.y + k.w * m.t.z + t.w * m.t.w};
-#endif
 
 	T* data() {
 		return &i.x;

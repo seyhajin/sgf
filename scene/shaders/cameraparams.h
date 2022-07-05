@@ -14,6 +14,9 @@ struct CameraParams {
 	Vec4f lightPositions[maxLights];
 	float clipNear = 0;
 	float clipFar = 1000;
-} SGF_ALIGN16;
+	char _pad[8];
+};
+
+SGF_ASSERT_ALIGNED16(CameraParams);
 
 } // namespace sgf

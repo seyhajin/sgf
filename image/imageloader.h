@@ -5,6 +5,7 @@
 namespace sgf {
 
 Image* loadImage(CString path);
+
 Image* loadImage(CString path, ImageFormat format);
 
 struct ImageLoader {

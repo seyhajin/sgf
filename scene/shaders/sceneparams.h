@@ -10,10 +10,13 @@ struct SceneParams {
 	Vec4f ambientLightColor;
 	Vec4f directionalLightVector;
 	Vec4f directionalLightColor;
-	uint numLights = 0;
-	SGF_ALIGN16 LightParams lights[maxLights];
+	LightParams lights[maxLights];
 	float renderTime = 0;
 	int debugFlags = 0;
-} SGF_ALIGN16;
+	uint numLights = 0;
+	char _pad[4];
+};
+
+SGF_ASSERT_ALIGNED16(SceneParams);
 
 } // namespace sgf

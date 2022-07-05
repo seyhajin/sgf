@@ -16,10 +16,7 @@ ModelInstance* boxInstance;
 
 int main() {
 
-	uint width = 1280;
-	uint height = 720;
-
-	window = new GLWindow("Blitz World!", width, height);
+	window = new GLWindow("Hello Box!", 1280, 720);
 
 	device = new GLGraphicsDevice();
 
@@ -43,14 +40,14 @@ int main() {
 	camera->lookAt(Vec3f(0, 0, 0));
 	scene->addCamera(camera);
 
-	// ***** Add box renderer to scene *****
+	// ***** Add new box renderer to scene *****
 	//
 	auto boxMesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
 	auto boxModel = createModel(boxMesh);
 	boxRenderer = new ModelRenderer(boxModel);
 	scene->addRenderer(boxRenderer);
 
-	// ***** Add a new box instance *****
+	// ***** Add new box instance to box renderer *****
 	//
 	boxInstance = new ModelInstance();
 	boxRenderer->addInstance(boxInstance);

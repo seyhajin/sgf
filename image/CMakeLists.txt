@@ -10,4 +10,4 @@ add_library(image
         imageutils.h
         imageloader.cpp imageloader.h)
 
-target_link_libraries(image imgui core)
+target_link_libraries(image imgui stb core)

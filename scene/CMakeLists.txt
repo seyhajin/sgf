@@ -51,9 +51,15 @@ add_library(scene
 
 target_link_libraries(scene core3d image)
 
+add_custom_command(
+        TARGET scene POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+                ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+
 ##### scene tests #####
 
 add_executable(hellobox tests/hellobox.cpp)
 
-target_link_libraries(hellobox scene glwindow)
+target_link_libraries(hellobox scene)
 

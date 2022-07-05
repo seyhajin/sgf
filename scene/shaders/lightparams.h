@@ -11,6 +11,9 @@ struct LightParams {
 	Vec4f color;
 	float radius = 0;
 	float range = 0;
-} SGF_ALIGN16;
+	char _pad[8];
+};
+
+SGF_ASSERT_ALIGNED16(LightParams);
 
 } // namespace sgf

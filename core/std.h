@@ -25,6 +25,8 @@
 #define SGF_ALIGN8 __attribute__((aligned(8)))
 #define SGF_ALIGN16 __attribute__((aligned(16)))
 
+#define SGF_ASSERT_ALIGNED16(T) static_assert((sizeof(T) & 15) == 0);
+
 namespace sgf {
 
 using uchar = unsigned char;
