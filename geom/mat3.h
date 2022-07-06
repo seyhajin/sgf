@@ -127,6 +127,10 @@ template <class T> struct Mat3 {
 	static Mat3 scale(CVec3<T> s) {
 		return {s.x, 0, 0, 0, s.y, 0, 0, 0, s.z};
 	}
+
+	friend std::ostream& operator<<(std::ostream& str, CMat3 m) {
+		return str << '(' << m.i << ',' << m.j << ',' << m.k << ')';
+	}
 };
 
 } // namespace sgf

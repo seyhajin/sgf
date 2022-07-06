@@ -31,7 +31,7 @@ template <class T> struct Mat4 {
 		: i(ix, iy, iz, iw), j(jx, jy, jz, jw), k(kx, ky, kz, kw), t(tx, ty, tz, tw) {
 	}
 
-	Mat4(CAffineMat4<T> m) : Mat4(m.m) {
+	Mat4(CAffineMat4<T> m) : i(m.m.i, 0), j(m.m.j, 0), k(m.m.k, 0), t(m.t, 1) {
 	}
 
 	Mat4(CMat3<T> m) : i(m.i, 0), j(m.j, 0), k(m.k, 0) {

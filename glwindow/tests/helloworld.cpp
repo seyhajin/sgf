@@ -5,10 +5,6 @@
 
 using namespace sgf;
 
-extern "C" const char* __asan_default_options() {
-	return "abort_on_error=1:detect_leaks=0";
-}
-
 int main() {
 
 	uint width = 1280;

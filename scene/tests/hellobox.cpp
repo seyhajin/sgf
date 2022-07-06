@@ -36,7 +36,7 @@ int main() {
 		camera->viewport = Recti(Vec2i(0), size);
 	});
 	camera->viewport = Recti(Vec2i(0), window->size());
-	camera->setPosition(Vec3f(0, 1, -1));
+	camera->setPosition(Vec3f(0, 1, -2));
 	camera->lookAt(Vec3f(0, 0, 0));
 	scene->addCamera(camera);
 
