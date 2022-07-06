@@ -9,7 +9,7 @@ For example, on Windows 10:
 * Install Git.
 * Install MSVC Community Edition 2022.
 * git clone https://github.com/blitz-research/sgf.git somewhere.
-* Start MSVC, click 'Open Folder...' and select the git folder.
+* Start MSVC, click 'Open Folder...' and select the sgf folder you just cloned.
 * Change 'startup item' to 'hellobox.exe'.
 * Click 'build and run'.
 
