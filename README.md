@@ -13,7 +13,7 @@ For example, on Windows 10:
 * Change 'startup item' to 'hellobox.exe'.
 * Click 'build and run'.
 
-The process should be pretty much the same although you mahve to install some packages:
+On Linux, the process should be pretty much the same although you may have to install some packages:
 
 OpenAL
 GLFW3
