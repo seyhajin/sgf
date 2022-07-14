@@ -11,7 +11,7 @@ public:
 	String const name;
 	ObjectType* const super;
 
-	ObjectType(String name, ObjectType* super) : name(std::move(name)), super(super) {
+	ObjectType(const char* name, ObjectType* super) noexcept : name(name),super(super) {
 	}
 
 	bool extends(const ObjectType* thatType) const {
@@ -33,27 +33,26 @@ public:
 	// Special case manual expansion of SGF_OBJECT_TYPE for root object.
 	static inline ObjectType staticType{"Object", nullptr};
 
-	Signal<> deleted;
-
 	virtual ObjectType* dynamicType() const {
 		return &staticType;
 	}
 
+	Signal<> deleted;
+
 	Object() = default;
+
 	virtual ~Object();
 
-	template <class ObjTy> bool instanceOf() const {	//NOLINT (nodiscard)
+	template <class ObjTy> bool instanceOf() const {
 		return dynamicType()->extends(&ObjTy::staticType);
 	}
 
 	template <class ObjTy> ObjTy* cast() {
-		if (instanceOf<ObjTy>()) return static_cast<ObjTy*>(this);
-		return nullptr;
+		return instanceOf<ObjTy>() ? static_cast<ObjTy*>(this) : nullptr;
 	}
 
 	template <class ObjTy> const ObjTy* cast() const {
-		if (instanceOf<ObjTy>()) return static_cast<const ObjTy*>(this);
-		return nullptr;
+		return instanceOf<ObjTy>() ? static_cast<ObjTy*>(this) : nullptr;
 	}
 
 private:

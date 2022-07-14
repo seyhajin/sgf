@@ -20,6 +20,7 @@ enum struct TextureFormat {
 	srgb24,
 	rgba32,
 	srgba32,
+	rgba64,
 	r32f,
 	depth32f,
 	rgba64f
@@ -29,9 +30,10 @@ enum struct TextureFlags {
 	none = 0,
 	clampS = 1,
 	clampT = 2,
+	clampST = 3,
 	linear = 4,
 	mipmap = 8, // also implies linear
-	clampST = 3,
+	unmanaged = 16
 };
 
 enum struct AttribFormat { none, float1, float2, float3, float4, sbyte4, ubyte4, ubyte2 };
@@ -63,17 +65,17 @@ struct VertexLayout {
 using CVertexLayout = const VertexLayout&;
 
 inline uint channelsPerPixel(TextureFormat format) {
-	static constexpr uint r[] = {1, 1, 2, 3, 3, 4, 4, 1, 1, 4};
+	static constexpr uint r[] = {1, 1, 2, 3, 3, 4, 4, 4,1, 1, 4};
 	return r[uint(format)];
 }
 
 inline uint bytesPerChannel(TextureFormat format) {
-	static constexpr uint r[] = {1, 1, 1, 1, 1, 1, 1, 4, 4, 2};
+	static constexpr uint r[] = {1, 1, 1, 1, 1, 1, 1, 2,4, 4, 2};
 	return r[uint(format)];
 }
 
 inline uint bytesPerPixel(TextureFormat format) {
-	static constexpr uint r[] = {1, 1, 2, 3, 3, 4, 4, 4, 4, 8};
+	static constexpr uint r[] = {1, 1, 2, 3, 3, 4, 4,8, 4, 4, 8};
 	return r[uint(format)];
 }
 

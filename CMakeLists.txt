@@ -15,25 +15,17 @@ project("Simple Game Framework")
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+    set(CMAKE_BUILD_TYPE RelWithDebugInfo)
 endif ()
 
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Emscripten")
-    set(OS_EMSCRIPTEN 1)
-    add_compile_definitions(OS_EMSCRIPTEN=1)
-elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-    set(OS_WINDOWS 1)
-    add_compile_definitions(OS_WINDOWS=1)
-elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    set(OS_LINUX 1)
-    add_compile_definitions(OS_LINUX=1)
-    #elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-    #    set(DARWIN 1)
-else ()
-    message(FATAL_ERROR "!!! Unrecognized CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
-endif ()
+message("### Configuring project for:")
+message("### CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+message("### CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+message("### CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}")
 
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+# Build type
+#
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(DEBUG 1)
     add_compile_definitions(DEBUG=1)
 else ()
@@ -41,21 +33,53 @@ else ()
     add_compile_definitions(RELEASE=1)
 endif ()
 
+# System name
+#
+if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(OS_EMSCRIPTEN 1)
+    add_compile_definitions(OS_EMSCRIPTEN=1)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(OS_WINDOWS 1)
+    add_compile_definitions(OS_WINDOWS=1)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(OS_LINUX 1)
+    add_compile_definitions(OS_LINUX=1)
+else()
+    message(FATAL_ERROR "!!! Unrecognized CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
+endif ()
+
+# Compiler
+#
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(COMPILER_CLANG 1)
+    add_compile_definitions(COMPILER_CLANG=1)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(COMPILER_GCC 1)
+    add_compile_definitions(COMPILER_GCC=1)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(COMPILER_MSVC 1)
+    add_compile_definitions(COMPILER_MSVC=1)
+endif()
+
 if (OS_EMSCRIPTEN)
     set(USE_OPENGLES 1)
     add_compile_definitions(USE_OPENGLES=1)
 endif ()
 
-message("### Configuring cmake for CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME} and CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} USE_OPENGLES=${USE_OPENGLES}")
-
+# Add our cmake 'find' scripts
+#
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake ${CMAKE_MODULE_PATH})
 
+# C++17 FTW!
+#
 set(CMAKE_CXX_STANDARD 17)
 
 # Disable exceptions and RTTI
 #
-if (OS_WINDOWS)
-    add_compile_options(/GR- /EHs- /EHc- /MD /D_HAS_EXCEPTIONS=0)
+if (COMPILER_MSVC)
+    string(REPLACE "/GR /EHsc" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    string(REPLACE "/MDd" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    add_compile_options(/GR- /EHsc- /MD /D_HAS_EXCEPTIONS=0)
 else ()
     add_compile_options(-fno-rtti -fno-exceptions)
     add_link_options(-fno-rtti -fno-exceptions)
@@ -72,7 +96,7 @@ if (RELEASE)
     endif ()
 endif ()
 
-# Enable sanitizers for linux debug builds
+# TODO: Get memory sanitizer working on other systems:
 #
 if (OS_LINUX AND DEBUG)
     set(SANITIZER_OPTIONS -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)

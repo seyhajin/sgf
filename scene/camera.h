@@ -2,7 +2,15 @@
 
 #include "entity.h"
 
+#include <core3d/core3d.hh>
+
 namespace sgf {
+
+struct CameraView {
+	Mat4f projectionMatrix;
+	AffineMat4f cameraMatrix;
+	SharedPtr<FrameBuffer> frameBuffer;
+};
 
 class Camera : public Entity {
 public:
@@ -14,19 +22,18 @@ public:
 
 	Camera();
 
-	Mat4f projectionMatrix() const;
+	CVector<CameraView> getViews() const;
 
 protected:
-	virtual Mat4f getProjectionMatrix() const = 0;
+	virtual Vector<CameraView> validateViews() const = 0;
 
-	void invalidateProjectionMatrix(){
-		m_projDirty=true;
+	void invalidateViews() {
+		m_viewsDirty=true;
 	}
 
 private:
-	mutable Mat4f m_projMatrix;
-	mutable bool m_projDirty = true;
-
+	mutable Vector<CameraView> m_views;
+	mutable bool m_viewsDirty = true;
 };
 
 } // namespace sgf

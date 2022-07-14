@@ -3,13 +3,16 @@
 namespace sgf {
 
 PerspectiveCamera::PerspectiveCamera() {
-	fovY.valueChanged.connect(this,[this](float) {invalidateProjectionMatrix();});
+	fovY.valueChanged.connect(this,[this](float) {invalidateViews();});
 }
 
-Mat4f PerspectiveCamera::getProjectionMatrix() const {
+Vector<CameraView> PerspectiveCamera::validateViews() const{
+
 	float yh = std::tan(fovY * degreesToRadians) * zNear;
 	float ar = float(viewport.value().size().x) / float(viewport.value().size().y);
-	return Mat4f::frustum(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
+	auto projMatrix = Mat4f::frustum(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
+
+	return {{projMatrix,matrix()}};
 }
 
 } // namespace sgf

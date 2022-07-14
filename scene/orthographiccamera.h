@@ -9,7 +9,7 @@ public:
 	SGF_OBJECT_TYPE(OrthographicCamera, Camera);
 
 private:
-	Mat4f getProjectionMatrix() const override;
+	Vector<CameraView> validateViews() const override;
 };
 
 } // namespace sgf

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <cstddef>
 
 #include <algorithm>
 #include <any>
@@ -28,6 +29,8 @@
 #define SGF_ASSERT_ALIGNED16(T) static_assert((sizeof(T) & 15) == 0);
 
 namespace sgf {
+
+using ::std::nullptr_t;
 
 using uchar = unsigned char;
 #if defined(OS_EMSCRIPTEN) || defined(OS_WINDOWS)

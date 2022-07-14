@@ -27,12 +27,12 @@ public:
 
 	uint const width;
 	uint const height;
-	TextureFormat const texelFormat;
-	TextureFlags const filterFlags;
+	TextureFormat const format;
+	TextureFlags const flags;
 
 protected:
 	Texture(GraphicsDevice* device, uint width, uint height, TextureFormat format, TextureFlags flags)
-		: GraphicsResource(device), width(width), height(height), texelFormat(format), filterFlags(flags) {
+		: GraphicsResource(device), width(width), height(height), format(format), flags(flags) {
 	}
 };
 

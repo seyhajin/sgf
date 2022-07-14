@@ -2,21 +2,14 @@
 
 namespace sgf {
 
-Mat4f OrthographicCamera::getProjectionMatrix() const {
+Vector<CameraView> OrthographicCamera::validateViews() const {
 
-	float yh = 1;//zNear;
+	float yh = 1;
 	float ar = float(viewport.value().size().x) / float(viewport.value().size().y);
 
-#if 0
-	float yh = std::tan(fovY * degreesToRadians) * zNear;
-	float ar = float(viewport.value().size().x) / float(viewport.value().size().y);
-	return Mat4f::frustum(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
+	auto projMatrix = Mat4f::ortho(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
 
-	float hx = viewport.value().width() / 2;
-	float hy = viewport.value().height() / 2;
-#endif
-
-	return Mat4f::ortho(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
+	return {{projMatrix,matrix()}};
 }
 
 } // namespace sgf

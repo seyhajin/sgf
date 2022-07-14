@@ -92,6 +92,8 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
 	gc->setVertexState(m_vertexState);
 
+	//gc->setCullMode(CullMode::disable);
+
 	auto& surfaces = (pass == RenderPassType::blended ? m_model->blendedSurfaces : m_model->opaqueSurfaces);
 
 	for (auto& surf : surfaces) {

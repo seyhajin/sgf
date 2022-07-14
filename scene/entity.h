@@ -88,7 +88,7 @@ public:
 private:
 	enum struct Dirty { none = 0, rotation = 1, rotationMatrix = 2 };
 
-	mutable Dirty m_dirty;
+	mutable Dirty m_dirty = Dirty::none;
 
 	mutable AffineMat4f m_matrix;
 	mutable Vec3f m_rotation;

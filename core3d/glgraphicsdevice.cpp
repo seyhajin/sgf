@@ -651,4 +651,12 @@ GraphicsContext* GLGraphicsDevice::createGraphicsContext() {
 	return new GLGraphicsContext(this);
 }
 
+Texture* GLGraphicsDevice::wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
+					   GLuint texture){
+
+	glAssert();
+
+	return new GLTexture(this,width,height,format,flags | TextureFlags::unmanaged,texture);
+}
+
 } // namespace sgf

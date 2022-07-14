@@ -37,7 +37,7 @@ Scene::Scene(GraphicsDevice* graphicsDevice) : m_graphicsDevice(graphicsDevice) 
 
 	m_graphicsContext = m_graphicsDevice->createGraphicsContext();
 
-	m_cameraParams = m_graphicsDevice->createGraphicsBuffer(BufferType::uniform,sizeof(CameraParams), nullptr);
+	m_cameraParams = m_graphicsDevice->createGraphicsBuffer(BufferType::uniform, sizeof(CameraParams), nullptr);
 	m_sceneParams = m_graphicsDevice->createGraphicsBuffer(BufferType::uniform, sizeof(SceneParams), nullptr);
 
 	m_graphicsContext->setUniformBuffer("cameraParams", m_cameraParams);
@@ -113,45 +113,53 @@ void Scene::render(CVec2i size) {
 	m_sceneParams->updateData(0, sizeof(SceneParams), &rscene);
 
 	auto gc = m_graphicsContext;
-	m_renderContext.beginScene(gc, &renderParams, size.x, size.y);
 
 	for (auto camera : m_cameras) {
 
 		auto& viewport = camera->viewport.value();
 
-		rcamera.projMatrix = camera->projectionMatrix();
-		rcamera.invProjMatrix = rcamera.projMatrix.inverse();
-		rcamera.cameraMatrix = camera->matrix();
-		rcamera.viewMatrix = rcamera.cameraMatrix.inverse();
-		rcamera.viewProjMatrix = rcamera.projMatrix * rcamera.viewMatrix;
+		gc->setViewport(viewport);
+
 		rcamera.clipNear = camera->zNear;
 		rcamera.clipFar = camera->zFar;
 
-		rcamera.directionalLightVector = rcamera.viewMatrix * rscene.directionalLightVector;
+		// Iterate through each camera view, eg: left-eye, right-eye for VRCamera
+		//
+		for (auto& view : camera->getViews()) {
 
-		for (uint i = 0; i < rscene.numLights; ++i) {
-			rcamera.lightPositions[i] = rcamera.viewMatrix * rscene.lights[i].position;
+			rcamera.projMatrix = view.projectionMatrix;
+			rcamera.invProjMatrix = rcamera.projMatrix.inverse();
+			rcamera.cameraMatrix = view.cameraMatrix;
+			rcamera.viewMatrix = rcamera.cameraMatrix.inverse();
+			rcamera.viewProjMatrix = rcamera.projMatrix * rcamera.viewMatrix;
+
+			rcamera.directionalLightVector = rcamera.viewMatrix * rscene.directionalLightVector;
+
+			for (uint i = 0; i < rscene.numLights; ++i) {
+				rcamera.lightPositions[i] = rcamera.viewMatrix * rscene.lights[i].position;
+			}
+
+			m_cameraParams->updateData(0, sizeof(CameraParams), &rcamera);
+
+			m_renderContext.beginScene(gc, &renderParams, size.x, size.y);
+
+			gc->clear(rscene.clearColor);
+
+			for (RenderPass* p : m_renderPasses) p->render(m_renderContext);
+
+			auto sourceTexture = m_renderContext.endScene();
+
+			gc->setFrameBuffer(view.frameBuffer);
+
+			gc->setDepthMode(DepthMode::disable);
+			gc->setBlendMode(BlendMode::disable);
+			gc->setCullMode(CullMode::disable);
+			gc->setTexture("sourceTexture", sourceTexture);
+			gc->setShader(g_copyShader.open());
+
+			gc->drawGeometry(3, 0, 6, 1);
 		}
-
-		m_cameraParams->updateData(0, sizeof(CameraParams), &rcamera);
-
-		gc->setViewport(viewport);
-
-		gc->clear(rscene.clearColor);
-
-		for (RenderPass* p : m_renderPasses) p->render(m_renderContext);
 	}
-
-	auto sourceTexture = m_renderContext.endScene();
-
-	m_graphicsContext->setFrameBuffer(nullptr);
-	m_graphicsContext->setDepthMode(DepthMode::disable);
-	m_graphicsContext->setBlendMode(BlendMode::disable);
-	m_graphicsContext->setCullMode(CullMode::disable);
-	m_graphicsContext->setTexture("sourceTexture", sourceTexture);
-	m_graphicsContext->setShader(g_copyShader.open());
-
-	m_graphicsContext->drawGeometry(3, 0, 6, 1);
 }
 
 } // namespace sgf

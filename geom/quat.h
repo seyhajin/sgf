@@ -145,7 +145,7 @@ template <class T> struct Quat {
 	}
 
 	friend std::ostream& operator<<(std::ostream& str, CQuat q) {
-		return str << '(' << q.i << ',' << q.j << ',' << q.k << ',' << q.r << ')';
+		return str << '(' << q.v << ',' << q.w << ')';
 	}
 };
 

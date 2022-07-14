@@ -83,7 +83,7 @@ public:
 	GLuint const glTexture;
 
 	~GLTexture() override {
-		glDeleteTextures(1, &glTexture);
+		if(!bool(flags & TextureFlags::unmanaged))glDeleteTextures(1, &glTexture);
 	}
 
 protected:
@@ -201,6 +201,9 @@ public:
 						   const void* data) override;
 	Shader* createShader(CString source) override;
 	GraphicsContext* createGraphicsContext() override;
+
+	Texture* wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
+						   GLuint texture);
 };
 
 } // namespace sgf

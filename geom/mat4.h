@@ -65,6 +65,10 @@ template <class T> struct Mat4 {
 		return &i.x;
 	}
 
+	Mat4 transpose() const {
+		return {i.x, j.x, k.x, t.x, i.y, j.y, k.y, t.y, i.z, j.z, k.z, t.z, i.w, j.w, k.w, t.w};
+	}
+
 	Mat4 inverse() const {
 		Mat4<T> r{
 			j.y * k.z * t.w - j.y * k.w * t.z - k.y * j.z * t.w + k.y * j.w * t.z + t.y * j.z * k.w - t.y * j.w * k.z,
@@ -112,22 +116,28 @@ template <class T> struct Mat4 {
 	}
 
 	static Mat4 frustum(float left, float right, float bottom, float top, float near, float far) {
+
 		float w = right - left, h = top - bottom, d = far - near, near2 = near * 2;
+
 		// clang-format off
-		return Mat4f(near2 / w, 0, 0, 0,
-					 0, near2 / h, 0, 0,
-					 (right + left) / w, (top + bottom) / h, (far + near) / d, 1,
-					 0, 0, -(far * near2) / d, 0);
+		return {
+			near2 / w,				0,						0,						0,
+			0,						near2 / h,				0,						0,
+			(right + left) / w, 	(top + bottom) / h,		(far + near) / d, 		1,
+			0,						0,						-(far * near2) / d, 	0};
 		// clang-format on
 	}
 
 	static Mat4 ortho(float left, float right, float bottom, float top, float near, float far) {
+
 		float w = right - left, h = top - bottom, d = far - near;
+
 		// clang-format off
-		return Mat4f(2/w, 0, 0, 0,
-					 0, 2/h, 0, 0,
-					 0, 0, 2/d, 0,
-					 -(right + left) / w, -(top + bottom) / h, -(far + near) / d, 1);
+		return {
+			2 / w,					0,						0,						0,
+			0,						2 / h,					0,						0,
+			0,						0,						2 / d,					0,
+			-(right + left) / w,	-(top + bottom) / h,	-(far + near) / d, 		1};
 		// clang-format on
 	}
 
