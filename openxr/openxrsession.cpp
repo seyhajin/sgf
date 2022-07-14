@@ -10,11 +10,55 @@
 
 #include <openxr/xr_linear.h>
 
-#define xrAssert(X) verify((X) == 0);
+#define xrAssert(X) verify((X) >= 0);
 
 #define xrInsert(Vec, Num, Type) Vec.insert(Vec.end(), Num, {Type});
 
 namespace sgf {
+
+namespace {
+
+Mat4f projectionMatrix(float angleLeft, float angleRight, float angleUp, float angleDown, float zNear, float zFar) {
+
+	float left = std::tan(angleLeft), right = std::tan(angleRight), up = std::tan(angleUp), down = std::tan(angleDown);
+
+	float w = right - left, h = up - down, d = zFar - zNear;
+
+	// clang-format off
+	return {2 / w,					0,						0,							0,
+			0,						2 / h,					0,							0,
+			-(right + left) / w,	-(up + down) / h,		(zFar + zNear) / d, 		1,
+			0,						0,						-(zFar * zNear * 2) / d,	0};
+	// clang-format on
+}
+
+AffineMat4f poseMatrix(XrQuaternionf orientation, XrVector3f position) {
+
+	auto m = AffineMat4f(Mat3f((Quatf&)orientation).transpose(), (Vec3f&)position);
+
+	m.m.i.z = -m.m.i.z;
+	m.m.j.z = -m.m.j.z;
+	m.m.k.x = -m.m.k.x;
+	m.m.k.y = -m.m.k.y;
+	m.t.z = -m.t.z;
+
+	return m;
+}
+
+AffineMat4f poseMatrix(const XrPosef& pose) {
+
+	auto m = AffineMat4f(Mat3f((CQuatf)pose.orientation).transpose(), (CVec3f)pose.position);
+
+	m.m.i.z = -m.m.i.z;
+	m.m.j.z = -m.m.j.z;
+	m.m.k.x = -m.m.k.x;
+	m.m.k.y = -m.m.k.y;
+	m.t.z = -m.t.z;
+
+	return m;
+}
+
+} // namespace
 
 OpenXRSession::OpenXRSession(GLWindow* window) : m_window(window) {
 
@@ -138,16 +182,27 @@ OpenXRSession::OpenXRSession(GLWindow* window) : m_window(window) {
 		uint32_t n;
 		xrAssert(xrEnumerateSwapchainFormats(m_state.session, 0, &n, nullptr));
 
-		m_state.swapchainFormats.resize(n);
-		xrAssert(xrEnumerateSwapchainFormats(m_state.session, n, &n, m_state.swapchainFormats.data()));
+		Vector<int64_t> swapchainFormats(n);
+		xrAssert(xrEnumerateSwapchainFormats(m_state.session, n, &n, swapchainFormats.data()));
 
-		m_swapchainFormat = m_state.swapchainFormats[0]; // GL_RGBA16;
+		for(auto format : swapchainFormats) {
+			switch(format) {
+			case GL_RGBA16:
+			case GL_RGBA8:
+				m_swapchainTextureFormat = format;
+				break;
+			default:
+				continue;
+			}
+			break;
+		}
+		if(!m_swapchainTextureFormat) panic("Can't find suitable swapchain texture format");
 
-		for (uint eye = 0; eye < 2; ++eye) {
+		for (uint eye = 0; eye < numEyes; ++eye) {
 
 			XrSwapchainCreateInfo info{XR_TYPE_SWAPCHAIN_CREATE_INFO};
 			info.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
-			info.format = m_swapchainFormat;
+			info.format = m_swapchainTextureFormat;
 			info.sampleCount = 1;
 			info.width = m_swapchainTextureSize.x;
 			info.height = m_swapchainTextureSize.y;
@@ -188,11 +243,80 @@ OpenXRSession::OpenXRSession(GLWindow* window) : m_window(window) {
 		m_state.frameEndInfo.layerCount = 1;
 		m_state.frameEndInfo.layers = m_state.layers;
 	}
+
+	{
+		// Create action set
+		//
+		auto name = "gameplayactions";
+		auto locname = "Gameplay Actions";
+
+		XrActionSetCreateInfo createSetInfo{XR_TYPE_ACTION_SET_CREATE_INFO};
+		strncpy_s(createSetInfo.actionSetName, XR_MAX_ACTION_SET_NAME_SIZE, "actionset", XR_MAX_ACTION_SET_NAME_SIZE);
+		strncpy_s(createSetInfo.localizedActionSetName, XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE, "ActionSet",
+				  XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
+
+		xrAssert(xrCreateActionSet(m_state.instance, &createSetInfo, &m_state.actionSet));
+		m_state.activeActionSets.actionSet = m_state.actionSet;
+
+		// Create hand pose actions
+		//
+		name = "handposes";
+		locname = "Hand Poses";
+
+		XrPath handPaths[numHands]{};
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/left", &handPaths[0]));
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/right", &handPaths[1]));
+
+		XrActionCreateInfo createInfo{XR_TYPE_ACTION_CREATE_INFO};
+		strncpy_s(createInfo.actionName, XR_MAX_ACTION_NAME_SIZE, name, XR_MAX_ACTION_NAME_SIZE);
+		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, locname,
+				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+		createInfo.actionType = XR_ACTION_TYPE_POSE_INPUT;
+		createInfo.countSubactionPaths = numHands;
+		createInfo.subactionPaths = handPaths;
+
+		xrAssert(xrCreateAction(m_state.actionSet, &createInfo, &m_state.handPoseAction));
+
+		// Create hand pose spaces
+		//
+		for (uint hand = 0; hand < numHands; ++hand) {
+			XrActionSpaceCreateInfo spaceInfo{XR_TYPE_ACTION_SPACE_CREATE_INFO};
+			spaceInfo.action = m_state.handPoseAction;
+			spaceInfo.subactionPath = handPaths[hand];
+			spaceInfo.poseInActionSpace.orientation.w = 1;
+			xrAssert(xrCreateActionSpace(m_state.session, &spaceInfo, &m_state.handPoseSpaces[hand]));
+		}
+
+		// Associate action with poses
+		//
+		XrPath posePaths[2];
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/left/input/aim/pose",&posePaths[0]));
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/right/input/aim/pose",&posePaths[1]));
+
+		XrPath profPath;
+		xrAssert(xrStringToPath(m_state.instance, "/interaction_profiles/khr/simple_controller",&profPath));
+
+		XrActionSuggestedBinding actionBindings[] = {{m_state.handPoseAction,posePaths[0]},{m_state.handPoseAction,posePaths[1]}};
+
+		XrInteractionProfileSuggestedBinding suggestedBinding = {XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
+		suggestedBinding.interactionProfile=profPath;
+		suggestedBinding.countSuggestedBindings = std::size(actionBindings);
+		suggestedBinding.suggestedBindings = actionBindings;
+
+		xrAssert(xrSuggestInteractionProfileBindings(m_state.instance, &suggestedBinding));
+
+		// Attach to session
+		//
+		XrSessionActionSetsAttachInfo attachInfo = {XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO, nullptr, 1, &m_state.actionSet};
+		xrAssert(xrAttachSessionActionSets(m_state.session, &attachInfo));
+	}
 }
 
 OpenXRSession::~OpenXRSession() {
 
-	for (uint eye = 0; eye < 2; ++eye) {
+	if (m_state.actionSet) xrAssert(xrDestroyActionSet(m_state.actionSet));
+
+	for (uint eye = 0; eye < numEyes; ++eye) {
 		if (m_state.swapchains[eye]) xrAssert(xrDestroySwapchain(m_state.swapchains[eye]));
 	}
 
@@ -202,6 +326,7 @@ OpenXRSession::~OpenXRSession() {
 }
 
 void OpenXRSession::pollEvents() {
+	assert(!m_rendering);
 
 	XrEventDataBuffer event{XR_TYPE_EVENT_DATA_BUFFER};
 
@@ -230,20 +355,21 @@ void OpenXRSession::pollEvents() {
 }
 
 bool OpenXRSession::beginFrame() {
+	assert(!m_rendering);
 
 	if (!m_ready) return false;
 
 	// Wait for next frame
 	//
 	xrAssert(xrWaitFrame(m_state.session, nullptr, &m_state.frameState));
-
 	if (!m_state.frameState.shouldRender) return false;
 
 	xrAssert(xrBeginFrame(m_state.session, nullptr));
+	m_rendering = true;
 
 	// Acquire swapchain images
 	//
-	for (uint eye = 0; eye < 2; ++eye) {
+	for (uint eye = 0; eye < numEyes; ++eye) {
 		xrAssert(xrAcquireSwapchainImage(m_state.swapchains[eye], nullptr, &m_activeSwapchainImages[eye]));
 
 		// FIXME: Can't block forever
@@ -251,7 +377,7 @@ bool OpenXRSession::beginFrame() {
 		xrAssert(xrWaitSwapchainImage(m_state.swapchains[eye], &waitInfo));
 	}
 
-	// Update eye poses
+	// Update projviews and eye poses
 	//
 	XrViewState viewState{XR_TYPE_VIEW_STATE};
 	XrView views[2]{{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
@@ -259,50 +385,58 @@ bool OpenXRSession::beginFrame() {
 	m_state.viewLocateInfo.displayTime = m_state.frameState.predictedDisplayTime;
 	xrAssert(xrLocateViews(m_state.session, &m_state.viewLocateInfo, &viewState, 2, &n, views));
 	assert(n == 2);
-	for (uint eye = 0; eye < 2; ++eye) {
+	for (uint eye = 0; eye < numEyes; ++eye) {
 
 		auto& view = views[eye];
 		auto& projView = m_state.projViews[eye];
 
-		(Vec4f&)m_eyePoses[eye].fovAngles = (Vec4f&)view.fov.angleLeft;
-		projView.fov = views[eye].fov;
+		projView.fov = view.fov;
 
 		auto flags = viewState.viewStateFlags;
+		if (flags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) projView.pose.orientation = view.pose.orientation;
+		if (flags & XR_VIEW_STATE_POSITION_VALID_BIT) projView.pose.position = view.pose.position;
 
-		if (flags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) {
-			auto q = view.pose.orientation;
-			projView.pose.orientation = q;
-			//			q.x = -q.x;
-			//			q.y = -q.y;
-			//			q.w = -q.w;
-			//			q.z = -q.z;
-			m_eyePoses[eye].orientation = (Quatf&)q;
-		}
-		if (flags & XR_VIEW_STATE_POSITION_VALID_BIT) {
-			auto v = view.pose.position;
-			projView.pose.position = v;
-			//			v.z = -v.z;
-			m_eyePoses[eye].position = (Vec3f&)v;
-		}
+		m_eyePoses[eye] = poseMatrix(projView.pose);
+	}
+
+	xrAssert(xrSyncActions(m_state.session, &m_state.actionsSyncInfo));
+	for (uint hand = 0; hand < numHands; ++hand) {
+		XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+		xrAssert(xrLocateSpace(m_state.handPoseSpaces[hand], m_state.localSpace, m_state.frameState.predictedDisplayTime,
+							   &location));
+		auto flags = location.locationFlags;
+
+		if (flags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)
+			m_state.handPoses[hand].orientation = location.pose.orientation;
+		if (flags & XR_SPACE_LOCATION_POSITION_VALID_BIT) m_state.handPoses[hand].position = location.pose.position;
+
+		m_handPoses[hand] = poseMatrix(m_state.handPoses[hand]);
 	}
 
 	return true;
 }
 
-void OpenXRSession::endFrame() {
+void OpenXRSession::updateProjectionMatrices(float zNear, float zFar) {
+	assert(m_rendering);
 
-	assert(m_ready && m_state.frameState.shouldRender);
-	m_state.frameState.shouldRender = false;
+	for (uint eye = 0; eye < numEyes; ++eye) {
+		auto& fov = m_state.projViews[eye].fov;
+		m_projMatrices[eye] = projectionMatrix(fov.angleLeft, fov.angleRight, fov.angleUp, fov.angleDown, zNear, zFar);
+	}
+}
+
+void OpenXRSession::endFrame() {
+	assert(m_rendering);
 
 	// Release swapchain images
 	//
-	for (uint eye = 0; eye < 2; ++eye) xrAssert(xrReleaseSwapchainImage(m_state.swapchains[eye], nullptr));
+	for (uint eye = 0; eye < numEyes; ++eye) xrAssert(xrReleaseSwapchainImage(m_state.swapchains[eye], nullptr));
 
 	// End frame!
 	//
 	m_state.frameEndInfo.displayTime = m_state.frameState.predictedDisplayTime;
-	auto r = xrEndFrame(m_state.session, &m_state.frameEndInfo);
-	if (r) { debug() << "### xrEndFrame failed!" << r; }
+	xrAssert(xrEndFrame(m_state.session, &m_state.frameEndInfo));
+	m_rendering = false;
 }
 
 } // namespace sgf

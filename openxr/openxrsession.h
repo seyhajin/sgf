@@ -22,33 +22,8 @@ class GLWindow;
 
 class OpenXRSession {
 public:
-
-	struct EyePose {
-		float fovAngles[4]; //left,right,up,down
-		Quatf orientation;
-		Vec3f position;
-	};
-
-	struct OpenXRState {
-		XrSessionState sessionState = XR_SESSION_STATE_UNKNOWN;
-		XrInstance instance{};
-		XrSystemId systemId{};
-		XrSystemProperties systemProperties{};
-		XrViewConfigurationView viewConfigurationViews[2]{};
-		XrSession session{};
-		XrSpace viewSpace{};
-		XrSpace localSpace{};
-		std::vector<int64_t> swapchainFormats{};
-		XrSwapchain swapchains[2]{};
-		std::vector<XrSwapchainImageOpenGLKHR> swapchainImages[2]{};
-
-		XrFrameState frameState{XR_TYPE_FRAME_STATE};
-		XrViewLocateInfo viewLocateInfo = {XR_TYPE_VIEW_LOCATE_INFO};
-		XrCompositionLayerProjectionView projViews[2]{};
-		XrCompositionLayerProjection projLayer{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
-		XrCompositionLayerBaseHeader* layers[1];
-		XrFrameEndInfo frameEndInfo{XR_TYPE_FRAME_END_INFO};
-	};
+	static constexpr uint numEyes = 2;
+	static constexpr uint numHands = 2;
 
 	OpenXRSession(GLWindow* window);
 
@@ -62,8 +37,8 @@ public:
 		return m_state.sessionState;
 	}
 
-	GLenum swapchainFormat() const {
-		return m_swapchainFormat;
+	GLenum swapchainTextureFormat() const {
+		return m_swapchainTextureFormat;
 	}
 
 	CVec2i swapchainTextureSize() const {
@@ -78,25 +53,66 @@ public:
 		return m_activeSwapchainImages;
 	}
 
-	const EyePose* eyePoses() const {
+	const Mat4f* projectionMatrices() const {
+		return m_projMatrices;
+	}
+
+	const AffineMat4f* eyePoses() const {
 		return m_eyePoses;
+	}
+
+	const AffineMat4f* handPoses() const {
+		return m_handPoses;
 	}
 
 	void pollEvents();
 
 	bool beginFrame();
 
+	void updateProjectionMatrices(float zNear, float zFar);
+
 	void endFrame();
 
 private:
+	struct OpenXRState {
+		XrSessionState sessionState = XR_SESSION_STATE_UNKNOWN;
+		XrInstance instance{};
+		XrSystemId systemId{};
+		XrSystemProperties systemProperties{};
+		XrViewConfigurationView viewConfigurationViews[numEyes]{};
+		XrSession session{};
+		XrSpace viewSpace{};
+		XrSpace localSpace{};
+		XrSwapchain swapchains[numEyes]{};
+		std::vector<XrSwapchainImageOpenGLKHR> swapchainImages[numEyes]{};
+
+		XrFrameState frameState{XR_TYPE_FRAME_STATE};
+		XrViewLocateInfo viewLocateInfo = {XR_TYPE_VIEW_LOCATE_INFO};
+		XrCompositionLayerProjectionView projViews[numEyes]{};
+		XrCompositionLayerProjection projLayer{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
+		XrCompositionLayerBaseHeader* layers[1];
+		XrFrameEndInfo frameEndInfo{XR_TYPE_FRAME_END_INFO};
+
+		XrActionSet actionSet{};
+		XrAction handPoseAction{};
+		XrSpace handPoseSpaces[numHands]{};
+		XrPosef handPoses[numHands]{};
+		XrActiveActionSet activeActionSets={{},XR_NULL_PATH};
+		XrActionsSyncInfo actionsSyncInfo={XR_TYPE_ACTIONS_SYNC_INFO,nullptr,1,&activeActionSets};
+	};
+
 	GLWindow* m_window;
 	OpenXRState m_state;
 	bool m_ready = false;
-	GLenum m_swapchainFormat;
-	Vec2i m_swapchainTextureSize;
-	Vector<GLuint> m_swapchainTextures[2];
-	uint m_activeSwapchainImages[2]{};
-	EyePose m_eyePoses[2];
+	bool m_rendering = false;
+	GLenum m_swapchainTextureFormat{};
+	Vec2i m_swapchainTextureSize{};
+	Vector<GLuint> m_swapchainTextures[numEyes]{};
+	uint m_activeSwapchainImages[numEyes]{};
+
+	Mat4f m_projMatrices[numEyes];
+	AffineMat4f m_eyePoses[numEyes];
+	AffineMat4f m_handPoses[numHands];
 };
 
 } // namespace sgf

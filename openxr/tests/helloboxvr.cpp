@@ -15,6 +15,8 @@ OpenXRCamera* camera;
 ModelRenderer* boxRenderer;
 ModelInstance* boxInstance;
 OpenXRSession* xrSession;
+ModelRenderer* handRenderer;
+ModelInstance* handInstances[2];
 
 } // namespace
 
@@ -46,6 +48,20 @@ int main() {
 	boxInstance->color = Vec4(1, 1, 0, 1);
 	boxInstance->translate({0, 0, .25f});
 
+	// Add new hand renderer
+	//
+	auto handMesh = createBoxMesh(.05f, .01f, .10f, matteMaterial(Vec4f(1)));
+	auto handModel = createModel(handMesh);
+	handRenderer = new ModelRenderer(handModel);
+	scene->addRenderer(handRenderer);
+
+	// Add hand instances
+	for (uint i = 0; i < 2; ++i) {
+		handInstances[i] = new ModelInstance();
+		handRenderer->addInstance(handInstances[i]);
+		handInstances[i]->color = Vec4f(1, .75f, 0, 1);
+	}
+
 	xrSession = new OpenXRSession(window);
 
 	// ***** Initialize VR camera *****
@@ -64,7 +80,11 @@ int main() {
 		xrSession->pollEvents();
 
 		if (xrSession->beginFrame()) {
+
+			for (uint hand = 0; hand < 2; ++hand) { handInstances[hand]->setMatrix(xrSession->handPoses()[hand]); }
+
 			scene->render(camera->viewport.value().size());
+
 			xrSession->endFrame();
 		}
 	});
