@@ -13,6 +13,7 @@ class Any {
 
 	struct Rep {
 		int refs = 1;
+		virtual ~Rep() = default;
 		virtual int typeId() const = 0;
 		virtual bool equals(Rep* rhs) const = 0;
 	};

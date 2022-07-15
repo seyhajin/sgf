@@ -10,8 +10,8 @@ Image* loadImage(CString path, ImageFormat format);
 
 struct ImageLoader {
 
-	ImageLoader(CString path) {
-		m_loadFunc = [path] { return loadImage(path); };
+	ImageLoader(CString assetPath) {
+		m_loadFunc = [assetPath] { return loadImage(resolveAssetPath(assetPath)); };
 	}
 
 	ImageLoader(CString path, ImageFormat format) {

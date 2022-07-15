@@ -13,11 +13,13 @@ void RenderPass::clear() {
 }
 
 void RenderPass::addRenderer(Renderer* r) {
+	assert(!contains(m_renderers,r));
 	m_renderers.push_back(r);
 }
 
 void RenderPass::removeRenderer(Renderer* r) {
-	erase(m_renderers, r);
+	assert(contains(m_renderers,r));
+	remove(m_renderers, r);
 }
 
 void RenderPass::update() {

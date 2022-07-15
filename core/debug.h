@@ -25,12 +25,6 @@ class DebugStream {
 
 	Rep* m_rep = new Rep;
 
-	[[noreturn]] friend void fail(DebugStream&& dbgstream, const char* file, int line) {
-		auto str = dbgstream.m_rep->buf.str();
-		dbgstream.m_rep->buf.str({});
-		fail(str, file, line);
-	}
-
 	template <class T> friend DebugStream&& operator<<(DebugStream&& dbgstream, const T& value) {
 		auto rep = dbgstream.m_rep;
 		if (rep->space) rep->buf << ' ';

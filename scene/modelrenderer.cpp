@@ -34,19 +34,19 @@ Vector<RenderPassType> ModelRenderer::renderPasses() const {
 }
 
 void ModelRenderer::addInstance(ModelInstance* instance) {
+	assert(!contains(m_instances, instance));
 	m_instances.push_back(instance);
 }
 
 void ModelRenderer::removeInstance(ModelInstance* instance) {
-	erase(m_instances, instance);
+	assert(contains(m_instances, instance));
+	remove(m_instances,instance);
 }
 
 void ModelRenderer::sortInstances(CVec3f eyePos) {
-
 	auto cmpFunc = [eyePos](ModelInstance* x, ModelInstance* y) {
 		return eyePos.distanceSquared(x->position()) > eyePos.distanceSquared(y->position());
 	};
-
 	std::sort(m_instances.begin(), m_instances.end(), cmpFunc);
 }
 

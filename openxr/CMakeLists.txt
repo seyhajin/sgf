@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 
-##### openxr module #####
-
 if (OS_EMSCRIPTEN OR OS_LINUX)
     return()
 endif ()
+
+##### openxr module #####
 
 project(openxr)
 
@@ -48,6 +48,6 @@ add_executable(helloboxvr "tests/helloboxvr.cpp")
 
 target_link_libraries(helloboxvr openxr scene)
 
-add_custom_command(TARGET helloboxvr POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/../scene/shaders
-        ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+copy_scene_assets_to_target(helloboxvr "${CMAKE_CURRENT_BINARY_DIR}/assets")
+
+emscripten_preload_file(helloboxvr "${CMAKE_CURRENT_BINARY_DIR}/assets@/")

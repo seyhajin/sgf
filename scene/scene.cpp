@@ -60,19 +60,23 @@ void Scene::removeRenderer(Renderer* renderer) {
 }
 
 void Scene::addCamera(Camera* camera) {
+	assert(!contains(m_cameras,camera));
 	m_cameras.push_back(camera);
 }
 
 void Scene::removeCamera(Camera* camera) {
-	erase(m_cameras, camera);
+	assert(contains(m_cameras,camera));
+	remove(m_cameras, camera);
 }
 
 void Scene::addLight(Light* light) {
+	assert(!contains(m_lights,light));
 	m_lights.push_back(light);
 }
 
 void Scene::removeLight(Light* light) {
-	erase(m_lights, light);
+	assert(contains(m_lights,light));
+	remove(m_lights, light);
 }
 
 void Scene::render(CVec2i size) {

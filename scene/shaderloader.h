@@ -10,8 +10,8 @@ Shader* loadShader(CString path);
 
 class ShaderLoader {
 public:
-	explicit ShaderLoader(CString path) {
-		m_loadFunc = [path] { return loadShader(path); };
+	explicit ShaderLoader(CString assetPath) {
+		m_loadFunc = [assetPath] { return loadShader(resolveAssetPath(assetPath)); };
 	}
 
 	Shader* open() {

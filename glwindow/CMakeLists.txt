@@ -27,5 +27,4 @@ target_link_libraries(glwindow imgui glfw geom core)
 ##### tests #####
 
 add_executable(helloworld tests/helloworld.cpp)
-
 target_link_libraries(helloworld glwindow)

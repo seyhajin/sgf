@@ -111,7 +111,14 @@ endif ()
 if (OS_EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     add_link_options(--shell-file "${CMAKE_SOURCE_DIR}/embuild/index_template.html")
+    add_link_options("SHELL:--emrun -s TOTAL_MEMORY=8mb -s ASSERTIONS=1")
 endif ()
+
+function(target_link_assets target)
+    if(OS_EMSCRIPTEN)
+        target_link_options(${target} PRIVATE --preload-file "$<TARGET_PROPERTY:${target},BINARY_DIR>/assets@/")
+    endif()
+endfunction()
 
 include_directories(${CMAKE_SOURCE_DIR})
 

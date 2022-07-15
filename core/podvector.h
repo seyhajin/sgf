@@ -1,7 +1,7 @@
 #pragma once
 
 #include "std.h"
-#include <queue>
+#include "error.h"
 
 namespace sgf {
 

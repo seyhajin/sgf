@@ -203,15 +203,15 @@ void removeDegenerateTriangles(Mesh* mesh) {
 void removeDuplicateTriangles(Mesh* mesh) {
 
 	struct CompareTris {
-		ulong hash(const Triangle& tri) const {
-			ulong v0 = tri.v0;
-			ulong v1 = tri.v1;
-			ulong v2 = tri.v2;
+		uint64_t hash(const Triangle& tri) const {
+			uint v0 = tri.v0;
+			uint v1 = tri.v1;
+			uint v2 = tri.v2;
 			assert(v0 != v1 && v0 != v2 && v1 != v2);
 			if (v1 < v0) std::swap(v0, v1);
 			if (v2 < v0) std::swap(v0, v2);
 			if (v2 < v1) std::swap(v1, v2);
-			return (v0 << 42) | (v1 << 21) | v2;
+			return (uint64_t(v0) << 42) | (uint64_t(v1) << 21) | uint64_t(v2);
 		}
 
 		bool operator()(const Triangle& x, const Triangle& y) const {
@@ -219,7 +219,7 @@ void removeDuplicateTriangles(Mesh* mesh) {
 		}
 	};
 
-	std::map<Triangle, uint, CompareTris> triMap;
+	std::map<Triangle, uint64_t, CompareTris> triMap;
 
 	uint put = 0;
 	for (uint triId = 0; triId < mesh->triangles().size(); ++triId) {

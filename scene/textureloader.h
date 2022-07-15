@@ -13,8 +13,8 @@ struct TextureLoader {
 		m_loadFunc = [color] { return createTexture(color); };
 	};
 
-	TextureLoader(CString path, TextureFormat format, TextureFlags flags) {
-		m_loadFunc = [path, format, flags] { return loadTexture(path, format, flags); };
+	TextureLoader(CString assetPath, TextureFormat format, TextureFlags flags) {
+		m_loadFunc = [assetPath, format, flags] { return loadTexture(resolveAssetPath(assetPath), format, flags); };
 	}
 
 	Texture* open() const {

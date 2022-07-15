@@ -35,7 +35,7 @@ add_library(core
         std.h
         weakptr.cpp
         weakptr.h
-        )
+        error.cpp error.h fileio.cpp fileio.h random.cpp random.h)
 
 ##### tests #####
 

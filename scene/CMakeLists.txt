@@ -49,17 +49,17 @@ add_library(scene
         textureloader.h
         )
 
-target_link_libraries(scene core3d image)
+function(copy_scene_assets target)
+    add_custom_command(TARGET ${target} PRE_LINK COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+            "$<TARGET_PROPERTY:${target},BINARY_DIR>/assets/shaders")
+endfunction()
 
-add_custom_command(
-        TARGET scene POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_CURRENT_SOURCE_DIR}/shaders
-                ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+target_link_libraries(scene core3d image)
 
 ##### scene tests #####
 
 add_executable(hellobox tests/hellobox.cpp)
-
 target_link_libraries(hellobox scene)
-
+target_link_assets(hellobox)
+copy_scene_assets(hellobox)

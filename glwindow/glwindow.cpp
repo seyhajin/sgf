@@ -96,7 +96,7 @@ GLWindow::GLWindow(CString title, uint width, uint height) {
 
 		glfwMakeContextCurrent(m_glfwWindow);
 
-		initOpenGL();
+		initGLContext();
 
 		settings::vsyncEnabled.valueChanged.connect([](bool enabled) { glfwSwapInterval(enabled ? 1 : 0); });
 

@@ -356,15 +356,15 @@ Texture* GLGraphicsDevice::createTexture(uint width, uint height, TextureFormat 
 	glBindTexture(glTarget, glTexture);
 
 	float aniso = 0.0f;
-	if (glfwExtensionSupported("GL_EXT_texture_filter_anisotropic")) {
+
+	if (checkGLExtension("GL_EXT_texture_filter_anisotropic")) {
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
 	}
-	//	if (GLEW_EXT_texture_filter_anisotropic) { glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso); }
 
 	if (bool(flags & TextureFlags::mipmap)) {
 		glTexParameteri(glTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(glTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		if (aniso != 0) glTexParameterf(glTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+		if (aniso) glTexParameterf(glTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
 	} else if (bool(flags & TextureFlags::linear)) {
 		glTexParameteri(glTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(glTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -498,7 +498,7 @@ FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture*
 		break;
 	}
 
-	if (err) panic(debug() << "glCheckFramebufferStatus failed:" << err);
+	if (err) panic(String("glCheckFramebufferStatus failed:") + err);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -541,7 +541,7 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 			glGetShaderInfoLog(shader, length, nullptr, log);
 			log[length - 1] = 0;
 			debug() << "Compile shader failed:";
-			auto lines = splitString(source, "\n");
+			auto lines = stringSplit(source, "\n");
 			for (size_t i = 0; i < lines.size(); ++i) { debug() << i + 1 << " : " << lines[i]; }
 			debug() << log;
 			delete[] log;
