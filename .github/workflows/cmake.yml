@@ -26,10 +26,15 @@ jobs:
     - name: Install OpenGL
       run: sudo apt-get install -y mesa-common-dev
 
+    - name: Install OpenGL GLU
+      # We don't really need this but glfw includes glu.h
+      run: sudo apt-get install -y libglu1-mesa-dev
+
     - name: Install OpenAL
       run: sudo apt-get install -y libopenal-dev
 
-#    - name: Install OpenXR
+#    Not available in ubunutu-latest
+#    -name: Install OpenXR
 #      run: sudo apt-get install -y libopenxr-dev
 
     - name: Configure CMake
