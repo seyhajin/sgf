@@ -4,7 +4,7 @@
 
 namespace sgf {
 
-//! Convert asset plain into filesystem path
+//! Convert asset path to filesystem path
 String resolveAssetPath(CString assetPath);
 
 //! Load raw data from a file.
