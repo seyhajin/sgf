@@ -20,14 +20,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Instal GLFW3      
+    - name: Install GLFW3      
       run: sudo apt-get install -y libglfw3-dev
       
     - name: Install OpenGL
       run: sudo apt-get install -y mesa-common-dev
 
     - name: Install OpenGL GLU
-      # We don't really need this but glfw includes glu.h
+      # We don't need this but glfw includes glu.h
       run: sudo apt-get install -y libglu1-mesa-dev
 
     - name: Install OpenAL
