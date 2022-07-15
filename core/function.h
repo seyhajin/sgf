@@ -92,7 +92,7 @@ public:
 	}
 
 	bool operator<(const Function& that) const {
-		return m_rep != that.m_rep;
+		return m_rep < that.m_rep;
 	}
 
 	explicit operator bool() const {
