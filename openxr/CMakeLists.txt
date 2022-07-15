@@ -45,9 +45,6 @@ endif ()
 ##### openxr tests #####
 
 add_executable(helloboxvr "tests/helloboxvr.cpp")
-
 target_link_libraries(helloboxvr openxr scene)
-
-copy_scene_assets_to_target(helloboxvr "${CMAKE_CURRENT_BINARY_DIR}/assets")
-
-emscripten_preload_file(helloboxvr "${CMAKE_CURRENT_BINARY_DIR}/assets@/")
+target_copy_assets(helloboxvr scene)
+target_link_assets(helloboxvr)

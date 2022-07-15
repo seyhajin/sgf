@@ -114,6 +114,11 @@ if (OS_EMSCRIPTEN)
     add_link_options("SHELL:--emrun -s TOTAL_MEMORY=8mb -s ASSERTIONS=1")
 endif ()
 
+function(target_copy_assets target source)
+    add_custom_command(TARGET ${target} PRE_LINK COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "$<TARGET_PROPERTY:${source},SOURCE_DIR>/assets" "$<TARGET_PROPERTY:${target},BINARY_DIR>/assets")
+endfunction()
+
 function(target_link_assets target)
     if(OS_EMSCRIPTEN)
         target_link_options(${target} PRIVATE --preload-file "$<TARGET_PROPERTY:${target},BINARY_DIR>/assets@/")

@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "shaders/cameraparams.h"
-#include "shaders/lightparams.h"
-#include "shaders/materialparams.h"
-#include "shaders/sceneparams.h"
+#include "assets/shaders/cameraparams.h"
+#include "assets/shaders/lightparams.h"
+#include "assets/shaders/materialparams.h"
+#include "assets/shaders/sceneparams.h"
 
 namespace sgf {
 

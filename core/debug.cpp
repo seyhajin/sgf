@@ -1,29 +1,33 @@
 ﻿#include "debug.h"
 
+#include <ctime>
 #include <chrono>
+
+#ifdef COMPILER_MSVC
+#pragma warning(disable:4996)
+#endif
 
 namespace sgf {
 
 String debugTimestamp() {
-	using std::chrono::system_clock;
-	auto currentTime = std::chrono::system_clock::now();
-	char buffer[80];
 
-	auto transformed = currentTime.time_since_epoch().count() / 1000000;
+	auto now = std::chrono::system_clock::now();
 
-	auto millis = transformed % 1000;
+	std::time_t timer;
+	timer = std::chrono::system_clock::to_time_t(now);
+	auto timeinfo = localtime(&timer);
 
-	std::time_t tt;
-	tt = system_clock::to_time_t(currentTime);
-	auto timeinfo = localtime(&tt);
-	strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
-	sprintf(buffer, "%s:%03d", buffer, (int)millis);
+	ulong millis = (now.time_since_epoch().count() / 1000000) % 1000;
 
-	return buffer;
+	char buf[80];
+	std::strftime(buf, sizeof(buf), "%F %H:%M:%S", timeinfo);
+	std::snprintf(buf, sizeof(buf),"%s:%03d", buf, (int)millis);
+
+	return buf;
 }
 
 void defaultDebugOutputFunc(CString str) {
-	fflush(stdout);
+
 	std::puts(str.c_str());
 	fflush(stdout);
 }

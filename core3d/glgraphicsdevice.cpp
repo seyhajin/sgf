@@ -298,7 +298,7 @@ void GLGraphicsContext::drawIndexedGeometry(uint order, uint firstIndex, uint nu
 	assert(indexFormat != IndexFormat::none);
 
 	auto type = types[uint(indexFormat)];
-	auto ptr = reinterpret_cast<void*>(bytesPerIndex(indexFormat) * firstIndex);
+	auto ptr = reinterpret_cast<void*>(static_cast<size_t>(bytesPerIndex(indexFormat)) * firstIndex);
 
 	validate();
 

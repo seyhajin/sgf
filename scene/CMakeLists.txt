@@ -61,5 +61,5 @@ target_link_libraries(scene core3d image)
 
 add_executable(hellobox tests/hellobox.cpp)
 target_link_libraries(hellobox scene)
+target_copy_assets(hellobox scene)
 target_link_assets(hellobox)
-copy_scene_assets(hellobox)

@@ -9,7 +9,7 @@ Image::Image(void* data, uint width, uint height, uint pitch, ImageFormat format
 
 Vec4f Image::getPixel(int x, int y) const {
 
-	if (x < 0 || x >= width || y < 0 || y >= height) return {};
+	if (uint(x) >= width || uint(y) >= height) return {};
 
 	static constexpr float sc = 1.0f / 255.0f;
 
@@ -47,7 +47,7 @@ Vec4f Image::getPixel(float x, float y) const {
 
 void Image::setPixel(int x, int y, CVec4f pixel) const {
 
-	if (x < 0 || x >= width || y < 0 || y >= height) return;
+	if (uint(x) >= width || uint(y) >= height) return;
 
 	uchar* p = data + y * pitch + x * bytesPerPixel(format);
 	switch (format) {
