@@ -9,8 +9,11 @@ For example, on Windows 10:
 * Install Git.
 * Install MSVC Community Edition 2022.
 * git clone https://github.com/blitz-research/sgf.git somewhere.
-* Start MSVC, click 'Open Folder...' and select the sgf folder you just cloned.
-* Change 'startup item' to 'hellobox.exe'.
+* Start MSVC, click 'Open a local folder...' and select the sgf folder you just cloned.
+* Change 'Select Startup Item' to 'hellobox.exe':
+
+![Select Startup Item](docs/images/select_startup.png?raw=true "Visual Studio 2022 - Select Startup Item")
+
 * Click 'build and run'.
 
 On Linux, the process should be pretty much the same although you may have to install some packages:
