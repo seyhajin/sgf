@@ -30,7 +30,7 @@
    ~~~
    ghp_f4FChGQ1vxQtUVblahblahblahHqbf1YIf4Z
    ~~~
-   This is effectively a password you can use in combination with your username to give you full access to your repositories at github, BUT I was not able to get this to work easily! Lots of tutorials around claim that git will ask you for username and password at some point but this didn't happen for me while writing this tutorial. Instead, I had to add username/passwork to the github repository URL (next).
+   This is effectively a password you can use in combination with your username to give you full access to your repositories at github, BUT I was not able to get this to work easily! Lots of tutorials around claim that git will ask you for username and password at some point but this didn't happen for me while writing this tutorial. Instead, I had to add username/password to the github repository URL.
   
 
 8. Clone the repository, including your github username and password (ie: personal access tokern) in the URL, like this:
@@ -47,3 +47,6 @@
     $ git commit -m "Make some changes."
     $ git push
     ~~~
+
+
+After experimenting a bit more, I think the 'git doesn't ask for username/password' problem may be caused by git's 'credential helper'. Disabling it (using 'git config --global --unset credential.helper') seems to fix git not asking me for username/password when pushing to my 'main' repository (which does not have my username/password in the URL). Meh, who knows, I think the username/password in the URL is still probably the most bulletproof way to go, but it's another random thing to try I guess!
