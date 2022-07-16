@@ -34,9 +34,8 @@
   
 
 8. Clone the repository, including your github username and password (ie: personal access token) in the URL, like this:
-
     ~~~
-    $ git clone https://myusername:ghp_f4FChGblahblahblahJR0frmRaHqbf1YIf4Z@github.com/myusername/sgf.git```
+    $ git clone https://myusername:ghp_f4FChGblahblahblahJR0frmRaHqbf1YIf4Z@github.com/myusername/sgf.git
     ~~~
 
 9. You should now be able to make changes to the local repository and 'push' them back to github, eg:
