@@ -13,17 +13,16 @@ String debugTimestamp() {
 
 	auto now = std::chrono::system_clock::now();
 
-	std::time_t timer;
-	timer = std::chrono::system_clock::to_time_t(now);
-	auto timeinfo = localtime(&timer);
-
-	ulong millis = (now.time_since_epoch().count() / 1000000) % 1000;
-
 	char buf[80];
-	std::strftime(buf, sizeof(buf), "%F %H:%M:%S", timeinfo);
-	std::snprintf(buf, sizeof(buf),"%s:%03d", buf, (int)millis);
+	auto time = std::chrono::system_clock::to_time_t(now);
+	auto localTime =  localtime(&time);
+	std::strftime(buf, sizeof(buf), "%F %H:%M:%S", localTime);
 
-	return buf;
+	char tbuf[120];
+	ulong millis = (now.time_since_epoch().count() / 1000000) % 1000;
+	std::snprintf(tbuf, sizeof(tbuf),"%s:%03d", buf, (int)millis);
+
+	return tbuf;
 }
 
 void defaultDebugOutputFunc(CString str) {
