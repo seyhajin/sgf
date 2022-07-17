@@ -16,14 +16,22 @@ add_library(core
         core.hh
         debug.cpp
         debug.h
+        error.cpp
+        error.h
+        fileio.cpp
+        fileio.h
         function.cpp
         function.h
         object.cpp
         object.h
         podvector.cpp
         podvector.h
+        promise.cpp
+        promise.h
         property.cpp
         property.h
+        random.cpp
+        random.h
         shared.cpp
         shared.h
         sharedptr.cpp
@@ -35,12 +43,12 @@ add_library(core
         std.h
         weakptr.cpp
         weakptr.h
-        error.cpp error.h fileio.cpp fileio.h random.cpp random.h)
+        )
 
 ##### tests #####
 
-add_executable(core_tests
-        tests/signal.cpp
-        )
+add_executable(promisetest tests/promisetest.cpp)
+target_link_libraries(promisetest PRIVATE core)
 
-target_link_libraries(core_tests PRIVATE core)
+add_executable(signaltest tests/signaltest.cpp)
+target_link_libraries(signaltest PRIVATE core)

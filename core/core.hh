@@ -7,6 +7,7 @@
 #include "error.h"
 #include "fileio.h"
 #include "object.h"
+#include "promise.h"
 #include "property.h"
 #include "random.h"
 #include "shared.h"
