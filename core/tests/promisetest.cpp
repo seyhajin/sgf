@@ -12,12 +12,11 @@ Promise<bool> delay(double seconds) {
 	Promise<bool> promise;
 
 	Thread thread([promise, seconds]() mutable {
-
 		debug() << "sleeping...";
 
 		ThisThread::sleep_for(duration(seconds));
 
-		debug() << "done!";
+		debug() << "...awake!";
 
 		promise.resolve(true);
 	});
@@ -40,6 +39,7 @@ int main() {
 		})
 		.then([](bool) {
 			debug() << "Done3!";
+			std::exit(0);
 		});
 
 	for (;;) {
