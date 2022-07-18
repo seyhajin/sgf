@@ -9,21 +9,21 @@
 namespace sgf {
 
 template <class ValueTy> class Promise;
+template <class ValueTy> using CPromise = const Promise<ValueTy>&;
 
 template <class ValueTy> class Promise {
 
-	using FunTy = Function<void(ValueTy)>;
+	using FunTy = Function<void(const ValueTy&)>;
 
 	struct Rep {
 		std::atomic_int refs = 1;
 		std::mutex mutex;
-		bool valueValid = false;
-		bool funValid = false;
+		bool resolved = false;
 		ValueTy value;
-		FunTy thenFun;
+		FunTy fun;
 
 		Rep() = default;
-		Rep(ValueTy value) : valueValid(true), value(value) {
+		Rep(ValueTy value) : resolved(true), value(value) {
 		}
 	};
 
@@ -35,13 +35,14 @@ template <class ValueTy> class Promise {
 	}
 
 	void release() {
-		if(!m_rep || --m_rep->refs) return;
+		if (!m_rep || --m_rep->refs) return;
 		delete m_rep;
-		m_rep=nullptr;
+		m_rep = nullptr;
 	}
 
 public:
-	using value_type = ValueTy;
+	using CValueTy = const ValueTy&;
+
 	template <class T> struct is_promise : std::false_type {};
 	template <class T> struct is_promise<Promise<T>> : public std::true_type {};
 	template <class T> static inline constexpr bool is_promise_v = is_promise<T>::value;
@@ -72,7 +73,7 @@ public:
 	}
 
 	Promise& operator=(Promise&& that) noexcept {
-		if(m_rep == that.m_rep) return *this;
+		if (m_rep == that.m_rep) return *this;
 		release();
 		m_rep = that.m_rep;
 		that.m_rep = nullptr;
@@ -81,87 +82,80 @@ public:
 
 	// Can be called by any thread.
 	//
-	void fulfill(ValueTy value) {
-		{
-			std::lock_guard<std::mutex> lock(m_rep->mutex);
+	void resolve(CValueTy value) {
 
-			assert(!m_rep->valueValid);
-			m_rep->valueValid = true;
+		std::lock_guard<std::mutex> lock(m_rep->mutex);
 
-			m_rep->value = value;
+		assert(!m_rep->resolved);
 
-			if (m_rep->funValid) m_rep->thenFun(value);
-		}
+		m_rep->resolved = true;
+		m_rep->value = value;
+
+		if (m_rep->fun) m_rep->fun(value);
 	}
 
 	// Should be called by main thread.
 	//
 	// The 'then' function is never called immediately, it is always called via postAsyncEvent()
-	template <class RetTy> Promise<RetTy> then(Function<Promise<RetTy>(ValueTy)> fun) {
-		{
-			std::lock_guard<std::mutex> lock(m_rep->mutex);
+	template <class RetTy> Promise<RetTy> then(Function<Promise<RetTy>(ValueTy)> thenFun) {
 
-			assert(!m_rep->funValid);
-			m_rep->funValid = true;
+		std::lock_guard<std::mutex> lock(m_rep->mutex);
 
-			Promise<RetTy> promise;
+		assert(!m_rep->fun);
 
-			m_rep->thenFun = [promise, fun](ValueTy value) {
-				// clang-format off
-				postAppEvent([promise, fun, value] {
-					fun(value).then([promise](RetTy result) mutable {
-						promise.fulfill(result);
-					});
+		Promise<RetTy> promise;
+
+		m_rep->fun = [promise, thenFun](CValueTy value) {
+			// clang-format off
+			postAppEvent([promise, thenFun, value] {
+				thenFun(value).then([promise](RetTy result) mutable {
+					promise.resolve(result);
 				});
-				// clang-format on
-			};
+			});
+			// clang-format on
+		};
 
-			if (m_rep->valueValid) m_rep->thenFun(m_rep->value);
+		if (m_rep->resolved) m_rep->fun(m_rep->value);
 
-			return promise;
-		}
+		return promise;
 	}
 
-	template <class RetTy> Promise<RetTy> then(Function<RetTy(ValueTy)> fun) {
-		{
-			std::lock_guard<std::mutex> lock(m_rep->mutex);
+	template <class RetTy> Promise<RetTy> then(Function<RetTy(ValueTy)> thenFun) {
 
-			assert(!m_rep->funValid);
-			m_rep->funValid = true;
+		std::lock_guard<std::mutex> lock(m_rep->mutex);
 
-			Promise<RetTy> promise;
+		assert(!m_rep->fun);
 
-			m_rep->thenFun = [promise, fun](ValueTy value) {
-				// clang-format off
-				postAppEvent([promise, fun, value] () mutable {
-					promise.fulfill(fun(value));
-				});
-				// clang-format on
-			};
+		Promise<RetTy> promise;
 
-			if (m_rep->valueValid) m_rep->thenFun(m_rep->value);
+		m_rep->fun = [promise, thenFun](CValueTy value) {
+			// clang-format off
+			postAppEvent([promise, thenFun, value] () mutable {
+				promise.resolve(thenFun(value));
+			});
+			// clang-format on
+		};
 
-			return promise;
-		}
+		if (m_rep->resolved) m_rep->fun(m_rep->value);
+
+		return promise;
 	}
 
-	void then(Function<void(ValueTy)> fun) {
-		{
-			std::lock_guard<std::mutex> lock(m_rep->mutex);
+	void then(Function<void(ValueTy)> thenFun) {
 
-			assert(!m_rep->funValid);
-			m_rep->funValid = true;
+		std::lock_guard<std::mutex> lock(m_rep->mutex);
 
-			m_rep->thenFun = [fun](ValueTy value) {
-				// clang-format off
-				postAppEvent([fun, value] () {
-					fun(value);
-				});
-				// clang-format on
-			};
+		assert(!m_rep->fun);
 
-			if (m_rep->valueValid) m_rep->thenFun(m_rep->value);
-		}
+		m_rep->fun = [thenFun](CValueTy value) {
+			// clang-format off
+			postAppEvent([thenFun, value] () {
+				thenFun(value);
+			});
+			// clang-format on
+		};
+
+		if (m_rep->resolved) m_rep->fun(m_rep->value);
 	}
 
 	template <class ThenFunTy, class RetTy = typename std::invoke_result<ThenFunTy, ValueTy>::type,

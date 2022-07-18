@@ -19,7 +19,7 @@ Promise<bool> delay(double seconds) {
 
 		debug() << "done!";
 
-		promise.fulfill(true);
+		promise.resolve(true);
 	});
 
 	thread.detach();
