@@ -107,7 +107,7 @@ public:
 
 		m_rep->fun = [promise, thenFun](CValueTy value) {
 			// clang-format off
-			postAppEvent([promise, thenFun, value] {
+			postAppEvent([promise, thenFun, value] () mutable {
 				thenFun(value).then([promise](RetTy result) mutable {
 					promise.resolve(result);
 				});
