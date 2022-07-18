@@ -24,7 +24,7 @@ elseif (OS_WINDOWS)
             )
 
     target_link_libraries(fetch PRIVATE
-            "${PROJECT_SOURCE_DIR}/libcurl/windows_x64/lib/libcurl.lib"
+            "${PROJECT_SOURCE_DIR}/libcurl/windows_x64/release/libcurl.lib"
             core
             )
 else ()
