@@ -19,6 +19,8 @@ if (OS_EMSCRIPTEN)
 
 elseif (OS_WINDOWS)
 
+    target_compile_definitions(fetch PRIVATE -DCURL_STATICLIB)
+
     target_include_directories(fetch PRIVATE
             "${PROJECT_SOURCE_DIR}/libcurl/include"
             )
@@ -26,6 +28,8 @@ elseif (OS_WINDOWS)
     target_link_libraries(fetch PRIVATE
             "${PROJECT_SOURCE_DIR}/libcurl/windows_x64/release/libcurl.lib"
             core
+            Ws2_32.lib
+            crypt32.lib
             )
 else ()
 
