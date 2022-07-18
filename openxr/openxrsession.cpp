@@ -171,8 +171,8 @@ OpenXRSession::OpenXRSession(GLWindow* window) : m_window(window) {
 		Vector<int64_t> swapchainFormats(n);
 		xrAssert(xrEnumerateSwapchainFormats(m_state.session, n, &n, swapchainFormats.data()));
 
-		for(auto format : swapchainFormats) {
-			switch(format) {
+		for (auto format : swapchainFormats) {
+			switch (format) {
 			case GL_RGBA16:
 			case GL_RGBA8:
 				m_swapchainTextureFormat = format;
@@ -182,7 +182,7 @@ OpenXRSession::OpenXRSession(GLWindow* window) : m_window(window) {
 			}
 			break;
 		}
-		if(!m_swapchainTextureFormat) panic("Can't find suitable swapchain texture format");
+		if (!m_swapchainTextureFormat) panic("Can't find suitable swapchain texture format");
 
 		for (uint eye = 0; eye < numEyes; ++eye) {
 
@@ -246,54 +246,73 @@ OpenXRSession::OpenXRSession(GLWindow* window) : m_window(window) {
 
 		// Create hand pose actions
 		//
-		name = "handposes";
-		locname = "Hand Poses";
-
 		XrPath handPaths[numHands]{};
 		xrAssert(xrStringToPath(m_state.instance, "/user/hand/left", &handPaths[0]));
 		xrAssert(xrStringToPath(m_state.instance, "/user/hand/right", &handPaths[1]));
 
+		// Create aim pose and grip pose actions
+		//
 		XrActionCreateInfo createInfo{XR_TYPE_ACTION_CREATE_INFO};
-		strncpy_s(createInfo.actionName, XR_MAX_ACTION_NAME_SIZE, name, XR_MAX_ACTION_NAME_SIZE);
-		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, locname,
-				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
 		createInfo.actionType = XR_ACTION_TYPE_POSE_INPUT;
 		createInfo.countSubactionPaths = numHands;
 		createInfo.subactionPaths = handPaths;
 
-		xrAssert(xrCreateAction(m_state.actionSet, &createInfo, &m_state.handPoseAction));
+		strncpy_s(createInfo.actionName, XR_MAX_ACTION_NAME_SIZE, "aimposes", XR_MAX_ACTION_NAME_SIZE);
+		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, "Aim Poses",
+				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+		xrAssert(xrCreateAction(m_state.actionSet, &createInfo, &m_state.aimPoseAction));
 
-		// Create hand pose spaces
+		strncpy_s(createInfo.actionName, XR_MAX_ACTION_NAME_SIZE, "gripposes", XR_MAX_ACTION_NAME_SIZE);
+		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, "Grip Poses",
+				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+		xrAssert(xrCreateAction(m_state.actionSet, &createInfo, &m_state.gripPoseAction));
+
+		// Create aim pose spaces and grip pose spaces
 		//
 		for (uint hand = 0; hand < numHands; ++hand) {
+
 			XrActionSpaceCreateInfo spaceInfo{XR_TYPE_ACTION_SPACE_CREATE_INFO};
-			spaceInfo.action = m_state.handPoseAction;
+
 			spaceInfo.subactionPath = handPaths[hand];
 			spaceInfo.poseInActionSpace.orientation.w = 1;
-			xrAssert(xrCreateActionSpace(m_state.session, &spaceInfo, &m_state.handPoseSpaces[hand]));
+
+			spaceInfo.action = m_state.aimPoseAction;
+			xrAssert(xrCreateActionSpace(m_state.session, &spaceInfo, &m_state.aimPoseSpaces[hand]));
+
+			spaceInfo.action = m_state.gripPoseAction;
+			xrAssert(xrCreateActionSpace(m_state.session, &spaceInfo, &m_state.gripPoseSpaces[hand]));
 		}
 
 		// Associate action with poses
 		//
-		XrPath posePaths[2];
-		xrAssert(xrStringToPath(m_state.instance, "/user/hand/left/input/aim/pose",&posePaths[0]));
-		xrAssert(xrStringToPath(m_state.instance, "/user/hand/right/input/aim/pose",&posePaths[1]));
+		XrPath profilePath;
+		xrAssert(xrStringToPath(m_state.instance, "/interaction_profiles/khr/simple_controller", &profilePath));
 
-		XrPath profPath;
-		xrAssert(xrStringToPath(m_state.instance, "/interaction_profiles/khr/simple_controller",&profPath));
+		XrPath bindingPaths[4];
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/left/input/aim/pose", &bindingPaths[0]));
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/right/input/aim/pose", &bindingPaths[1]));
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/left/input/grip/pose", &bindingPaths[2]));
+		xrAssert(xrStringToPath(m_state.instance, "/user/hand/right/input/grip/pose", &bindingPaths[3]));
 
-		XrActionSuggestedBinding actionBindings[] = {{m_state.handPoseAction,posePaths[0]},{m_state.handPoseAction,posePaths[1]}};
+		// clang-format off
+		XrActionSuggestedBinding suggestedBindings[] = {
+		{m_state.aimPoseAction,bindingPaths[0]},
+		{m_state.aimPoseAction,bindingPaths[1]},
+		{m_state.gripPoseAction,bindingPaths[2]},
+		{m_state.gripPoseAction,bindingPaths[3]}};
+		// clang-format on
 
-		XrInteractionProfileSuggestedBinding suggestedBinding = {XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
-		suggestedBinding.interactionProfile=profPath;
-		suggestedBinding.countSuggestedBindings = std::size(actionBindings);
-		suggestedBinding.suggestedBindings = actionBindings;
+		XrInteractionProfileSuggestedBinding profileBindings = {XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
+		profileBindings.interactionProfile = profilePath;
+		profileBindings.countSuggestedBindings = std::size(suggestedBindings);
+		profileBindings.suggestedBindings = suggestedBindings;
 
-		xrAssert(xrSuggestInteractionProfileBindings(m_state.instance, &suggestedBinding));
+		xrAssert(xrSuggestInteractionProfileBindings(m_state.instance, &profileBindings));
 
 		// Attach to session
 		//
-		XrSessionActionSetsAttachInfo attachInfo = {XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO, nullptr, 1, &m_state.actionSet};
+		XrSessionActionSetsAttachInfo attachInfo = {XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO, nullptr, 1,
+													&m_state.actionSet};
 		xrAssert(xrAttachSessionActionSets(m_state.session, &attachInfo));
 	}
 }
@@ -371,6 +390,9 @@ bool OpenXRSession::beginFrame() {
 	m_state.viewLocateInfo.displayTime = m_state.frameState.predictedDisplayTime;
 	xrAssert(xrLocateViews(m_state.session, &m_state.viewLocateInfo, &viewState, 2, &n, views));
 	assert(n == 2);
+
+	// Update eye states
+	//
 	for (uint eye = 0; eye < numEyes; ++eye) {
 
 		auto& view = views[eye];
@@ -381,22 +403,44 @@ bool OpenXRSession::beginFrame() {
 		if (flags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) projView.pose.orientation = view.pose.orientation;
 		if (flags & XR_VIEW_STATE_POSITION_VALID_BIT) projView.pose.position = view.pose.position;
 
-		memcpy(m_eyeStates[eye].fovAngles,&projView.fov,sizeof(m_eyeStates[eye].fovAngles));
+		memcpy(m_eyeStates[eye].fovAngles, &projView.fov, sizeof(m_eyeStates[eye].fovAngles));
 		m_eyeStates[eye].eyePose = poseMatrix(projView.pose);
 	}
 
+	// Update controller states
+	//
 	xrAssert(xrSyncActions(m_state.session, &m_state.actionsSyncInfo));
 	for (uint hand = 0; hand < numHands; ++hand) {
-		XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-		xrAssert(xrLocateSpace(m_state.handPoseSpaces[hand], m_state.localSpace, m_state.frameState.predictedDisplayTime,
-							   &location));
-		auto flags = location.locationFlags;
 
-		if (flags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)
-			m_state.handPoses[hand].orientation = location.pose.orientation;
-		if (flags & XR_SPACE_LOCATION_POSITION_VALID_BIT) m_state.handPoses[hand].position = location.pose.position;
+		// Update aim pose
+		{
+			XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+			xrAssert(xrLocateSpace(m_state.aimPoseSpaces[hand], m_state.localSpace,
+								   m_state.frameState.predictedDisplayTime, &location));
 
-		m_handPoses[hand] = poseMatrix(m_state.handPoses[hand]);
+			auto flags = location.locationFlags;
+
+			if (flags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)
+				m_state.aimPoses[hand].orientation = location.pose.orientation;
+			if (flags & XR_SPACE_LOCATION_POSITION_VALID_BIT) m_state.aimPoses[hand].position = location.pose.position;
+
+			m_controllerStates[hand].aimPose = poseMatrix(m_state.aimPoses[hand]);
+		}
+
+		// Update grip pose
+		{
+			XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+			xrAssert(xrLocateSpace(m_state.gripPoseSpaces[hand], m_state.localSpace,
+								   m_state.frameState.predictedDisplayTime, &location));
+
+			auto flags = location.locationFlags;
+
+			if (flags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)
+				m_state.gripPoses[hand].orientation = location.pose.orientation;
+			if (flags & XR_SPACE_LOCATION_POSITION_VALID_BIT) m_state.gripPoses[hand].position = location.pose.position;
+
+			m_controllerStates[hand].gripPose = poseMatrix(m_state.gripPoses[hand]);
+		}
 	}
 
 	return true;

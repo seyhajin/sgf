@@ -97,9 +97,14 @@ private:
 		XrFrameEndInfo frameEndInfo{XR_TYPE_FRAME_END_INFO};
 
 		XrActionSet actionSet{};
-		XrAction handPoseAction{};
-		XrSpace handPoseSpaces[numHands]{};
-		XrPosef handPoses[numHands]{};
+
+		XrAction aimPoseAction{};
+		XrAction gripPoseAction{};
+		XrSpace aimPoseSpaces[numHands]{};
+		XrSpace gripPoseSpaces[numHands]{};
+		XrPosef aimPoses[numHands]{};
+		XrPosef gripPoses[numHands]{};
+
 		XrActiveActionSet activeActionSets={{},XR_NULL_PATH};
 		XrActionsSyncInfo actionsSyncInfo={XR_TYPE_ACTIONS_SYNC_INFO,nullptr,1,&activeActionSets};
 	};

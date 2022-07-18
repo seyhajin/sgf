@@ -81,7 +81,9 @@ int main() {
 
 		if (xrSession->beginFrame()) {
 
-			for (uint hand = 0; hand < 2; ++hand) { handInstances[hand]->setMatrix(xrSession->handPoses()[hand]); }
+			auto cstates = xrSession->controllerStates();
+
+			for (uint hand = 0; hand < 2; ++hand) handInstances[hand]->setMatrix(cstates[hand].aimPose);
 
 			scene->render(camera->viewport.value().size());
 
