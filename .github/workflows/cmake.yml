@@ -33,7 +33,10 @@ jobs:
     - name: Install OpenAL
       run: sudo apt-get install -y libopenal-dev
 
-#    Not available in ubunutu-latest
+    - name: Install CURL
+      run: sudo apt-get install -y libcurl4-openssl-dev
+
+#    Not available in ubunutu-latest?
 #    -name: Install OpenXR
 #      run: sudo apt-get install -y libopenxr-dev
 
