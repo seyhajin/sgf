@@ -25,6 +25,19 @@ public:
 	static constexpr uint numEyes = 2;
 	static constexpr uint numHands = 2;
 
+	struct EyeState {
+		AffineMat4f eyePose;
+		float fovAngles[4];
+		uint swapchainImage;
+	};
+
+	struct ControllerState {
+		AffineMat4f gripPose;
+		AffineMat4f aimPose;
+		bool selectClick;
+		bool menuClick;
+	};
+
 	OpenXRSession(GLWindow* window);
 
 	~OpenXRSession();
@@ -49,32 +62,22 @@ public:
 		return m_swapchainTextures;
 	}
 
-	const uint* activeSwapchainImages() const {
-		return m_activeSwapchainImages;
+	const EyeState* eyeStates() const {
+		return m_eyeStates;
 	}
 
-	const Mat4f* projectionMatrices() const {
-		return m_projMatrices;
-	}
-
-	const AffineMat4f* eyePoses() const {
-		return m_eyePoses;
-	}
-
-	const AffineMat4f* handPoses() const {
-		return m_handPoses;
+	const ControllerState* controllerStates() const {
+		return m_controllerStates;
 	}
 
 	void pollEvents();
 
 	bool beginFrame();
 
-	void updateProjectionMatrices(float zNear, float zFar);
-
 	void endFrame();
 
 private:
-	struct OpenXRState {
+	struct XRState {
 		XrSessionState sessionState = XR_SESSION_STATE_UNKNOWN;
 		XrInstance instance{};
 		XrSystemId systemId{};
@@ -102,17 +105,16 @@ private:
 	};
 
 	GLWindow* m_window;
-	OpenXRState m_state;
-	bool m_ready = false;
-	bool m_rendering = false;
+	XRState m_state;
 	GLenum m_swapchainTextureFormat{};
 	Vec2i m_swapchainTextureSize{};
 	Vector<GLuint> m_swapchainTextures[numEyes]{};
-	uint m_activeSwapchainImages[numEyes]{};
 
-	Mat4f m_projMatrices[numEyes];
-	AffineMat4f m_eyePoses[numEyes];
-	AffineMat4f m_handPoses[numHands];
+	EyeState m_eyeStates[numEyes];
+	ControllerState m_controllerStates[numHands];
+
+	bool m_ready = false;
+	bool m_rendering = false;
 };
 
 } // namespace sgf

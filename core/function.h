@@ -46,12 +46,12 @@ public:
 	template <class FunTy> Function(const FunTy& fun) : m_rep(new FunRep<FunTy>(fun)) { // NOLINT
 	}
 
-	Function(const Function& f) : m_rep(f.m_rep) {
+	Function(const Function& fun) : m_rep(fun.m_rep) {
 		retain();
 	}
 
-	Function(Function&& f) noexcept : m_rep(f.m_rep) {
-		f.m_rep = nullptr;
+	Function(Function&& fun) noexcept : m_rep(fun.m_rep) {
+		fun.m_rep = nullptr;
 	}
 
 	~Function() {
@@ -64,18 +64,18 @@ public:
 		return *this;
 	}
 
-	Function& operator=(const Function& f) { // NOLINT
-		f.retain();
+	Function& operator=(const Function& fun) { // NOLINT
+		fun.retain();
 		release();
-		m_rep = f.m_rep;
+		m_rep = fun.m_rep;
 		return *this;
 	}
 
-	Function& operator=(Function&& f) noexcept {
-		if (m_rep == f.m_rep) return *this;
+	Function& operator=(Function&& fun) noexcept {
+		if (m_rep == fun.m_rep) return *this;
 		release();
-		m_rep = f.m_rep;
-		f.m_rep = nullptr;
+		m_rep = fun.m_rep;
+		fun.m_rep = nullptr;
 		return *this;
 	}
 
@@ -99,10 +99,6 @@ public:
 		return m_rep != nullptr;
 	}
 };
-
-template <class RetTy, class... ArgTys, class FunTy> Function<RetTy(ArgTys...)> function(const FunTy& fun) {
-	return Function<RetTy(ArgTys...)>(fun);
-}
 
 template <class RetTy, class... ArgTys, class InstTy, class ClassTy>
 Function<RetTy(ArgTys...)> function(InstTy* inst, RetTy (ClassTy::*fun)(ArgTys...)) {

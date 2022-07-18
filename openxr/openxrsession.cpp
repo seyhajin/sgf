@@ -18,20 +18,6 @@ namespace sgf {
 
 namespace {
 
-Mat4f projectionMatrix(float angleLeft, float angleRight, float angleUp, float angleDown, float zNear, float zFar) {
-
-	float left = std::tan(angleLeft), right = std::tan(angleRight), up = std::tan(angleUp), down = std::tan(angleDown);
-
-	float w = right - left, h = up - down, d = zFar - zNear;
-
-	// clang-format off
-	return {2 / w,					0,						0,							0,
-			0,						2 / h,					0,							0,
-			-(right + left) / w,	-(up + down) / h,		(zFar + zNear) / d, 		1,
-			0,						0,						-(zFar * zNear * 2) / d,	0};
-	// clang-format on
-}
-
 AffineMat4f poseMatrix(XrQuaternionf orientation, XrVector3f position) {
 
 	auto m = AffineMat4f(Mat3f((Quatf&)orientation).transpose(), (Vec3f&)position);
@@ -370,7 +356,7 @@ bool OpenXRSession::beginFrame() {
 	// Acquire swapchain images
 	//
 	for (uint eye = 0; eye < numEyes; ++eye) {
-		xrAssert(xrAcquireSwapchainImage(m_state.swapchains[eye], nullptr, &m_activeSwapchainImages[eye]));
+		xrAssert(xrAcquireSwapchainImage(m_state.swapchains[eye], nullptr, &m_eyeStates[eye].swapchainImage));
 
 		// FIXME: Can't block forever
 		XrSwapchainImageWaitInfo waitInfo{XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO, nullptr, XR_INFINITE_DURATION};
@@ -389,14 +375,14 @@ bool OpenXRSession::beginFrame() {
 
 		auto& view = views[eye];
 		auto& projView = m_state.projViews[eye];
-
 		projView.fov = view.fov;
 
 		auto flags = viewState.viewStateFlags;
 		if (flags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) projView.pose.orientation = view.pose.orientation;
 		if (flags & XR_VIEW_STATE_POSITION_VALID_BIT) projView.pose.position = view.pose.position;
 
-		m_eyePoses[eye] = poseMatrix(projView.pose);
+		memcpy(m_eyeStates[eye].fovAngles,&projView.fov,sizeof(m_eyeStates[eye].fovAngles));
+		m_eyeStates[eye].eyePose = poseMatrix(projView.pose);
 	}
 
 	xrAssert(xrSyncActions(m_state.session, &m_state.actionsSyncInfo));
@@ -414,15 +400,6 @@ bool OpenXRSession::beginFrame() {
 	}
 
 	return true;
-}
-
-void OpenXRSession::updateProjectionMatrices(float zNear, float zFar) {
-	assert(m_rendering);
-
-	for (uint eye = 0; eye < numEyes; ++eye) {
-		auto& fov = m_state.projViews[eye].fov;
-		m_projMatrices[eye] = projectionMatrix(fov.angleLeft, fov.angleRight, fov.angleUp, fov.angleDown, zNear, zFar);
-	}
 }
 
 void OpenXRSession::endFrame() {
