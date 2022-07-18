@@ -45,6 +45,10 @@ add_library(core
         weakptr.h
         )
 
+if(OS_LINUX)
+    target_link_libraries(core PRIVATE pthread)
+endif()
+
 ##### tests #####
 
 add_executable(promisetest tests/promisetest.cpp)
