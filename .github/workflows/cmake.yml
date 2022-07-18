@@ -20,6 +20,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Use latest gcc/g++
+      run: sudo update-alternatives --set gcc /usr/bin/gcc-12
+    
     - name: Install GLFW3      
       run: sudo apt-get install -y libglfw3-dev
       
