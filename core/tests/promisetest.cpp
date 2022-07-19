@@ -3,22 +3,22 @@
 
 using namespace sgf;
 
-template <class T> Duration<T> duration(T seconds) {
-	return Duration<T>(seconds);
+template <class T> sgf::Duration<T> duration(T seconds) {
+	return sgf::Duration<T>(seconds);
 }
 
-Promise<bool> delay(double seconds) {
+sgf::Promise<bool> delay(double seconds) {
 
-	Promise<bool> promise;
+	sgf::Promise<bool> promise;
 
-	Thread thread([promise, seconds]() mutable {
-		debug() << "sleeping...";
+	sgf::Thread thread([promise, seconds]() mutable {
+		sgf::debug() << "sleeping...";
 
-		ThisThread::sleep_for(duration(seconds));
+		sgf::ThisThread::sleep_for(duration(seconds));
 
-		debug() << "...awake!";
+		sgf::debug() << "...awake!";
 
-		promise.resolve(true);
+		promise.resolveAsync(true);
 	});
 
 	thread.detach();
@@ -28,22 +28,25 @@ Promise<bool> delay(double seconds) {
 
 int main() {
 
-	delay(1)
-		.then([](bool) {
-			debug() << "Done1!";
-			return delay(.5f);
-		})
-		.then([](bool) {
-			debug() << "Done2";
-			return delay(.25f);
-		})
-		.then([](bool) {
-			debug() << "Done3!";
-			std::exit(0);
-		});
+	delay(2) | [](bool) {
+		sgf::debug() << "Done1!";
+		return delay(1);
+	} | [](bool) {
+		sgf::debug() << "Done2!";
+		return delay(.5f);
+	} | [](bool) {
+		sgf::debug() << "Done3!";
+		return delay(.25f);
+	} | [](bool) {
+		sgf::debug() << "Done4!";
+		return delay(.125f);
+	} | [](bool) {
+		sgf::debug() << "Bye!";
+		std::exit(0);
+	};
 
 	for (;;) {
-		debug() << "Waiting for app events";
-		waitAppEvents();
+		sgf::debug() << "Waiting for app events";
+		sgf::waitAppEvents();
 	}
 }

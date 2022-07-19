@@ -1,8 +1,53 @@
 #include "fetch.h"
 
+#ifdef OS_EMSCRIPTEN
+#include <emscripten.h>
+#else
 #include <curl/curl.h>
+#endif
 
 namespace sgf {
+
+#ifdef OS_EMSCRIPTEN
+
+namespace {
+
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE void sgfOnFetchResponse(Promise<FetchResponse>* promise_ptr, int status, const char* text_cstr, const char* error_cstr) {
+	promise_ptr->resolve({status, text_cstr ? String(text_cstr) : String(),error_cstr ? String(error_cstr) : String ()});
+	delete promise_ptr;
+}
+
+// clang-format off
+EM_JS(void,sgfFetch,(Promise<FetchResponse>* promise_ptr, const char* url_cstr),{
+
+	const url = UTF8ToString(url_cstr);
+
+	fetch(url).then(response => {
+		response.text().then(text => {
+			const text_cstr = allocateUTF8(text);
+			_sgfOnFetchResponse(promise_ptr, response.status, text_cstr, 0);
+			_free(text_cstr);
+		});
+	}).catch(ex => {
+		const ex_cstr = allocateUTF8(String(ex));
+		_sgfOnFetchResponse(promise_ptr, -1, 0, ex_cstr);
+		_free(ex_cstr);
+	});
+});
+// clang-format on
+}
+
+}
+
+Promise<FetchResponse> fetch(CString url) {
+	auto promise_ptr = new Promise<FetchResponse>;
+	sgfFetch(promise_ptr, url.c_str());
+	return *promise_ptr;
+}
+
+#else
 
 namespace {
 
@@ -20,7 +65,7 @@ Promise<FetchResponse> fetch(CString url) {
 
 	auto threadFunc = [promise, url]() mutable {
 
-		FetchResponse response{-1,url};
+		FetchResponse response{-1};
 
 		CURL* curl = curl_easy_init();
 		if (!curl) {
@@ -32,7 +77,7 @@ Promise<FetchResponse> fetch(CString url) {
 
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writeFunc);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response.data);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response.text);
 		curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
@@ -40,8 +85,8 @@ Promise<FetchResponse> fetch(CString url) {
 
 		curl_easy_perform(curl);
 		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response.httpStatus);
-		response.error = error;
 		curl_easy_cleanup(curl);
+		response.error=error;
 
 		promise.resolve(response);
 	};
@@ -51,5 +96,7 @@ Promise<FetchResponse> fetch(CString url) {
 
 	return promise;
 }
+
+#endif
 
 } // namespace sgf

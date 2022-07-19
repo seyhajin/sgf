@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.8)
 
 if (OS_EMSCRIPTEN)
-    return()
+#    return()
 endif()
 
 ##### fetch module #####
@@ -16,6 +16,10 @@ add_library(fetch
         )
 
 if (OS_EMSCRIPTEN)
+
+    target_link_libraries(fetch PRIVATE
+            core
+            )
 
 elseif (OS_WINDOWS)
 

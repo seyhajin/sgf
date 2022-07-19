@@ -6,8 +6,7 @@ namespace sgf {
 
 struct FetchResponse {
 	int httpStatus;
-	String url;
-	String data;
+	String text;
 	String error;
 };
 using CFetchResponse = const FetchResponse&;

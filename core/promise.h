@@ -11,23 +11,21 @@ namespace sgf {
 template <class ValueTy> class Promise;
 template <class ValueTy> using CPromise = const Promise<ValueTy>&;
 
+template <class T> struct is_promise_base : std::false_type {};
+template <class T> struct is_promise_base<Promise<T>> : public std::true_type {};
+template <class T> struct is_promise : public is_promise_base<std::remove_cv_t<T>> {};
+template <class T> static inline constexpr bool is_promise_v = is_promise<T>::value;
+
 template <class ValueTy> class Promise {
 
-	using FunTy = Function<void(const ValueTy&)>;
+	using ResolveFun = Function<void(ValueTy)>;
 
 	struct Rep {
 		std::atomic_int refs = 1;
-		std::mutex mutex;
-		bool resolved = false;
-		ValueTy value;
-		FunTy fun;
-
-		Rep() = default;
-		Rep(ValueTy value) : resolved(true), value(value) {
-		}
+		ResolveFun resolveFun;
 	};
 
-	mutable Rep* m_rep = nullptr;
+	Rep* m_rep = new Rep;
 
 	void retain() {
 		assert(m_rep);
@@ -35,23 +33,13 @@ template <class ValueTy> class Promise {
 	}
 
 	void release() {
-		if (!m_rep || --m_rep->refs) return;
-		delete m_rep;
-		m_rep = nullptr;
+		if (m_rep && !--m_rep->refs) delete m_rep;
 	}
 
 public:
-	using CValueTy = const ValueTy&;
+	using value_type = ValueTy;
 
-	template <class T> struct is_promise : std::false_type {};
-	template <class T> struct is_promise<Promise<T>> : public std::true_type {};
-	template <class T> static inline constexpr bool is_promise_v = is_promise<T>::value;
-
-	Promise() : m_rep(new Rep()) {
-	}
-
-	Promise(ValueTy value) : m_rep(new Rep(value)) {
-	}
+	Promise() = default;
 
 	Promise(const Promise& promise) : m_rep(promise.m_rep) {
 		retain();
@@ -80,101 +68,53 @@ public:
 		return *this;
 	}
 
-	// Can be called by any thread.
-	//
-	void resolve(CValueTy value) {
-
-		std::lock_guard<std::mutex> lock(m_rep->mutex);
-
-		assert(!m_rep->resolved);
-
-		m_rep->resolved = true;
-		m_rep->value = value;
-
-		if (m_rep->fun) m_rep->fun(value);
+	void resolve(ValueTy value) {
+		if(!m_rep->resolveFun) return;
+		m_rep->resolveFun(value);
 	}
 
-	// Should be called by main thread.
+	void resolveAsync(ValueTy value) {
+		if(!m_rep->resolveFun) return;
+		postAppEvent([promise = *this, value] { promise.m_rep->resolveFun(value); });
+	}
+
+	// 'then' function that returns a promise.
 	//
-	// The 'then' function is never called immediately, it is always called via postAsyncEvent()
-	template <class RetTy> Promise<RetTy> then(Function<Promise<RetTy>(ValueTy)> thenFun) {
-
-		std::lock_guard<std::mutex> lock(m_rep->mutex);
-
-		assert(!m_rep->fun);
-
-		Promise<RetTy> promise;
-
-		m_rep->fun = [promise, thenFun](CValueTy value) {
-			// clang-format off
-			postAppEvent([promise, thenFun, value] () {
-				thenFun(value).then([promise = promise](RetTy result) mutable{
-					promise.resolve(result);
-				});
-			});
-			// clang-format on
-		};
-
-		if (m_rep->resolved) m_rep->fun(m_rep->value);
-
+	template <class ThenTy, class RetTy = typename std::invoke_result_t<ThenTy, ValueTy>,
+			  class ResultTy = typename RetTy::value_type, std::enable_if_t<is_promise_v<RetTy>, bool> = true>
+	Promise<ResultTy> then(ThenTy thenFun) {
+		assert(!m_rep->resolveFun);
+		Promise<ResultTy> promise;
+		m_rep->resolveFun = ResolveFun([thenFun, promise](ValueTy value) {
+			thenFun(value).then([promise](ResultTy result) mutable { promise.resolve(result); });
+		});
 		return promise;
 	}
 
-	template <class RetTy> Promise<RetTy> then(Function<RetTy(ValueTy)> thenFun) {
-
-		std::lock_guard<std::mutex> lock(m_rep->mutex);
-
-		assert(!m_rep->fun);
-
-		Promise<RetTy> promise;
-
-		m_rep->fun = [promise, thenFun](CValueTy value) {
-			// clang-format off
-			postAppEvent([promise, thenFun, value] () mutable {
-				promise.resolve(thenFun(value));
-			});
-			// clang-format on
-		};
-
-		if (m_rep->resolved) m_rep->fun(m_rep->value);
-
-		return promise;
-	}
-
-	void then(Function<void(ValueTy)> thenFun) {
-
-		std::lock_guard<std::mutex> lock(m_rep->mutex);
-
-		assert(!m_rep->fun);
-
-		m_rep->fun = [thenFun](CValueTy value) {
-			// clang-format off
-			postAppEvent([thenFun, value] () {
-				thenFun(value);
-			});
-			// clang-format on
-		};
-
-		if (m_rep->resolved) m_rep->fun(m_rep->value);
-	}
-
-	template <class ThenFunTy, class RetTy = typename std::invoke_result<ThenFunTy, ValueTy>::type,
-			  std::enable_if_t<is_promise<RetTy>::value, bool> = true>
-	RetTy then(ThenFunTy thenFun) {
-		return then(Function<RetTy(ValueTy)>(thenFun));
-	}
-
-	template <class ThenFunTy, class RetTy = typename std::invoke_result<ThenFunTy, ValueTy>::type,
-			  std::enable_if_t<!is_promise<RetTy>::value && !std::is_void<RetTy>::value, bool> = true>
-	Promise<RetTy> then(ThenFunTy thenFun) {
-		return then(Function<RetTy(ValueTy)>(thenFun));
-	}
-
-	template <class ThenFunTy, class RetTy = typename std::invoke_result<ThenFunTy, ValueTy>::type,
-			  std::enable_if_t<std::is_void<RetTy>::value, bool> = true>
-	void then(ThenFunTy thenFun) {
-		then(Function<RetTy(ValueTy)>(thenFun));
+	// 'then' function that returns void.
+	//
+	template <class ThenTy, class RetTy = typename std::invoke_result_t<ThenTy, ValueTy>,
+			  std::enable_if_t<std::is_void_v<RetTy>, bool> = true>
+	void then(ThenTy thenFun) {
+		assert(!m_rep->resolveFun);
+		m_rep->resolveFun = ResolveFun([thenFun](ValueTy value) mutable { thenFun(value); });
 	}
 };
+
+// Operator '|' for promise | fun -> promise
+//
+template <class ValueTy, class FunTy, class RetTy = typename std::invoke_result_t<FunTy, ValueTy>,
+		  std::enable_if_t<is_promise_v<RetTy>, bool> = true>
+RetTy operator|(Promise<ValueTy> promise, FunTy fun) {
+	return promise.then(fun);
+}
+
+// Operator '|' for promise | fun -> void
+//
+template <class ValueTy, class FunTy, class RetTy = typename std::invoke_result_t<FunTy, ValueTy>,
+		  std::enable_if_t<std::is_void_v<RetTy>, bool> = true>
+void operator|(Promise<ValueTy> promise, FunTy fun) {
+	promise.then(fun);
+}
 
 } // namespace sgf

@@ -44,7 +44,7 @@ endif ()
 
 ##### openxr tests #####
 
-add_executable(helloboxvr "tests/helloboxvr.cpp")
+add_executable(helloboxvr "tests/helloboxvr.cpp" xrsystem.cpp xrsystem.h)
 target_link_libraries(helloboxvr openxr scene)
 target_copy_assets(helloboxvr scene)
 target_link_assets(helloboxvr)
