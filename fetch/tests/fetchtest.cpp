@@ -6,7 +6,7 @@
 
 int main() {
 
-	sgf::fetch("https://www.reddit.com") | [](sgf::CFetchResponse r){
+	sgf::fetch("https://www.httpvshttps.com") | [](sgf::CFetchResponse r){
 
 		sgf::debug() << "Http status:" << r.httpStatus;
 		sgf::debug() << "Text:" << r.text;
