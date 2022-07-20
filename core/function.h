@@ -30,6 +30,10 @@ template <class RetTy, class... ArgTys> class Function<RetTy(ArgTys...)> {
 
 	Rep* m_rep = nullptr;
 
+	template <class FunTy> Rep* makeRep(const FunTy& fun) {
+		return new FunRep<FunTy>(fun);
+	}
+
 	void retain() const {
 		if (m_rep) ++m_rep->refs;
 	}
@@ -41,9 +45,21 @@ template <class RetTy, class... ArgTys> class Function<RetTy(ArgTys...)> {
 	}
 
 public:
+	using FunPtrTy = RetTy (*)(ArgTys...);
+
+	template <class ObjTy> using MemFunTy = RetTy (ObjTy::*)(ArgTys...);
+
 	Function() = default;
 
-	template <class FunTy> Function(const FunTy& fun) : m_rep(new FunRep<FunTy>(fun)) { // NOLINT
+	Function(FunPtrTy fun) : m_rep(makeRep(fun)) {
+	}
+
+	template <class FunTy> Function(const FunTy& fun) : m_rep(makeRep(fun)) { // NOLINT
+	}
+
+	template <class ObjTy>
+	Function(ObjTy* obj, MemFunTy<ObjTy> fun)
+		: m_rep(makeRep([obj, fun](ArgTys&&... args) -> RetTy { return (obj->*fun)(std::forward<ArgTys>(args)...); })) {
 	}
 
 	Function(const Function& fun) : m_rep(fun.m_rep) {
@@ -99,12 +115,5 @@ public:
 		return m_rep != nullptr;
 	}
 };
-
-template <class RetTy, class... ArgTys, class InstTy, class ClassTy>
-Function<RetTy(ArgTys...)> function(InstTy* inst, RetTy (ClassTy::*fun)(ArgTys...)) {
-	return [inst, fun](ArgTys&&... args) -> RetTy { //
-		return (inst->*fun)(std::forward<ArgTys>(args)...);
-	};
-}
 
 } // namespace sgf

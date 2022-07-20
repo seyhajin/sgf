@@ -2,6 +2,4 @@
 
 namespace sgf {
 
-GraphicsDevice* GraphicsDevice::g_instance;
-
 }

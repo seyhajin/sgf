@@ -45,8 +45,15 @@ add_library(core
         weakptr.h
         )
 
-if(OS_LINUX)
+if(OS_EMSCRIPTEN)
+
+    target_link_options(core PUBLIC "SHELL:-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=['sgfRegistry','sgfRegisterObject','sgfGetObject','sgfDeregisterObject']")
+    em_link_js_library(core "${PROJECT_SOURCE_DIR}/jsutils.js")
+
+elseif(OS_LINUX)
+
     target_link_libraries(core PRIVATE pthread)
+
 endif()
 
 ##### tests #####

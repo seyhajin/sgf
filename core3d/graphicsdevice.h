@@ -155,7 +155,7 @@ protected:
 	}
 
 private:
-	static GraphicsDevice* g_instance;
+	static inline GraphicsDevice* g_instance;
 	friend GraphicsDevice* graphicsDevice() {
 		return g_instance;
 	}
