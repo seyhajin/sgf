@@ -16,15 +16,9 @@ public:
 
 	GLuint const glFramebuffer;
 
-	~GLFrameBuffer() override {
-		glDeleteFramebuffers(1, &glFramebuffer);
-	}
-
-protected:
-	friend class GLGraphicsDevice;
-
-	GLFrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture, GLuint glFramebuffer)
-		: FrameBuffer(device, colorTexture, depthTexture), glFramebuffer(glFramebuffer) {
+	GLFrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture, uint width, uint height,
+				  GLuint glFramebuffer)
+		: FrameBuffer(device, colorTexture, depthTexture, width, height), glFramebuffer(glFramebuffer) {
 	}
 };
 
@@ -37,17 +31,14 @@ public:
 	GLenum const glTarget;
 	GLuint const glBuffer;
 
+	GLGraphicsBuffer(GraphicsDevice* device, BufferType type, uint size, GLenum glTarget, GLuint glBuffer)
+		: GraphicsBuffer(device, type, size), glTarget(glTarget), glBuffer(glBuffer) {
+	}
+
 	void updateData(uint offset, uint size, const void* data) override;
 
 	void* lockData(uint offset, uint size) override;
 	void unlockData() override;
-
-protected:
-	friend class GLGraphicsDevice;
-
-	GLGraphicsBuffer(GraphicsDevice* device, BufferType type, uint size, GLenum glTarget, GLuint glBuffer)
-		: GraphicsBuffer(device, type, size), glTarget(glTarget), glBuffer(glBuffer) {
-	}
 
 private:
 	Vector<uchar> m_lockedData;
@@ -65,9 +56,6 @@ public:
 
 	GLuint const glVertexArray;
 
-protected:
-	friend class GLGraphicsDevice;
-
 	GLVertexState(GraphicsDevice* device, Vector<SharedPtr<GraphicsBuffer>> vertexBuffers, GraphicsBuffer* indexBuffer,
 				  VertexLayout layout, GLuint glVertexArray)
 		: VertexState(device, std::move(vertexBuffers), indexBuffer, std::move(layout)), glVertexArray(glVertexArray) {
@@ -82,16 +70,13 @@ public:
 
 	GLuint const glTexture;
 
-	~GLTexture() override {
-		if(!bool(flags & TextureFlags::unmanaged))glDeleteTextures(1, &glTexture);
-	}
-
-protected:
-	friend class GLGraphicsDevice;
-
 	GLTexture(GraphicsDevice* device, uint width, uint height, TextureFormat format, TextureFlags flags,
 			  GLuint glTexture)
 		: Texture(device, width, height, format, flags), glTexture(glTexture) {
+	}
+
+	~GLTexture() override {
+		if (!bool(flags & TextureFlags::unmanaged)) glDeleteTextures(1, &glTexture);
 	}
 };
 
@@ -106,17 +91,14 @@ public:
 	Vector<GLUniform> const uniforms;
 	Vector<uint> const textures;
 
-	~GLShader() override {
-		glDeleteProgram(glProgram);
-	}
-
-protected:
-	friend class GLGraphicsDevice;
-
 	GLShader(GraphicsDevice* device, String source, GLuint glProgram, Vector<uint> uniformBlocks,
 			 Vector<GLUniform> uniforms, Vector<uint> textures)
 		: Shader(device, std::move(source)), glProgram(glProgram), uniformBlocks(std::move(uniformBlocks)),
 		  uniforms(std::move(uniforms)), textures(std::move(textures)) {
+	}
+
+	~GLShader() override {
+		glDeleteProgram(glProgram);
 	}
 };
 
@@ -125,6 +107,9 @@ protected:
 class GLGraphicsContext : public GraphicsContext {
 public:
 	SGF_OBJECT_TYPE(GLGraphicsContext, GraphicsContext)
+
+	explicit GLGraphicsContext(GraphicsDevice* device) : GraphicsContext(device) {
+	}
 
 	void setFrameBuffer(FrameBuffer* frameBuffer) override;
 	void setViewport(CRecti viewport) override;
@@ -143,12 +128,6 @@ public:
 	void clear(CVec4f color) override;
 	void drawIndexedGeometry(uint order, uint firstVertex, uint numVertices, uint numInstances) override;
 	void drawGeometry(uint order, uint firstVertex, uint numVertices, uint numInstances) override;
-
-protected:
-	friend class GLGraphicsDevice;
-
-	explicit GLGraphicsContext(GraphicsDevice* device) : GraphicsContext(device) {
-	}
 
 private:
 	enum struct Dirty {
@@ -202,8 +181,7 @@ public:
 	Shader* createShader(CString source) override;
 	GraphicsContext* createGraphicsContext() override;
 
-	Texture* wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
-						   GLuint texture);
+	Texture* wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags, GLuint texture);
 };
 
 } // namespace sgf

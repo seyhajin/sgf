@@ -86,9 +86,9 @@ public:
 	uint const height;
 
 protected:
-	FrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture)
-		: GraphicsResource(device), colorTexture(colorTexture), depthTexture(depthTexture), width(colorTexture->width),
-		  height(colorTexture->height) {
+	FrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture, uint width,uint height)
+		: GraphicsResource(device), colorTexture(colorTexture), depthTexture(depthTexture), width(width),
+		  height(height) {
 	}
 };
 

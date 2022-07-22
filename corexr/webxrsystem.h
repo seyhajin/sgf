@@ -25,7 +25,7 @@ public:
 	FrameBuffer* frameBuffer() override;
 
 private:
-	SharedPtr<FrameBuffer> m_frameBuffer;
+	SharedPtr<GLFrameBuffer> m_frameBuffer;
 };
 
 class WebXRSystem : public XRSystem {

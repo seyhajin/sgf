@@ -1,6 +1,8 @@
+#ifdef OS_EMSCRIPTEN
+
 #include "webxrsystem.h"
 
-#include <emscripten.h>
+#include "emscripten.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-attributes"
@@ -31,7 +33,7 @@ constexpr auto c_localSpace = "localSpace";
 // ***** WebXRFrame::getViewerPose *****
 
 // clang-format off
-EM_JS(void,sgfXRGetViewerPose,(XRFrame * frame_ptr, XRViewerPose* viewer_ptr,const char* localSpace_ptr),{
+EM_JS(void,sgfXRGetViewerPose,(XRFrame* frame_ptr, XRViewerPose* viewer_ptr,const char* localSpace_ptr),{
 
 	const frame = _sgfGetObject(frame_ptr);
 	const localSpace = _sgfGetObject(localSpace_ptr);
@@ -84,7 +86,7 @@ EM_JS(void,sgfXRGetViewerPose,(XRFrame * frame_ptr, XRViewerPose* viewer_ptr,con
 
 const XRViewerPose* WebXRFrame::getViewerPose() {
 
-	sgfXRGetViewerPose(this,&m_viewerPose,c_localSpace);
+	sgfXRGetViewerPose(this, &m_viewerPose, c_localSpace);
 
 	return &m_viewerPose;
 }
@@ -127,17 +129,28 @@ void WebXRSession::requestFrame(XRFrameFunc func) {
 // ***** WebXRSession::frameBuffer *****
 
 // clang-format off
-EM_JS(GLuint, sgfXRGetFrameBuffer, (XRSession* session_ptr),{
+EM_JS(GLuint, sgfXRGetFrameBuffer, (XRSession* session_ptr, Vec2i* size_ptr),{
 
 	const session = _sgfGetObject(session_ptr);
 	const layer = session.renderState.baseLayer;
-	return layer.Framebuffer;
+	HEAP32[size_ptr / 4]=layer.framebufferWidth;
+	HEAP32[size_ptr / 4 + 1]=layer.framebufferHeight;
+	return layer.framebuffer;
 });
 // clang-format on
 
 FrameBuffer* WebXRSession::frameBuffer() {
 
-	auto glBuf = sgfXRGetFrameBuffer(this);
+	Vec2i size;
+
+	auto glFramebuffer = sgfXRGetFrameBuffer(this, &size);
+
+	if (!m_frameBuffer || m_frameBuffer->glFramebuffer != glFramebuffer || m_frameBuffer->width != size.x ||
+		m_frameBuffer->height == size.y) {
+		m_frameBuffer = new GLFrameBuffer(graphicsDevice(), nullptr, nullptr, size.x, size.y, glFramebuffer);
+	}
+
+	return m_frameBuffer;
 }
 
 // ***** WebXRSystem::isSessionSupported *****
@@ -160,8 +173,10 @@ EM_JS(void, sgfXRIsSessionSupported, (Promise<bool>* promise_ptr), {
 // clang-format on
 
 Promise<bool> WebXRSystem::isSessionSupported() {
+
 	auto promise_ptr = new Promise<bool>;
 	sgfXRIsSessionSupported(promise_ptr);
+
 	return *promise_ptr;
 }
 
@@ -218,3 +233,5 @@ Promise<XRSession*> WebXRSystem::requestSession() {
 } // namespace sgf
 
 #pragma clang diagnostic pop
+
+#endif

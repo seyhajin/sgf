@@ -78,7 +78,7 @@ void GLGraphicsBuffer::unlockData() {
 	if (m_mapped) glUnmapBuffer(glTarget);
 #endif
 
-	if (!m_mapped) updateData(m_lockedOffset, m_lockedSize,m_lockedData.data());
+	if (!m_mapped) updateData(m_lockedOffset, m_lockedSize, m_lockedData.data());
 
 	m_mapped = false;
 	m_locked = false;
@@ -425,7 +425,7 @@ VertexState* GLGraphicsDevice::createVertexState(CVector<GraphicsBuffer*> vertex
 
 	for (auto& attrib : layout.attribLayouts) {
 
-		if(attrib.format==AttribFormat::none) continue;
+		if (attrib.format == AttribFormat::none) continue;
 
 		auto location = attrib.location;
 
@@ -458,6 +458,8 @@ VertexState* GLGraphicsDevice::createVertexState(CVector<GraphicsBuffer*> vertex
 FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture* depthTexture) {
 
 	glAssert();
+
+	assert(colorTexture || depthTexture);
 
 	auto glColorTexture = static_cast<GLTexture*>(colorTexture);
 	auto glDepthTexture = static_cast<GLTexture*>(depthTexture);
@@ -504,7 +506,14 @@ FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture*
 
 	glAssert();
 
-	return new GLFrameBuffer(this, colorTexture, depthTexture, glFramebuffer);
+	uint width = colorTexture ? colorTexture->width : depthTexture->width;
+	uint height = colorTexture ? colorTexture->height : depthTexture->height;
+
+	auto fbuffer = new GLFrameBuffer(this, colorTexture, depthTexture, width, height, glFramebuffer);
+
+	fbuffer->deleted.connect([glFramebuffer] { glDeleteFramebuffers(1, &glFramebuffer); });
+
+	return fbuffer;
 }
 
 Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
@@ -652,11 +661,11 @@ GraphicsContext* GLGraphicsDevice::createGraphicsContext() {
 }
 
 Texture* GLGraphicsDevice::wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
-					   GLuint texture){
+										 GLuint texture) {
 
 	glAssert();
 
-	return new GLTexture(this,width,height,format,flags | TextureFlags::unmanaged,texture);
+	return new GLTexture(this, width, height, format, flags | TextureFlags::unmanaged, texture);
 }
 
 } // namespace sgf

@@ -1,3 +1,5 @@
+#if OS_EMSCRIPTEN
+
 #include <core3d/core3d.hh>
 #include <corexr/corexr.hh>
 #include <glwindow/glwindow.h>
@@ -6,15 +8,31 @@
 
 using namespace sgf;
 
+GraphicsContext* gc;
+
 void renderFrame(double millis, XRFrame* frame) {
 
 	frame->session->requestFrame(renderFrame);
 
 	auto pose = frame->getViewerPose();
 
-	debug() << "### Camera:" << pose->transform;
-	debug() << "### Eyes:" << pose->views[0].transform << pose->views[1].transform;
-	debug() << "### Viewports:" << pose->views[0].viewport << pose->views[1].viewport;
+	if(!pose) return;
+
+	//debug() << "### Camera:" << pose->transform;
+	//debug() << "### Eyes:" << pose->views[0].transform << pose->views[1].transform;
+	//debug() << "### Viewports:" << pose->views[0].viewport << pose->views[1].viewport;
+
+	for(uint eye=0;eye<2;++eye) {
+
+		auto&view = pose->views[eye];
+
+		gc->setFrameBuffer(frame->session->frameBuffer());
+
+		gc->setViewport(view.viewport);
+
+		gc->clear(Vec4f(1,eye,0,1));
+	}
+
 
 #if 0
 	const session = frame.session; // frame is a frame handling object - it's used to get frame sessions, frame WebGL layers and some more things
@@ -44,11 +62,12 @@ int main() {
 	new GLWindow("Skirmish 2022!", 640, 480);
 
 	new GLGraphicsDevice();
+	gc = graphicsDevice()->createGraphicsContext();
 
 	new WebXRSystem();
 
 	xrSystem()->isSessionSupported() | [](bool supported) {
-		debug() << "Session supported:" << supported;
+		debug() << ">>> Session supported:" << supported;
 		if (!supported) std::exit(1);
 
 		xrSystem()->requestSession() | [](XRSession* session) { //
@@ -59,3 +78,5 @@ int main() {
 
 	emscripten_set_main_loop([] {}, 0, 1);
 }
+
+#endif
