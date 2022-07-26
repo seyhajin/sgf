@@ -91,7 +91,7 @@ Promise<FetchResponse> fetch(CString url) {
 		promise.resolve(response);
 	};
 
-	Thread thread(threadFunc);
+	std::thread thread(threadFunc);
 	thread.detach();
 
 	return promise;
