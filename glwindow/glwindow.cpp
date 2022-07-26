@@ -344,9 +344,13 @@ void GLWindow::updateIdleStats() {
 	}
 }
 
-void GLWindow::updateEvents() {
+void GLWindow::beginFrame() {
+
+	SharedPtrPool sharedPtrPool;
 
 	glfwPollEvents();
+
+	// close window request?
 	if (glfwWindowShouldClose(m_glfwWindow)) {
 		if (shouldClose.connected()) {
 			shouldClose.emit();
@@ -374,20 +378,26 @@ void GLWindow::updateEvents() {
 	}
 }
 
-void GLWindow::swapBuffers() {
+void GLWindow::endFrame() {
+
+	SharedPtrPool sharedPtrPool;
 
 	m_keyboard->endUpdate();
+
 	for (auto gp : m_gamepads) gp->endUpdate();
 
-	if (settings::showDebugLog) drawDebugLog();
 	if (settings::showDebugInfo) drawDebugInfo();
+	if (settings::showDebugLog) drawDebugLog();
 
-	// Render ImGui
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void GLWindow::swapBuffers() {
 
 	if (!settings::vsyncEnabled) updateIdleStats();
 
+	// Should do this on different thread?
 	glfwSwapBuffers(m_glfwWindow);
 
 	updateFPS();
@@ -397,7 +407,7 @@ void GLWindow::singleStep() {
 
 	SharedPtrPool sharedPtrPool;
 
-	updateEvents();
+	beginFrame();
 	if (!m_glfwWindow) return;
 
 	pollAppEvents();
@@ -405,6 +415,8 @@ void GLWindow::singleStep() {
 	updating.emit();
 
 	m_runFunc();
+
+	endFrame();
 
 	swapBuffers();
 }

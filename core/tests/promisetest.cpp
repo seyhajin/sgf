@@ -3,6 +3,13 @@
 
 using namespace sgf;
 
+namespace sgf {
+using Thread = std::thread;
+using CThread = const Thread&;
+template <class T> using Duration = std::chrono::duration<T>;
+namespace ThisThread = std::this_thread;
+}
+
 template <class T> sgf::Duration<T> duration(T seconds) {
 	return sgf::Duration<T>(seconds);
 }

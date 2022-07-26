@@ -74,6 +74,10 @@ public:
 		return m_glfwWindow;
 	};
 
+	void beginFrame();
+
+	void endFrame();
+
 	void run(Function<void()> runFunc);
 
 	void close();
@@ -105,10 +109,8 @@ private:
 	void drawDebugInfo();
 	void updateFPS();
 	void updateIdleStats();
-	void updateEvents();
 	void swapBuffers();
 	void singleStep();
-	void clearHitKeys();
 };
 
 } // namespace sgf

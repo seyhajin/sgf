@@ -41,6 +41,10 @@ public:
 
 	Promise() = default;
 
+	Promise(ValueTy value) {
+		resolveAsync(value);
+	}
+
 	Promise(const Promise& promise) : m_rep(promise.m_rep) {
 		retain();
 	}
@@ -69,13 +73,11 @@ public:
 	}
 
 	void resolve(ValueTy value) {
-		if(!m_rep->resolveFun) return;
-		m_rep->resolveFun(value);
+		if (m_rep->resolveFun) m_rep->resolveFun(value);
 	}
 
 	void resolveAsync(ValueTy value) {
-		if(!m_rep->resolveFun) return;
-		postAppEvent([promise = *this, value] { promise.m_rep->resolveFun(value); });
+		postAppEvent([promise = *this, value]() mutable { promise.resolve(value); });
 	}
 
 	// 'then' function that returns a promise.
@@ -116,5 +118,9 @@ template <class ValueTy, class FunTy, class RetTy = typename std::invoke_result_
 void operator|(Promise<ValueTy> promise, FunTy fun) {
 	promise.then(fun);
 }
+
+#ifndef OS_EMSCRIPTEN
+Promise<bool> sleep(double seconds);
+#endif
 
 } // namespace sgf

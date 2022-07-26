@@ -7,29 +7,44 @@
 	<title>WebAssembly App</title>
 	<style>
 		*{
-			margin: 0;
-			border: 0;
 			width: 100%;
 			height: 100%;
-			padding: none;
-			overflow: hide;
+			margin: 0;
+			border: 0;
+			padding: 0;
+			overflow: hidden;
 		}
 		body{
 			background-color: DeepSkyBlue;
 		}
-		canvas{
+		#canvasdiv{
+			display: none;
+		}
+		#canvas{
 			display: block;
 		}
-		.hidden{
+		#vrbutton{
+			cursor: default;
 			display: none;
+			margin: 4px;
+			position: absolute;
+			width: auto;
+			height: auto;
+			bottom: 0;
+			right: 0;
+			background-color: Yellow;
 		}
 	</style>
 </head>
 
 <body>
 
-<div class="hidden">
-	<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()" />
+<div id="canvasdiv">
+
+	<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+
+	<menu id="vrbutton" onclick="_sgfStartVRButtonClicked()">VEEEARGH</menu>
+
 </div>
 
 <script type="text/javascript">
@@ -37,7 +52,7 @@
 const canvasEl = document.getElementById("canvas");
 
 const ready = function(){
-	canvasEl.parentElement.style.display = "block";
+	document.getElementById("canvasdiv").style.display = "block";
 	canvasEl.focus();
 };
 

@@ -43,12 +43,6 @@ constexpr float degreesToRadians = .0174533f;
 using String = std::string;
 using CString = const String&;
 
-using Thread = std::thread;
-using CThread = const Thread&;
-namespace ThisThread = std::this_thread;
-
-template<class T> using Duration = std::chrono::duration<T>;
-
 template <class T> using Vector = std::vector<T>;
 template <class T> using CVector = const Vector<T>&;
 

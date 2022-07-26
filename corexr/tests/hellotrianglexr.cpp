@@ -1,82 +1,157 @@
-#if OS_EMSCRIPTEN
 
 #include <core3d/core3d.hh>
 #include <corexr/corexr.hh>
 #include <glwindow/glwindow.h>
 
+#ifdef OS_EMSCRIPTEN
 #include <emscripten.h>
+#endif
 
 using namespace sgf;
 
-GraphicsContext* gc;
+constexpr auto shaderSource = R"(
+
+//@vertex
+
+struct ShaderParams {
+	mat4 mvpMatrix;
+};
+
+layout (std140) uniform shaderParams {
+	ShaderParams params;
+};
+
+layout(location=0) in vec2 aPosition;
+layout(location=1) in vec4 aColor;
+
+out vec4 color;
+
+void main() {
+
+	gl_Position = params.mvpMatrix * vec4(aPosition, 0.0, 1.0);
+	color=aColor;
+}
+
+//@fragment
+
+in vec4 color;
+
+out vec4 fragColor;
+
+void main() {
+
+	fragColor = color;
+}
+
+)";
+
+struct ShaderParams {
+	Mat4f mvpMatrix;
+};
+
+struct Vertex {
+	Vec2f position;
+	Vec4f color;
+};
+
+//clang-format off
+//clang-format on
+
+GLWindow* window;
+GLGraphicsDevice* device;
+SharedPtr<GraphicsContext> gc;
+SharedPtr<GraphicsBuffer> vbuffer;
+SharedPtr<VertexState> vstate;
+SharedPtr<GraphicsBuffer> ubuffer;
+SharedPtr<Shader> shader;
 
 void renderFrame(double millis, XRFrame* frame) {
 
 	frame->session->requestFrame(renderFrame);
 
 	auto pose = frame->getViewerPose();
+	if (!pose) return;
 
-	if(!pose) return;
+	window->beginFrame();
 
-	//debug() << "### Camera:" << pose->transform;
-	//debug() << "### Eyes:" << pose->views[0].transform << pose->views[1].transform;
-	//debug() << "### Viewports:" << pose->views[0].viewport << pose->views[1].viewport;
+	ShaderParams params;
 
-	for(uint eye=0;eye<2;++eye) {
+	auto m = AffineMat4f::translation({0, 0, .5f}) * AffineMat4f::scale({.1f,.1f,.1f});
 
-		auto&view = pose->views[eye];
+	// Set framebuffer
+	gc->setFrameBuffer(frame->session->frameBuffer());
 
-		gc->setFrameBuffer(frame->session->frameBuffer());
+	for (uint eye = 0; eye < 2; ++eye) {
 
+		auto& view = pose->views[eye];
+
+		auto p = view.projectionMatrix;
+
+		auto v = view.transform.inverse();
+
+		params.mvpMatrix = p * v * m;
+
+		ubuffer->updateData(0, sizeof(ShaderParams), &params);
+
+		// Set viewport
 		gc->setViewport(view.viewport);
 
-		gc->clear(Vec4f(1,eye,0,1));
+		// Render scene
+		gc->clear({0, 0, 0, 1});
+		gc->drawGeometry(3, 0, 3, 1);
 	}
 
-
-#if 0
-	const session = frame.session; // frame is a frame handling object - it's used to get frame sessions, frame WebGL layers and some more things
-	session.requestAnimationFrame(onSessionFrame); // we simply set our animation frame function to be this function again
-	let pose = frame.getViewerPose(xrRefSpace); // gets the pose of the headset, relative to the previously gotten referance space
-
-	if(pose) { // if the pose was possible to get (if the headset responds)
-		let glLayer = session.renderState.baseLayer; // get the WebGL layer (it contains some important information we need)
-
-		gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer); // sets the framebuffer (drawing target of WebGL) to be our WebXR display's framebuffer
-		gl.clearColor(0.4, 0.7, 0.9, 1.0);
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clears the framebuffer (in the next episode we'll implement our ezgfx renderer here - for now, let's just use vanilla WebGL2, as we're not doing anything else than clearing the screen)
-		for(let view of pose.views) { // we go through every single view out of our camera's views
-			let viewport = glLayer.getViewport(view); // we get the viewport of our view (the place on the screen where things will be drawn)
-			gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height); // we set our viewport appropriately
-
-			// Here we will draw our scenes
-		}
-	}
-#endif
-
-	debug() << "Rendering frame!";
+	window->endFrame();
 }
 
 int main() {
 
-	new GLWindow("Skirmish 2022!", 640, 480);
+	window = new GLWindow("Skirmish 2022!", 640, 480);
 
-	new GLGraphicsDevice();
+	device = new GLGraphicsDevice();
 	gc = graphicsDevice()->createGraphicsContext();
 
+	VertexLayout vertexLayout{
+		{{AttribFormat::float2, 0, 0, 0, sizeof(Vertex)}, {AttribFormat::float4, 0, 1, 8, sizeof(Vertex)}}};
+	Vertex vertices[] = {{{0, 1}, {1, 0, 0, 1}}, {{1, -1}, {0, 1, 0, 1}}, {{-1, -1}, {0, 0, 1, 1}}};
+	vbuffer = device->createGraphicsBuffer(BufferType::vertex, sizeof(vertices), vertices);
+	vstate = device->createVertexState({vbuffer}, nullptr, vertexLayout);
+	ubuffer = device->createGraphicsBuffer(BufferType::uniform, sizeof(ShaderParams), nullptr);
+	shader = device->createShader(shaderSource);
+
+	gc->setVertexState(vstate);
+	gc->setUniformBuffer("shaderParams", ubuffer);
+	gc->setShader(shader);
+
+#ifdef EMSCRIPTEN
 	new WebXRSystem();
 
 	xrSystem()->isSessionSupported() | [](bool supported) {
 		debug() << ">>> Session supported:" << supported;
-		if (!supported) std::exit(1);
+		setStartVRButtonEnabled(supported);
+	};
 
+	startVRButtonClicked.connect([] {
+		debug() << "Requesting session";
 		xrSystem()->requestSession() | [](XRSession* session) { //
 			debug() << "Session created!";
 			session->requestFrame(renderFrame);
 		};
+	});
+
+	emscripten_exit_with_live_runtime();
+
+#else
+	new OpenXRSystem(window);
+
+	debug() << "Requesting session";
+	xrSystem()->requestSession() | [](XRSession* session) { //
+		debug() << "Session created!";
+		session->requestFrame(renderFrame);
 	};
 
-	emscripten_set_main_loop([] {}, 0, 1);
-}
+	for(;;) waitAppEvents();
 
 #endif
+
+}
