@@ -1,5 +1,7 @@
 #include "promise.h"
 
+#include <thread>
+
 namespace sgf {
 
 #ifndef OS_EMSCRIPTEN

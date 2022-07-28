@@ -1,5 +1,9 @@
 ﻿#include "std.h"
 
+#ifndef OS_EMSCRIPTEN
+#include <thread>
+#endif
+
 #ifdef ASAN_ENABLED
 // The mere presence of this magic bit of code causes debugger to popup when address sanitizer detects corruption at runtime.
 extern "C" const char* __asan_default_options() { // NOLINT (unused function)
@@ -8,6 +12,14 @@ extern "C" const char* __asan_default_options() { // NOLINT (unused function)
 #endif
 
 namespace sgf {
+
+namespace{
+
+#ifndef OS_EMSCRIPTEN
+std::thread::id g_mainThreadId = std::this_thread::get_id();
+#endif
+
+}
 
 String stringReplace(CString str, CString find, CString rep) {
 	auto r = str;
@@ -45,6 +57,14 @@ String StringtoLower(CString cstr) {
 	auto str=cstr;
 	std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
 	return str;
+}
+
+bool mainThread() {
+#ifndef OS_EMSCRIPTEN
+	return std::this_thread::get_id() == g_mainThreadId;
+#else
+	return true;
+#endif
 }
 
 } // namespace sgf

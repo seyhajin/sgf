@@ -13,15 +13,21 @@
 #include <set>
 #include <sstream>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
-#ifdef _MSC_VER
+#ifdef OS_EMSCRIPTEN
+#include <emscripten.h>
+#define EM_CALLBACK extern "C" EMSCRIPTEN_KEEPALIVE
+#define EM_EXTERN extern "C"
+#endif
+
+#ifdef COMPILER_MSVC
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4267)
 #endif
 
+// TODO: Move me
 #define SGF_ASSERT_ALIGNED16(T) static_assert((sizeof(T) & 15) == 0);
 
 namespace sgf {
@@ -81,5 +87,8 @@ String StringToUpper(CString string);
 
 //! Convert string to uppercase.
 String StringToLower(CString string);
+
+//! True if we're on the main thread.
+bool mainThread();
 
 } // namespace sgf

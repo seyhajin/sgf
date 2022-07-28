@@ -4,8 +4,8 @@ mergeInto(LibraryManager.library, {
     sgfRegistry: {},
 
     sgfRegisterObject: function(obj, this_ptr) {
-        _sgfRegistry[this_ptr] = obj;
         obj._sgf_this_ptr = this_ptr;
+        _sgfRegistry[this_ptr] = obj;
         return obj;
     },
 
@@ -14,7 +14,9 @@ mergeInto(LibraryManager.library, {
     },
 
     sgfDeregisterObject: function(this_ptr) {
+        const obj = _sgfRegistry(this_ptr);
         delete _sgfRegistry[this_ptr];
-    }
+        delete obj._sgf_this_ptr;
+    },
 
 });

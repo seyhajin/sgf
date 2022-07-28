@@ -23,4 +23,8 @@ void pollAppEvents();
 //
 void waitAppEvents();
 
+// Should only be called by main thread.
+//
+void runAppEventLoop();
+
 } // namespace sgf
