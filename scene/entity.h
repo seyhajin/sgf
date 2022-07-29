@@ -16,7 +16,7 @@ public:
 	}
 
 	CAffineMat4f matrix() const {
-		if(bool(m_dirty & Dirty::rotationMatrix)){
+		if (bool(m_dirty & Dirty::rotationMatrix)) {
 			assert(!bool(m_dirty & Dirty::rotation));
 			m_matrix.m = Mat3f::rotation(m_rotation);
 			m_dirty = Dirty::none;
@@ -46,8 +46,8 @@ public:
 		return m_rotation;
 	}
 
-	void setRotatonMatrix(CMat3f rotationMatrix) {
-		m_matrix.m=rotationMatrix;
+	void setRotationMatrix(CMat3f rotationMatrix) {
+		m_matrix.m = rotationMatrix;
 		m_dirty = Dirty::rotation;
 	}
 
@@ -73,7 +73,7 @@ public:
 	}
 
 	void rotate(CVec3f r) {
-		m_matrix.m=rotationMatrix() * Mat3f::rotation(r);
+		m_matrix.m = rotationMatrix() * Mat3f::rotation(r);
 		m_dirty = Dirty::rotation;
 	}
 
