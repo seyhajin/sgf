@@ -1,25 +1,21 @@
 
 cmake_minimum_required(VERSION 3.8)
 
-if(NOT OS_EMSCRIPTEN AND NOT OS_WINDOWS)
-    return()
-endif()
-
 ##### webxr module #####
 
 project(webxr)
 
 set(SOURCES webxr.hh)
 
-if(OS_EMSCRIPTEN)
+if (OS_EMSCRIPTEN)
     set(SOURCES ${SOURCES} webxrsystem.cpp webxrsystem.h)
-elseif()
+else ()
     set(SOURCES ${SOURCES} openxrsystem.cpp openxrsystem.h)
-endif()
+endif ()
 
 add_library(webxr ${SOURCES})
 
-if(OS_EMSCRIPTEN)
+if (OS_EMSCRIPTEN)
 
     target_link_libraries(webxr PUBLIC core3d)
 
@@ -33,7 +29,7 @@ elseif (OS_WINDOWS)
             "${PROJECT_SOURCE_DIR}/libopenxr/windows_x64/lib/openxr_loader.lib"
             core3d
             )
-else()
+else ()
 
     find_package(OpenXR REQUIRED)
 
@@ -41,9 +37,10 @@ else()
 
     target_link_libraries(webxr PUBLIC OpenXR_LIBRARIES core3d)
 
-endif()
+endif ()
 
 ##### webxr tests #####
 
 add_executable(hellotrianglexr tests/hellotrianglexr.cpp)
+
 target_link_libraries(hellotrianglexr webxr)

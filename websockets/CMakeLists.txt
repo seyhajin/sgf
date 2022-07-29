@@ -34,6 +34,8 @@ endif ()
 
 ##### websocket tests #####
 
-add_executable(websocketstest tests/websocketstest.cpp)
-
-target_link_libraries(websocketstest PRIVATE websockets)
+# No websockets on windows yet soz
+if(NOT OS_WINDOWS)
+    add_executable(websocketstest tests/websocketstest.cpp)
+    target_link_libraries(websocketstest PRIVATE websockets)
+endif()
