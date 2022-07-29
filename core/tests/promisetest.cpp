@@ -1,6 +1,8 @@
 
 #include <core/core.hh>
 
+#include <thread>
+
 using namespace sgf;
 
 namespace sgf {

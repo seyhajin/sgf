@@ -1,7 +1,7 @@
 
 #include <core3d/core3d.hh>
-#include <corexr/corexr.hh>
 #include <glwindow/glwindow.h>
+#include <webxr/webxr.hh>
 
 #ifdef OS_EMSCRIPTEN
 #include <emscripten.h>
@@ -76,7 +76,7 @@ void renderFrame(double millis, XRFrame* frame) {
 
 	ShaderParams params;
 
-	auto m = AffineMat4f::translation({0, 0, .5f}) * AffineMat4f::scale({.1f,.1f,.1f});
+	auto m = AffineMat4f::translation({0, 0, .5f}) * AffineMat4f::scale({.1f, .1f, .1f});
 
 	// Set framebuffer
 	gc->setFrameBuffer(frame->session->frameBuffer());
@@ -150,8 +150,7 @@ int main() {
 		session->requestFrame(renderFrame);
 	};
 
-	for(;;) waitAppEvents();
+	for (;;) waitAppEvents();
 
 #endif
-
 }

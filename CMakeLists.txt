@@ -141,7 +141,4 @@ add_subdirectory(scene)
 add_subdirectory(stb)
 add_subdirectory(webrtc)
 add_subdirectory(websockets)
-
-if(OS_WINDOWS OR OS_EMSCRIPTEN)
-    add_subdirectory(corexr)
-endif()
+add_subdirectory(webxr)

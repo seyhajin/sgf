@@ -4,6 +4,7 @@
 #include <emscripten.h>
 #else
 #include <curl/curl.h>
+#include <thread>
 #endif
 
 namespace sgf {
