@@ -88,7 +88,7 @@ public:
 		assert(!m_rep->resolveFun);
 		Promise<ResultTy> promise;
 		m_rep->resolveFun = ResolveFun([thenFun, promise](ValueTy value) {
-			thenFun(value).then([promise](ResultTy result) mutable { promise.resolve(result); });
+			thenFun(value).then([promise = promise](ResultTy result) mutable { promise.resolve(result); });
 		});
 		return promise;
 	}
