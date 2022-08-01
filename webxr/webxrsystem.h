@@ -11,8 +11,12 @@ public:
 
 	const XRViewerPose* getViewerPose() override;
 
+	const XRHandPose* getHandPoses() override;
+
 private:
 	XRViewerPose m_viewerPose{};
+
+	XRHandPose m_handPoses[2]{};
 };
 
 class WebXRSession : public XRSession {
@@ -30,7 +34,6 @@ private:
 
 class WebXRSystem : public XRSystem {
 public:
-
 	Promise<bool> isSessionSupported() override;
 
 	Promise<XRSession*> requestSession() override;

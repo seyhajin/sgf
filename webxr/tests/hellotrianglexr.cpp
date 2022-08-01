@@ -65,40 +65,64 @@ SharedPtr<VertexState> vstate;
 SharedPtr<GraphicsBuffer> ubuffer;
 SharedPtr<Shader> shader;
 
+Mat4f viewProjMatrix;
+
+void drawTriangle(CAffineMat4f modelMatrix) {
+
+	ShaderParams params;
+	params.mvpMatrix = viewProjMatrix * modelMatrix;
+
+	ubuffer->updateData(0, sizeof(ShaderParams), &params);
+
+	gc->drawGeometry(3, 0, 3, 1);
+}
+
 void renderFrame(double millis, XRFrame* frame) {
 
 	frame->session->requestFrame(renderFrame);
 
-	auto pose = frame->getViewerPose();
-	if (!pose) return;
+	auto viewerPose = frame->getViewerPose();
+	if (!viewerPose) return;
 
 	window->beginFrame();
 
-	ShaderParams params;
+	auto handPoses = frame->getHandPoses();
 
-	auto m = AffineMat4f::translation({0, 0, .5f}) * AffineMat4f::scale({.1f, .1f, .1f});
+	auto modelMatrix = AffineMat4f::translation({0, 0, .5f});
 
 	// Set framebuffer
 	gc->setFrameBuffer(frame->session->frameBuffer());
 
 	for (uint eye = 0; eye < 2; ++eye) {
 
-		auto& view = pose->views[eye];
+		auto& view = viewerPose->views[eye];
 
 		auto p = view.projectionMatrix;
 
 		auto v = view.transform.inverse();
 
-		params.mvpMatrix = p * v * m;
+		viewProjMatrix = p * v;
 
-		ubuffer->updateData(0, sizeof(ShaderParams), &params);
+		auto uiMatrix = viewProjMatrix * AffineMat4f::position({0,0,.2f});
 
 		// Set viewport
 		gc->setViewport(view.viewport);
 
-		// Render scene
+		gc->setDepthMode(DepthMode::enable);
+
 		gc->clear({0, 0, 0, 1});
-		gc->drawGeometry(3, 0, 3, 1);
+
+		drawTriangle(modelMatrix);
+
+		for(uint hand = 0;hand<2;++hand) {
+
+			auto handMatrix = handPoses[hand].transform * AffineMat4f::rotation({pi * .5f, pi, 0}) *
+							  AffineMat4f::scale({.3f, .3f, .3f});
+
+			drawTriangle(handMatrix);
+		}
+
+		gc->setDepthMode(DepthMode::compare);
 	}
 
 	window->endFrame();
@@ -113,7 +137,8 @@ int main() {
 
 	VertexLayout vertexLayout{
 		{{AttribFormat::float2, 0, 0, 0, sizeof(Vertex)}, {AttribFormat::float4, 0, 1, 8, sizeof(Vertex)}}};
-	Vertex vertices[] = {{{0, 1}, {1, 0, 0, 1}}, {{1, -1}, {0, 1, 0, 1}}, {{-1, -1}, {0, 0, 1, 1}}};
+	float sz=.1f;
+	Vertex vertices[] = {{{0, sz}, {1, 0, 0, 1}}, {{sz, -sz}, {0, 1, 0, 1}}, {{-sz, -sz}, {0, 0, 1, 1}}};
 	vbuffer = device->createGraphicsBuffer(BufferType::vertex, sizeof(vertices), vertices);
 	vstate = device->createVertexState({vbuffer}, nullptr, vertexLayout);
 	ubuffer = device->createGraphicsBuffer(BufferType::uniform, sizeof(ShaderParams), nullptr);
@@ -139,18 +164,20 @@ int main() {
 		};
 	});
 
-	emscripten_exit_with_live_runtime();
-
 #else
 	new OpenXRSystem(window);
 
-	debug() << "Requesting session";
-	xrSystem()->requestSession() | [](XRSession* session) { //
-		debug() << "Session created!";
-		session->requestFrame(renderFrame);
+	xrSystem()->isSessionSupported() | [](bool supported) {
+		if (supported) {
+			debug() << "Requesting session";
+			xrSystem()->requestSession() | [](XRSession* session) { //
+				debug() << "Session created!";
+				session->requestFrame(renderFrame);
+			};
+		}
 	};
 
-	for (;;) waitAppEvents();
-
 #endif
+
+	runAppEventLoop();
 }

@@ -23,29 +23,40 @@ class OpenXRFrame;
 class OpenXRSession;
 class OpenXRSystem;
 
-class OpenXRFrame : public XRFrame{
+class OpenXRFrame : public XRFrame {
 public:
 	OpenXRFrame(OpenXRSession* session);
 
 	const XRViewerPose* getViewerPose() override;
 
+	const XRHandPose* getHandPoses() override;
+
 private:
 	OpenXRSession* m_session;
 };
 
-class OpenXRSession : public XRSession{
+class OpenXRSession : public XRSession {
 public:
-	OpenXRSession(OpenXRSystem* system, XrSession session);
+	OpenXRSession(OpenXRSystem* system, GLWindow* window, XrInstance instance);
 
 	void requestFrame(XRFrameFunc func) override;
 
 	FrameBuffer* frameBuffer() override;
 
+	bool valid() const {
+		return m_valid;
+	}
+
 private:
 	friend class OpenXRFrame;
 
-	OpenXRSystem* m_system;
-	XrSession m_session;
+	GLWindow* m_window{};
+	XrInstance m_instance{};
+	bool m_valid = false;
+
+	XrSystemId m_systemId{};
+	XrSystemProperties m_systemProperties{};
+	XrSession m_session{};
 
 	XrSpace m_localSpace{};
 	Vec2i m_swapchainTextureSize{};
@@ -55,27 +66,34 @@ private:
 	Vector<XrSwapchainImageOpenGLKHR> m_swapchainImages;
 	XrCompositionLayerProjectionView m_projViews[2]{};
 	Recti m_viewports[2];
-
 	uint m_swapchainImage{};
 	XrViewLocateInfo m_viewLocateInfo = {XR_TYPE_VIEW_LOCATE_INFO};
 	XrCompositionLayerProjection m_projLayer{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
 	XrCompositionLayerBaseHeader* m_layers[1]{};
 	XrFrameEndInfo m_frameEndInfo{XR_TYPE_FRAME_END_INFO};
 
+	XrActionSet m_actionSet{};
+	XrAction m_aimPoseAction{};
+	XrAction m_gripPoseAction{};
+	XrSpace m_aimPoseSpaces[2]{};
+	XrSpace m_gripPoseSpaces[2]{};
+	XrPosef m_aimPoses[2]{};
+	XrPosef m_gripPoses[2]{};
+	XrActiveActionSet m_activeActionSets = {{}, XR_NULL_PATH};
+	XrActionsSyncInfo m_actionsSyncInfo = {XR_TYPE_ACTIONS_SYNC_INFO, nullptr, 1, &m_activeActionSets};
+
 	bool m_ready = false;
-	bool m_rendering =false;
+	bool m_rendering = false;
 	XrFrameState m_frameState{XR_TYPE_FRAME_STATE};
-
 	XRFrameFunc m_renderFunc{};
-
 	SharedPtr<GLFrameBuffer> m_frameBuffer;
-
-	XRViewerPose m_viewerPose;
+	XRViewerPose m_viewerPose{};
+	XRHandPose m_handPoses[2]{};
 
 	void pollEvents();
 };
 
-class OpenXRSystem : public XRSystem{
+class OpenXRSystem : public XRSystem {
 public:
 	OpenXRSystem(GLWindow* window);
 
@@ -86,16 +104,11 @@ public:
 private:
 	friend class OpenXRSession;
 
-	GLWindow* m_window;
+	GLWindow* m_window{};
 
 	XrInstance m_instance{};
-	XrSystemId m_systemId{};
-	XrSystemProperties m_systemProperties{};
 
-//	XrSession m_session{};
-//	XrSwapchain m_swapchains[2]{};
-//	std::vector<XrSwapchainImageOpenGLKHR> m_swapchainImages[2]{};
-//	XrSessionState m_sessionState = XR_SESSION_STATE_UNKNOWN;
+	OpenXRSession* m_session{};
 };
 
-}
+} // namespace sgf

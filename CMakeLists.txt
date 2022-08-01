@@ -22,6 +22,7 @@ message("### Configuring project for:")
 message("### CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 message("### CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
 message("### CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}")
+message("### SGF_GITHUB_BUILD=${SGF_GITHUB_BUILD}")
 
 # Build type
 #
@@ -140,5 +141,9 @@ add_subdirectory(opengl)
 add_subdirectory(scene)
 add_subdirectory(stb)
 #add_subdirectory(webrtc)
+
+# TODO: Get these working?
+if(NOT SGF_GITHUB_BUILD)
 add_subdirectory(websockets)
 add_subdirectory(webxr)
+endif()
