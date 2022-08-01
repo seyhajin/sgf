@@ -21,11 +21,17 @@ struct XRViewerPose {
 	XRView views[2];
 };
 
+struct XRHandPose {
+	AffineMat4f transform;
+};
+
 class XRFrame : public Object {
 public:
 	XRSession* const session;
 
 	virtual const XRViewerPose* getViewerPose() = 0;
+
+	virtual const XRHandPose* getHandPoses() = 0;
 
 protected:
 	XRFrame(XRSession* session) : session(session) {
@@ -41,7 +47,8 @@ public:
 	virtual FrameBuffer* frameBuffer() = 0;
 
 protected:
-	XRSession(XRSystem* system):system(system){}
+	XRSession(XRSystem* system) : system(system) {
+	}
 };
 
 class XRSystem : public Object {

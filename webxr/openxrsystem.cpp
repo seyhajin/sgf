@@ -7,7 +7,8 @@
 #define xrAssert(X) verify((X) >= 0);
 
 //#define CDEBUG debug() << "###"
-#define CDEBUG if constexpr(false) debug()
+#define CDEBUG                                                                                                         \
+	if constexpr (false) debug()
 
 namespace sgf {
 
@@ -65,10 +66,57 @@ const XRViewerPose* OpenXRFrame::getViewerPose() {
 	return &m_session->m_viewerPose;
 }
 
+const XRHandPose* OpenXRFrame::getHandPoses() {
+
+	return m_session->m_handPoses;
+}
+
 // ***** OpenXRSession *****
 
-OpenXRSession::OpenXRSession(OpenXRSystem* system, XrSession session)
-	: XRSession(system), m_system(system), m_session(session) {
+OpenXRSession::OpenXRSession(OpenXRSystem* system, GLWindow* window, XrInstance instance)
+	: XRSession(system), m_window(window), m_instance(instance) {
+
+	// get systemId/systemProperties
+	{
+		XrSystemGetInfo info{XR_TYPE_SYSTEM_GET_INFO};
+
+		info.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
+
+		xrAssert(xrGetSystem(m_instance, &info, &m_systemId));
+
+		xrAssert(xrGetSystemProperties(m_instance, m_systemId, &m_systemProperties));
+
+		CDEBUG << "System properties:" << m_systemProperties.systemName
+			   << "width:" << m_systemProperties.graphicsProperties.maxSwapchainImageWidth
+			   << "Height:" << m_systemProperties.graphicsProperties.maxSwapchainImageHeight << "Layers"
+			   << m_systemProperties.graphicsProperties.maxLayerCount;
+	}
+
+	// Create session
+	{
+		PFN_xrGetOpenGLGraphicsRequirementsKHR xrGetOpenGLGraphicsRequirementsKHR = nullptr;
+		xrAssert(xrGetInstanceProcAddr(m_instance, "xrGetOpenGLGraphicsRequirementsKHR",
+									   (PFN_xrVoidFunction*)(&xrGetOpenGLGraphicsRequirementsKHR)));
+
+		XrGraphicsRequirementsOpenGLKHR requirements{XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR};
+		xrAssert(xrGetOpenGLGraphicsRequirementsKHR(m_instance, m_systemId, &requirements));
+
+		CDEBUG << "Requirements - min gl version:" << XR_VERSION_MAJOR(requirements.minApiVersionSupported) << "."
+			   << XR_VERSION_MINOR(requirements.minApiVersionSupported);
+
+		CDEBUG << "Requirements -  max gl version:" << XR_VERSION_MAJOR(requirements.maxApiVersionSupported) << "."
+			   << XR_VERSION_MINOR(requirements.maxApiVersionSupported);
+
+		XrGraphicsBindingOpenGLWin32KHR binding{XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR};
+		binding.hDC = GetDC(glfwGetWin32Window(m_window->glfwWindow()));
+		binding.hGLRC = glfwGetWGLContext(m_window->glfwWindow());
+
+		XrSessionCreateInfo info{XR_TYPE_SESSION_CREATE_INFO};
+		info.next = &binding;
+		info.systemId = m_systemId;
+
+		if (xrCreateSession(m_instance, &info, &m_session) < 0) return;
+	}
 
 	// Create local reference space
 	{
@@ -87,9 +135,8 @@ OpenXRSession::OpenXRSession(OpenXRSystem* system, XrSession session)
 		viewConfigurationViews[1].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
 
 		uint n;
-		xrAssert(xrEnumerateViewConfigurationViews(m_system->m_instance, m_system->m_systemId,
-												   XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2, &n,
-												   viewConfigurationViews));
+		xrAssert(xrEnumerateViewConfigurationViews(m_instance, m_systemId, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2,
+												   &n, viewConfigurationViews));
 		assert(n == 2);
 		assert(viewConfigurationViews[0].recommendedImageRectWidth ==
 			   viewConfigurationViews[1].recommendedImageRectWidth);
@@ -99,7 +146,7 @@ OpenXRSession::OpenXRSession(OpenXRSystem* system, XrSession session)
 		m_swapchainTextureSize = {int(viewConfigurationViews[0].recommendedImageRectWidth),
 								  int(viewConfigurationViews[0].recommendedImageRectHeight)};
 
-		CDEBUG << "Swapchain texture size"<<m_swapchainTextureSize;
+		CDEBUG << "Swapchain texture size" << m_swapchainTextureSize;
 
 		m_viewports[0] = Recti(0, 0, m_swapchainTextureSize.y, m_swapchainTextureSize.y);
 		m_viewports[1] = Recti(m_swapchainTextureSize.x, 0, m_swapchainTextureSize.x * 2, m_swapchainTextureSize.y);
@@ -172,18 +219,106 @@ OpenXRSession::OpenXRSession(OpenXRSystem* system, XrSession session)
 		m_frameEndInfo.layerCount = 1;
 		m_frameEndInfo.layers = m_layers;
 	}
+
+	// Crazy action stuff..
+	{
+		// Create action set
+		//
+		auto name = "gameplayactions";
+		auto locname = "Gameplay Actions";
+
+		XrActionSetCreateInfo createSetInfo{XR_TYPE_ACTION_SET_CREATE_INFO};
+		strncpy_s(createSetInfo.actionSetName, XR_MAX_ACTION_SET_NAME_SIZE, "actionset", XR_MAX_ACTION_SET_NAME_SIZE);
+		strncpy_s(createSetInfo.localizedActionSetName, XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE, "ActionSet",
+				  XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
+
+		xrAssert(xrCreateActionSet(m_instance, &createSetInfo, &m_actionSet));
+		m_activeActionSets.actionSet = m_actionSet;
+
+		// Create hand pose actions
+		//
+		XrPath handPaths[2]{};
+		xrAssert(xrStringToPath(m_instance, "/user/hand/left", &handPaths[0]));
+		xrAssert(xrStringToPath(m_instance, "/user/hand/right", &handPaths[1]));
+
+		// Create aim pose and grip pose actions
+		//
+		XrActionCreateInfo createInfo{XR_TYPE_ACTION_CREATE_INFO};
+		createInfo.actionType = XR_ACTION_TYPE_POSE_INPUT;
+		createInfo.countSubactionPaths = 2;
+		createInfo.subactionPaths = handPaths;
+
+		strncpy_s(createInfo.actionName, XR_MAX_ACTION_NAME_SIZE, "aimposes", XR_MAX_ACTION_NAME_SIZE);
+		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, "Aim Poses",
+				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+		xrAssert(xrCreateAction(m_actionSet, &createInfo, &m_aimPoseAction));
+
+		strncpy_s(createInfo.actionName, XR_MAX_ACTION_NAME_SIZE, "gripposes", XR_MAX_ACTION_NAME_SIZE);
+		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, "Grip Poses",
+				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+		xrAssert(xrCreateAction(m_actionSet, &createInfo, &m_gripPoseAction));
+
+		// Create aim pose spaces and grip pose spaces
+		//
+		for (uint hand = 0; hand < 2; ++hand) {
+
+			XrActionSpaceCreateInfo spaceInfo{XR_TYPE_ACTION_SPACE_CREATE_INFO};
+
+			spaceInfo.subactionPath = handPaths[hand];
+			spaceInfo.poseInActionSpace.orientation.w = 1;
+
+			spaceInfo.action = m_aimPoseAction;
+			xrAssert(xrCreateActionSpace(m_session, &spaceInfo, &m_aimPoseSpaces[hand]));
+
+			spaceInfo.action = m_gripPoseAction;
+			xrAssert(xrCreateActionSpace(m_session, &spaceInfo, &m_gripPoseSpaces[hand]));
+		}
+
+		// Associate action with poses
+		//
+		XrPath profilePath;
+		xrAssert(xrStringToPath(m_instance, "/interaction_profiles/khr/simple_controller", &profilePath));
+
+		XrPath bindingPaths[4];
+		xrAssert(xrStringToPath(m_instance, "/user/hand/left/input/aim/pose", &bindingPaths[0]));
+		xrAssert(xrStringToPath(m_instance, "/user/hand/right/input/aim/pose", &bindingPaths[1]));
+		xrAssert(xrStringToPath(m_instance, "/user/hand/left/input/grip/pose", &bindingPaths[2]));
+		xrAssert(xrStringToPath(m_instance, "/user/hand/right/input/grip/pose", &bindingPaths[3]));
+
+		// clang-format off
+		XrActionSuggestedBinding suggestedBindings[] = {
+		{m_aimPoseAction,bindingPaths[0]},
+		{m_aimPoseAction,bindingPaths[1]},
+		{m_gripPoseAction,bindingPaths[2]},
+		{m_gripPoseAction,bindingPaths[3]}};
+		// clang-format on
+
+		XrInteractionProfileSuggestedBinding profileBindings = {XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
+		profileBindings.interactionProfile = profilePath;
+		profileBindings.countSuggestedBindings = std::size(suggestedBindings);
+		profileBindings.suggestedBindings = suggestedBindings;
+
+		xrAssert(xrSuggestInteractionProfileBindings(m_instance, &profileBindings));
+
+		// Attach to session
+		//
+		XrSessionActionSetsAttachInfo attachInfo = {XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO, nullptr, 1, &m_actionSet};
+		xrAssert(xrAttachSessionActionSets(m_session, &attachInfo));
+	}
+
+	m_valid = true;
 }
 
 void OpenXRSession::pollEvents() {
 
 	XrEventDataBuffer event{XR_TYPE_EVENT_DATA_BUFFER};
 
-	if (xrPollEvent(m_system->m_instance, &event) == 0) {
+	if (xrPollEvent(m_instance, &event) == 0) {
 		switch (event.type) {
 		case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED: {
 			auto ev = reinterpret_cast<XrEventDataSessionStateChanged*>(&event);
 			if (ev->state == XR_SESSION_STATE_READY) {
-				if(m_ready) panic("OOPS");
+				if (m_ready) panic("OOPS");
 				XrSessionBeginInfo info{XR_TYPE_SESSION_BEGIN_INFO};
 				info.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
 				verify(xrBeginSession(m_session, &info) == 0);
@@ -201,7 +336,7 @@ void OpenXRSession::pollEvents() {
 
 void OpenXRSession::requestFrame(XRFrameFunc func) {
 
-	if(m_rendering) {
+	if (m_rendering) {
 		m_renderFunc = func;
 		return;
 	}
@@ -260,6 +395,44 @@ void OpenXRSession::requestFrame(XRFrameFunc func) {
 		m_viewerPose.views[eye].viewport = m_viewports[eye];
 	}
 
+	// Update controller states
+	//
+	xrAssert(xrSyncActions(m_session, &m_actionsSyncInfo));
+
+	for (uint hand = 0; hand < 2; ++hand) {
+
+		// Update aim pose
+		{
+			XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+			xrAssert(xrLocateSpace(m_aimPoseSpaces[hand], m_localSpace, m_frameState.predictedDisplayTime, &location));
+
+			auto flags = location.locationFlags;
+
+			if (flags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)
+				m_aimPoses[hand].orientation = location.pose.orientation;
+			if (flags & XR_SPACE_LOCATION_POSITION_VALID_BIT) m_aimPoses[hand].position = location.pose.position;
+
+			m_handPoses[hand].transform = poseMatrix(m_aimPoses[hand]);
+		}
+
+#if 0
+		// Update grip pose
+		{
+			XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+			xrAssert(xrLocateSpace(m_gripPoseSpaces[hand], m_localSpace,
+								   m_frameState.predictedDisplayTime, &location));
+
+			auto flags = location.locationFlags;
+
+			if (flags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)
+				m_gripPoses[hand].orientation = location.pose.orientation;
+			if (flags & XR_SPACE_LOCATION_POSITION_VALID_BIT) m_gripPoses[hand].position = location.pose.position;
+
+			m_controllerStates[hand].gripPose = poseMatrix(m_gripPoses[hand]);
+		}
+#endif
+	}
+
 	postAppEvent([this, func] {
 		auto frame = new OpenXRFrame(this);
 
@@ -282,7 +455,7 @@ void OpenXRSession::requestFrame(XRFrameFunc func) {
 		m_frameEndInfo.displayTime = m_frameState.predictedDisplayTime;
 		xrAssert(xrEndFrame(m_session, &m_frameEndInfo));
 
-		if(m_renderFunc) requestFrame(m_renderFunc);
+		if (m_renderFunc) requestFrame(m_renderFunc);
 	});
 }
 
@@ -298,20 +471,11 @@ OpenXRSystem::OpenXRSystem(GLWindow* window) : m_window(window) {
 }
 
 Promise<bool> OpenXRSystem::isSessionSupported() {
-	return {true};
-}
 
-Promise<XRSession*> OpenXRSystem::requestSession() {
-
-	XRSession* xrSession = nullptr;
-
-	// Create instance
-	{
+	if (!m_instance) {
 		const char* exts[] = {"XR_KHR_opengl_enable"};
-
 		XrInstanceCreateInfo info{XR_TYPE_INSTANCE_CREATE_INFO};
-
-		strncpy_s(info.applicationInfo.applicationName, XR_MAX_APPLICATION_NAME_SIZE, "TestApp",
+		strncpy_s(info.applicationInfo.applicationName, XR_MAX_APPLICATION_NAME_SIZE, "SGF App",
 				  XR_MAX_APPLICATION_NAME_SIZE);
 		info.applicationInfo.applicationVersion = XR_VERSION_1_0;
 		strncpy_s(info.applicationInfo.engineName, XR_MAX_ENGINE_NAME_SIZE, "SGF", XR_MAX_ENGINE_NAME_SIZE);
@@ -320,54 +484,23 @@ Promise<XRSession*> OpenXRSystem::requestSession() {
 		info.enabledExtensionCount = std::size(exts);
 		info.enabledExtensionNames = exts;
 
-		xrAssert(xrCreateInstance(&info, &m_instance));
+		if (xrCreateInstance(&info, &m_instance) < 0) m_instance = nullptr;
 	}
+	return {m_instance != nullptr};
+}
 
-	// get systemId/systemProperties
-	{
-		XrSystemGetInfo info{XR_TYPE_SYSTEM_GET_INFO};
+Promise<XRSession*> OpenXRSystem::requestSession() {
 
-		info.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
-
-		xrAssert(xrGetSystem(m_instance, &info, &m_systemId));
-
-		xrAssert(xrGetSystemProperties(m_instance, m_systemId, &m_systemProperties));
-
-		CDEBUG << "System properties:" << m_systemProperties.systemName
-				<< "width:" << m_systemProperties.graphicsProperties.maxSwapchainImageWidth
-				<< "Height:" << m_systemProperties.graphicsProperties.maxSwapchainImageHeight << "Layers"
-				<< m_systemProperties.graphicsProperties.maxLayerCount;
-	}
-
-	// Create session
-	{
-		PFN_xrGetOpenGLGraphicsRequirementsKHR xrGetOpenGLGraphicsRequirementsKHR = nullptr;
-		xrAssert(xrGetInstanceProcAddr(m_instance, "xrGetOpenGLGraphicsRequirementsKHR",
-									   (PFN_xrVoidFunction*)(&xrGetOpenGLGraphicsRequirementsKHR)));
-
-		XrGraphicsRequirementsOpenGLKHR requirements{XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR};
-		xrAssert(xrGetOpenGLGraphicsRequirementsKHR(m_instance, m_systemId, &requirements));
-
-		CDEBUG << "Requirements - min gl version:" << XR_VERSION_MAJOR(requirements.minApiVersionSupported) << "."
-			   << XR_VERSION_MINOR(requirements.minApiVersionSupported);
-
-		CDEBUG << "Requirements -  max gl version:" << XR_VERSION_MAJOR(requirements.maxApiVersionSupported) << "."
-				<< XR_VERSION_MINOR(requirements.maxApiVersionSupported);
-
-		XrGraphicsBindingOpenGLWin32KHR binding{XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR};
-		binding.hDC = GetDC(glfwGetWin32Window(m_window->glfwWindow()));
-		binding.hGLRC = glfwGetWGLContext(m_window->glfwWindow());
-
-		XrSessionCreateInfo info{XR_TYPE_SESSION_CREATE_INFO};
-		info.next = &binding;
-		info.systemId = m_systemId;
-
-		XrSession session{};
-		xrAssert(xrCreateSession(m_instance, &info, &session));
-
-		xrSession = new OpenXRSession(this, session);
-	}
-	return {xrSession};
+	return isSessionSupported() | [this](bool supported) {
+		if (supported) {
+			m_session = new OpenXRSession(this, m_window, m_instance);
+			if (!m_session->valid()) {
+				delete m_session;
+				m_session = nullptr;
+			}
+		}
+		return Promise<XRSession*>(m_session);
+	};
 }
 
 } // namespace sgf

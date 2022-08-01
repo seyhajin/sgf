@@ -15,19 +15,82 @@ struct XRView {
 	0   : AffineMat4f transform; (48)
 	48  : Mat4f projectionMatrix; (64)
 	112 : Recti viewport; (16)
-	128
+	128	: sizeof
 };
 
 struct XRViewerPose {
 	0   : AffineMat4f transform; (48)
 	48  : XRView views[2]; (256)
+	304	: sizeof
 } ;
+
+struct XRHandPose {
+	0	: AffineMat4f transform; (48)
+	48	: sizeof
+};
+
 #endif
 
 namespace {
 
 constexpr auto c_localSpace = "localSpace";
 
+void flipZ(Mat4f& p) {
+	p.k.x = -p.k.x;
+	p.k.y = -p.k.y;
+	p.k.w = -p.k.w;
+	p.t.z = -p.t.z;
+}
+
+void flipZ(AffineMat4f& t) {
+	t.m.i.z = -t.m.i.z;
+	t.m.j.z = -t.m.j.z;
+	t.m.k.x = -t.m.k.x;
+	t.m.k.y = -t.m.k.y;
+	t.t.z = -t.t.z;
+}
+
+} // namespace
+
+// ***** WebXRSession::getHandPoses *****
+
+// clang-format off
+EM_JS(void, sgfXRGetHandPoses, (XRSession * session_ptr, XRFrame* frame_ptr, const char* localSpace_ptr, XRHandPose* handPoses_ptr), {
+
+	const session = _sgfGetObject(session_ptr);
+	const frame = _sgfGetObject(frame_ptr);
+	const localSpace = _sgfGetObject(localSpace_ptr);
+
+	const sources = session.inputSources;
+
+	for (let i = 0; i < Math.min(sources.length, 2); ++i) {
+
+		const pose = frame.getPose(sources[i].gripSpace, localSpace);
+
+		if (pose) {
+			const ptr = (handPoses_ptr + i*48) / 4;
+			const matrix = pose.transform.matrix;
+			for(let i = 0; i < 3; ++i) {
+				HEAPF32[ptr + i * 3 + 0] = matrix[i * 4 + 0];
+				HEAPF32[ptr + i * 3 + 1] = matrix[i * 4 + 1];
+				HEAPF32[ptr + i * 3 + 2] = matrix[i * 4 + 2];
+			}
+			HEAPF32[ptr +  9] = matrix[12];
+			HEAPF32[ptr + 10] = matrix[13];
+			HEAPF32[ptr + 11] = matrix[14];
+		}
+	}
+});
+// clang-format on
+
+const XRHandPose* WebXRFrame::getHandPoses() {
+
+	sgfXRGetHandPoses(session, this, c_localSpace, m_handPoses);
+
+	flipZ(m_handPoses[0].transform);
+	flipZ(m_handPoses[1].transform);
+
+	return m_handPoses;
 }
 
 // ***** WebXRFrame::getViewerPose *****
@@ -51,7 +114,7 @@ EM_JS(XRViewerPose*, sgfXRGetViewerPose, (XRFrame* frame_ptr, XRViewerPose* view
 		HEAPF32[ptr + i * 3 + 1] = matrix[i * 4 + 1];
 		HEAPF32[ptr + i * 3 + 2] = matrix[i * 4 + 2];
 	}
-	HEAPF32[ptr + 9] = matrix[12];
+	HEAPF32[ptr +  9] = matrix[12];
 	HEAPF32[ptr + 10] = matrix[13];
 	HEAPF32[ptr + 11] = matrix[14];
 
@@ -70,7 +133,7 @@ EM_JS(XRViewerPose*, sgfXRGetViewerPose, (XRFrame* frame_ptr, XRViewerPose* view
 			HEAPF32[ptr + i * 3 + 1] = matrix[i * 4 + 1];
 			HEAPF32[ptr + i * 3 + 2] = matrix[i * 4 + 2];
 		}
-		HEAPF32[ptr + 9] = matrix[12];
+		HEAPF32[ptr +  9] = matrix[12];
 		HEAPF32[ptr + 10] = matrix[13];
 		HEAPF32[ptr + 11] = matrix[14];
 
@@ -101,28 +164,13 @@ const XRViewerPose* WebXRFrame::getViewerPose() {
 		return nullptr;
 	}
 
-	auto& t = viewerPose->transform;
-	t.m.i.z = -t.m.i.z;
-	t.m.j.z = -t.m.j.z;
-	t.m.k.x = -t.m.k.x;
-	t.m.k.y = -t.m.k.y;
-	t.t.z = -t.t.z;
+	flipZ(viewerPose->transform);
 
 	for (uint eye = 0; eye < 2; ++eye) {
 		auto& view = viewerPose->views[eye];
-		auto& p = view.projectionMatrix;
-		p.k.x = -p.k.x;
-		p.k.y = -p.k.y;
-		p.k.w = -p.k.w;
-		p.t.z = -p.t.z;
+		flipZ(view.projectionMatrix);
 
-		auto& t = view.transform;
-		t.m.i.z = -t.m.i.z;
-		t.m.j.z = -t.m.j.z;
-		t.m.k.x = -t.m.k.x;
-		t.m.k.y = -t.m.k.y;
-		t.t.z = -t.t.z;
-		//		debug() << "###"<<t.t.z;
+		flipZ(view.transform);
 	}
 
 	return viewerPose;

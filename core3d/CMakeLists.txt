@@ -23,4 +23,5 @@ target_link_libraries(core3d glwindow stb)
 ##### core3d tests #####
 
 add_executable(hellotriangle tests/hellotriangle.cpp)
+
 target_link_libraries(hellotriangle core3d)

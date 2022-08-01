@@ -141,4 +141,8 @@ add_subdirectory(scene)
 add_subdirectory(stb)
 #add_subdirectory(webrtc)
 add_subdirectory(websockets)
+
+# For github actions
+if(NOT SGF_DISABLE_WEBXR)
 add_subdirectory(webxr)
+endif()
