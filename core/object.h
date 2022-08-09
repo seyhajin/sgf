@@ -11,7 +11,7 @@ public:
 	String const name;
 	ObjectType* const super;
 
-	ObjectType(const char* name, ObjectType* super) noexcept : name(name),super(super) {
+	ObjectType(const char* name, ObjectType* super) noexcept : name(name), super(super) {
 	}
 
 	bool extends(const ObjectType* thatType) const {
@@ -22,11 +22,10 @@ public:
 	}
 };
 
-#define SGF_OBJECT_TYPE(name, super)                                                                                    \
+#define SGF_OBJECT_TYPE(name, super)                                                                                   \
 	static inline ObjectType staticType{#name, &super::staticType};                                                    \
-	ObjectType* dynamicType() const override {                                                                         \
-		return &staticType;                                                                                            \
-	}
+	ObjectType* dynamicType() const override { return &staticType; }                                                   \
+	using Super = super;
 
 class Object {
 public:

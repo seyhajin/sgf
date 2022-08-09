@@ -2,34 +2,37 @@
 
 #include "entity.h"
 
-#include <core3d/core3d.hh>
-
 namespace sgf {
 
 struct CameraView {
+	Recti viewport;
 	Mat4f projectionMatrix;
 	AffineMat4f cameraMatrix;
-	SharedPtr<FrameBuffer> frameBuffer;
 };
 
 class Camera : public Entity {
 public:
 	SGF_OBJECT_TYPE(Camera, Entity);
 
-	Property<Recti> viewport{{0, 0, 640, 480}};
 	Property<float> zNear{.1f};
-	Property<float> zFar{1000.0f};
+	Property<float> zFar{100.0f};
 
-	Camera();
+	Camera(Scene* scene);
 
-	CVector<CameraView> getViews() const;
+	CVector<CameraView> views() const;
 
 protected:
 	virtual Vector<CameraView> validateViews() const = 0;
 
 	void invalidateViews() {
-		m_viewsDirty=true;
+		m_viewsDirty = true;
 	}
+
+	void onEnable() override;
+
+	void onDisable() override;
+
+	void onUpdate() override;
 
 private:
 	mutable Vector<CameraView> m_views;

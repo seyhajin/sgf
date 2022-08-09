@@ -1,6 +1,13 @@
 ﻿#include "scene.h"
 
+#include "actor.h"
+#include "camera.h"
+#include "debugrenderer.h"
+#include "light.h"
+#include "linearspace.h"
 #include "shaderloader.h"
+
+#include <glwindow/glwindow.h>
 
 namespace sgf {
 
@@ -11,6 +18,8 @@ ShaderLoader g_copyShader("shaders/fbcopy.glsl");
 } // namespace
 
 Scene::Scene(GraphicsDevice* graphicsDevice) : m_graphicsDevice(graphicsDevice) {
+
+	if(!m_defaultScene) m_defaultScene = this;
 
 	m_renderPasses.resize(numRenderPassTypes);
 
@@ -47,6 +56,8 @@ Scene::Scene(GraphicsDevice* graphicsDevice) : m_graphicsDevice(graphicsDevice) 
 	ambientLightColor = Vec3f(.075f);
 	directionalLightVector = Vec3f(0.0f, 0.25f, 1.0f).normalized();
 	directionalLightColor = Vec3f(.85f);
+
+	m_collisionSpace = new LinearSpace();
 }
 
 void Scene::addRenderer(Renderer* renderer) {
@@ -59,27 +70,118 @@ void Scene::removeRenderer(Renderer* renderer) {
 	renderer->detach(this);
 }
 
+void Scene::addEntity(Entity* entity) {
+	if (!entity->parent()) m_orphans.push_back(entity);
+}
+
+void Scene::removeEntity(Entity* entity) {
+	if (!entity->parent()) remove(m_orphans, entity);
+}
+
 void Scene::addCamera(Camera* camera) {
-	assert(!contains(m_cameras,camera));
+	assert(!contains(m_cameras, camera));
 	m_cameras.push_back(camera);
+	addEntity(camera);
 }
 
 void Scene::removeCamera(Camera* camera) {
-	assert(contains(m_cameras,camera));
+	assert(contains(m_cameras, camera));
 	remove(m_cameras, camera);
+	removeEntity(camera);
 }
 
 void Scene::addLight(Light* light) {
-	assert(!contains(m_lights,light));
+	assert(!contains(m_lights, light));
 	m_lights.push_back(light);
+	addEntity(light);
 }
 
 void Scene::removeLight(Light* light) {
-	assert(contains(m_lights,light));
+	assert(contains(m_lights, light));
 	remove(m_lights, light);
+	removeEntity(light);
 }
 
-void Scene::render(CVec2i size) {
+void Scene::addActor(Actor* actor) {
+	auto& actors = m_actors[actor->typeId()];
+	assert(!contains(actors, actor));
+	assert(!actor->parent());
+	actors.push_back(actor);
+	actor->create();
+}
+
+void Scene::removeActor(Actor* actor) {
+	auto& actors = m_actors[actor->typeId()];
+	assert(contains(actors, actor));
+	remove(actors, actor);
+	actor->destroy();
+}
+
+void Scene::addCollider(Collider* collider) {
+	m_collisionSpace->addCollider(collider);
+}
+
+void Scene::removeCollider(Collider* collider) {
+	m_collisionSpace->removeCollider(collider);
+}
+
+void Scene::updateCollider(Collider* collider) {
+	m_collisionSpace->updateCollider(collider);
+}
+
+bool Scene::eyeRay(CVec2f coords, Linef& ray) const {
+
+	for (auto camera : m_cameras) {
+		for (auto& view : camera->views()) {
+			if (!view.viewport.contains(coords)) continue;
+
+			Vec2f tcoords = coords - view.viewport.origin();
+			tcoords = tcoords / view.viewport.size() * 2 - 1;
+			tcoords.y = -tcoords.y;
+
+			auto tv = view.projectionMatrix.inverse() * Vec4f(tcoords, 0, 1);
+
+			auto vv = tv.xyz() / tv.w;
+			auto org = vv * (camera->zNear / vv.z);
+			auto dst = vv * (camera->zFar / vv.z);
+
+			ray = view.cameraMatrix * Linef(org, dst - org);
+			return true;
+		}
+	}
+	return false;
+}
+
+Collider* Scene::intersectRay(CLinef ray, float radius, Contact& contact) const {
+	return m_collisionSpace->intersectRay(ray, radius, contact);
+}
+
+Collider* Scene::intersectEyeRay(CVec2f coords, float radius) const {
+
+	Linef ray;
+	if (!eyeRay(coords, ray)) return nullptr;
+
+	Contact contact;
+	contact.time = ray.d.length();
+	ray.d.normalize();
+
+	return intersectRay(ray, radius, contact);
+}
+
+void Scene::update() {
+
+	// Update actors in typeId order
+	for(auto& actors : m_actors) {
+		for(auto actor : actors) actor->update();
+	}
+
+	// Update orphans
+	for (auto orphan : m_orphans) orphan->update();
+}
+
+void Scene::render() {
+
+	Vec2i size = m_graphicsDevice->window->size();
 
 	float elapsed = 1.0f / 60.0f;
 	m_renderTime += elapsed;
@@ -108,7 +210,7 @@ void Scene::render(CVec2i size) {
 		auto& rlight = rscene.lights[i];
 		auto light = m_lights[i];
 
-		rlight.position = Vec4f(light->position(), 1);
+		rlight.position = Vec4f(light->worldPosition(), 1);
 		rlight.color = Vec4f(light->color, light->intensity);
 		rlight.radius = light->radius;
 		rlight.range = light->range;
@@ -120,16 +222,14 @@ void Scene::render(CVec2i size) {
 
 	for (auto camera : m_cameras) {
 
-		auto& viewport = camera->viewport.value();
-
-		gc->setViewport(viewport);
-
 		rcamera.clipNear = camera->zNear;
 		rcamera.clipFar = camera->zFar;
 
 		// Iterate through each camera view, eg: left-eye, right-eye for VRCamera
 		//
-		for (auto& view : camera->getViews()) {
+		for (auto& view : camera->views()) {
+
+			auto& viewport = view.viewport;
 
 			rcamera.projMatrix = view.projectionMatrix;
 			rcamera.invProjMatrix = rcamera.projMatrix.inverse();
@@ -147,13 +247,15 @@ void Scene::render(CVec2i size) {
 
 			m_renderContext.beginScene(gc, &renderParams, size.x, size.y);
 
+			gc->setViewport(viewport);
+
 			gc->clear(rscene.clearColor);
 
 			for (RenderPass* p : m_renderPasses) p->render(m_renderContext);
 
 			auto sourceTexture = m_renderContext.endScene();
 
-			gc->setFrameBuffer(view.frameBuffer);
+			gc->setFrameBuffer(nullptr);
 
 			gc->setDepthMode(DepthMode::disable);
 			gc->setBlendMode(BlendMode::disable);

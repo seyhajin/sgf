@@ -52,9 +52,7 @@ struct Vertex {
 
 //clang-format off
 VertexLayout vertexLayout{
-	{{AttribFormat::float2,0,0,0,sizeof(Vertex)},
-	 {AttribFormat::float4,0,1,8,sizeof(Vertex)}}
-};
+	{{AttribFormat::float2, 0, 0, 0, sizeof(Vertex)}, {AttribFormat::float4, 0, 1, 8, sizeof(Vertex)}}};
 //clang-format on
 
 int main() {
@@ -64,14 +62,14 @@ int main() {
 
 	auto window = new GLWindow("Skirmish 2022!", width, height);
 
-	auto device = new GLGraphicsDevice();
+	auto device = new GLGraphicsDevice(window);
 
 	auto context = device->createGraphicsContext();
 
 	Vertex vertices[] = {{{0, 1}, {1, 0, 0, 1}}, {{1, -1}, {0, 1, 0, 1}}, {{-1, -1}, {0, 0, 1, 1}}};
 	auto vbuffer = device->createGraphicsBuffer(BufferType::vertex, sizeof(vertices), vertices);
 
-	auto vstate = device->createVertexState({vbuffer},nullptr,vertexLayout);
+	auto vstate = device->createVertexState({vbuffer}, nullptr, vertexLayout);
 
 	ShaderParams shaderParams{1};
 	auto ubuffer = device->createGraphicsBuffer(BufferType::uniform, sizeof(shaderParams), &shaderParams);

@@ -2,6 +2,7 @@
 
 #include "gamepad.h"
 #include "keyboard.h"
+#include "mouse.h"
 
 #include <opengl/opengl.hh>
 // Shouldn't have to force opengl b4 glfw? glfw still including gl.h for some reason?
@@ -161,11 +162,8 @@ GLWindow::GLWindow(CString title, uint width, uint height) {
 
 	// Init UI devices
 	{
-		m_keyboard = new Keyboard();
-		glfwSetKeyCallback(m_glfwWindow, [](GLFWwindow* glfwWindow, int key, int scancode, int action, int mods) {
-			auto window = getWindow(glfwWindow);
-			if (window->keyEventsEnabled) window->m_keyboard->sendKeyEvent(key, scancode, action, mods);
-		});
+		m_keyboard = new Keyboard(m_glfwWindow);
+		m_mouse = new Mouse(m_glfwWindow);
 
 		for (uint id = 0; id < maxGamepads; ++id) m_gamepads[id] = new Gamepad(id);
 		glfwSetJoystickCallback([](int id, int event) {});
@@ -348,6 +346,10 @@ void GLWindow::beginFrame() {
 
 	SharedPtrPool sharedPtrPool;
 
+	m_keyboard->resetButtonHits();
+	m_mouse->resetButtonHits();
+	for (auto gp : m_gamepads) gp->resetButtonHits();
+
 	glfwPollEvents();
 
 	// close window request?
@@ -366,15 +368,16 @@ void GLWindow::beginFrame() {
 	ImGui::NewFrame();
 
 	// Update UI Devices
-	m_keyboard->beginUpdate();
+	m_keyboard->update();
+	m_mouse->update();
 #ifdef __EMSCRIPTEN__
 	emscripten_sample_gamepad_data();
 #endif
 	for (uint i = 0; i < maxGamepads; ++i) {
 		auto gp = m_gamepads[i];
-		bool con = gp->connected();
-		gp->beginUpdate();
-		if (gp->connected() != con) gamepadConnectedChanged.emit(i, !con);
+		bool connected = gp->connected();
+		gp->update();
+		if (gp->connected() != connected) gamepadConnectedChanged.emit(i, !connected);
 	}
 }
 
@@ -382,15 +385,11 @@ void GLWindow::endFrame() {
 
 	SharedPtrPool sharedPtrPool;
 
-	m_keyboard->endUpdate();
-
-	for (auto gp : m_gamepads) gp->endUpdate();
-
 	if (settings::showDebugInfo) drawDebugInfo();
 	if (settings::showDebugLog) drawDebugLog();
 
 	ImGui::Render();
-	//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void GLWindow::swapBuffers() {

@@ -45,7 +45,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(OS_LINUX 1)
     add_compile_definitions(OS_LINUX=1)
-else()
+else ()
     message(FATAL_ERROR "!!! Unrecognized CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 endif ()
 
@@ -60,7 +60,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(COMPILER_MSVC 1)
     add_compile_definitions(COMPILER_MSVC=1)
-endif()
+endif ()
 
 if (OS_EMSCRIPTEN)
     set(USE_OPENGLES 1)
@@ -116,14 +116,39 @@ if (OS_EMSCRIPTEN)
 endif ()
 
 function(target_copy_assets target source)
-    add_custom_command(TARGET ${target} PRE_LINK COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "$<TARGET_PROPERTY:${source},SOURCE_DIR>/assets" "$<TARGET_PROPERTY:${target},BINARY_DIR>/assets")
+
+    get_target_property(SRC_DIR "${source}" "SOURCE_DIR")
+    set(SRC_DIR "${SRC_DIR}/assets")
+
+    get_target_property(DST_DIR "${target}" "BINARY_DIR")
+    set(DST_DIR "${DST_DIR}/assets")
+
+    get_target_property(STAMP_FILE "${target}" "BINARY_DIR")
+    set(STAMP_FILE "${STAMP_FILE}/${source}_assets.stamp")
+
+    file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*")
+
+    message("SRC_DIR: ${SRC_DIR}")
+    message("DST_DIR: ${DST_DIR}")
+    message("STAMP_FILE: ${STAMP_FILE}")
+    message("SRC_FILES: ${SRC_FILES}")
+
+    add_custom_command(
+            OUTPUT "${STAMP_FILE}"
+            COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP_FILE}"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${SRC_DIR}" "${DST_DIR}"
+            DEPENDS "${SRC_FILES}"
+    )
+
+    add_custom_target(${source}_assets DEPENDS "${STAMP_FILE}")
+    add_dependencies(${target} ${source}_assets)
+
 endfunction()
 
 function(target_link_assets target)
-    if(OS_EMSCRIPTEN)
+    if (OS_EMSCRIPTEN)
         target_link_options(${target} PRIVATE --preload-file "$<TARGET_PROPERTY:${target},BINARY_DIR>/assets@/")
-    endif()
+    endif ()
 endfunction()
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -140,10 +165,21 @@ add_subdirectory(imgui)
 add_subdirectory(opengl)
 add_subdirectory(scene)
 add_subdirectory(stb)
-#add_subdirectory(webrtc)
 
-# TODO: Get these working?
-if(NOT SGF_GITHUB_BUILD)
-add_subdirectory(websockets)
-add_subdirectory(webxr)
-endif()
+# WebRTC only on emscripten
+if (OS_EMSCRIPTEN)
+    #    add_subdirectory(webrtc)
+endif ()
+
+# Websockets only on emscripten or linux
+if (OS_EMSCRIPTEN OR OS_LINUX)
+    # Fails to build on github
+    if (NOT SGF_GITHUB_BUILD)
+        add_subdirectory(websockets)
+    endif ()
+endif ()
+
+# WebXR only on emscripten or windows
+if (OS_EMSCRIPTEN OR OS_WINDOWS)
+    add_subdirectory(webxr)
+endif ()

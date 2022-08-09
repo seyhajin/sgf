@@ -48,6 +48,10 @@ public:
 
 	void flush();
 
+	void resetButtonHits();
+
+	void update();
+
 protected:
 	UIDevice(uint maxButtons);
 	virtual ~UIDevice() = default;
@@ -64,10 +68,7 @@ private:
 
 	uint m_maxButtons;
 	Button* m_buttons;
-	PodVector<int> m_pressed;
-
-	void beginUpdate();
-	void endUpdate();
+	PodVector<uint> m_hits;
 
 	void setButtonState(uint index, float value, bool down);
 };

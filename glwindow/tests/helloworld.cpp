@@ -7,12 +7,7 @@ using namespace sgf;
 
 int main() {
 
-	uint width = 1280;
-	uint height = 720;
-
-	auto window = new GLWindow("Skirmish 2022!", width, height);
-
-	window->shouldClose.connect(window, &GLWindow::close);
+	auto window = new GLWindow("Skirmish 2022!", 1280, 720);
 
 	glClearColor(.25f, 0, 1, 1);
 

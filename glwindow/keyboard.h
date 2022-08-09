@@ -2,20 +2,19 @@
 
 #include "uidevice.h"
 
+struct GLFWwindow;
+
 namespace sgf {
 
 class Keyboard : public UIDevice {
 public:
+	static constexpr uint maxButtons = 512;
+
+	Keyboard(GLFWwindow* window);
+
 	Button& key(uint index) const {
 		return button(index);
 	}
-
-private:
-	friend class GLWindow;
-
-	Keyboard();
-
-	void sendKeyEvent(int key, int scancode, int action, int mods);
 };
 
 } // namespace sgf

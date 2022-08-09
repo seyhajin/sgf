@@ -8,7 +8,16 @@
 
 namespace sgf {
 
-class Scene : public Object{
+class Entity;
+class Actor;
+class Camera;
+class Light;
+class Renderer;
+class Collider;
+class CollisionSpace;
+struct Contact;
+
+class Scene : public Object {
 public:
 	SGF_OBJECT_TYPE(Scene, Object);
 
@@ -19,7 +28,7 @@ public:
 
 	explicit Scene(GraphicsDevice* graphicsDevice);
 
-	GraphicsDevice* graphicsDevice()const{
+	GraphicsDevice* graphicsDevice() const {
 		return m_graphicsDevice;
 	}
 
@@ -27,16 +36,34 @@ public:
 		return m_renderTime;
 	}
 
+	bool eyeRay(CVec2f windowCoords, Linef& ray) const;
+
+	Collider* intersectRay(CLinef ray, float radius, Contact& contact) const;
+
+	Collider* intersectEyeRay(CVec2f windowCoords, float radius) const;
+
+	void update();
+	void render();
+
+	// ***** INTERNAL *****
+	void addRenderer(Renderer* renderer);
+	void removeRenderer(Renderer* renderer);
+
+	void addEntity(Entity* entity);
+	void removeEntity(Entity* entity);
+
 	void addCamera(Camera* camera);
 	void removeCamera(Camera* camera);
 
 	void addLight(Light* light);
 	void removeLight(Light* light);
 
-	void addRenderer(Renderer* renderer);
-	void removeRenderer(Renderer* renderer);
+	void addActor(Actor* actor);
+	void removeActor(Actor* actor);
 
-	void render(CVec2i size);
+	void addCollider(Collider* collider);
+	void removeCollider(Collider* collider);
+	void updateCollider(Collider* collider);
 
 private:
 	GraphicsDevice* m_graphicsDevice;
@@ -45,12 +72,23 @@ private:
 	SharedPtr<GraphicsBuffer> m_sceneParams;
 
 	Vector<RenderPass*> m_renderPasses;
+	Vector<Entity*> m_orphans;
 	Vector<Camera*> m_cameras;
 	Vector<Light*> m_lights;
+	Vector<Actor*> m_actors[32];
 
 	RenderContext m_renderContext;
 
+	CollisionSpace* m_collisionSpace;
+
 	float m_renderTime = 0;
+
+	static inline Scene* m_defaultScene;
+
+	friend Scene* defaultScene() {
+		return m_defaultScene;
+	}
+
 };
 
 }; // namespace sgf

@@ -6,6 +6,9 @@ namespace sgf {
 
 extern const VertexAttribs defaultModelAttribs;
 
+class Scene;
+class ModelRenderer;
+
 class Model : public Shared {
 public:
 	SGF_OBJECT_TYPE(Model, Shared);
@@ -27,6 +30,9 @@ public:
 	Vector<Surface> const blendedSurfaces;
 	VertexLayout const vertexLayout;
 
+	mutable Map<Scene*,ModelRenderer*> m_renderers;
+
+
 	Model(GraphicsBuffer* vertexBuffer, GraphicsBuffer* indexBuffer, Vector<Surface> opaqueSurfaces,
 		  Vector<Surface> blendedSurfaces, GraphicsBuffer* outlineBuffer, VertexLayout vertexLayout)
 		: vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), outlineBuffer(outlineBuffer),
@@ -41,6 +47,8 @@ public:
 	bool hasBlendedSurfaces() const {
 		return !blendedSurfaces.empty();
 	}
+
+	ModelRenderer* getRenderer(Scene* scene);
 };
 
 Model* createModel(const Mesh* mesh, CVertexAttribs attribFormats = defaultModelAttribs);

@@ -103,7 +103,7 @@ void renderFrame(double millis, XRFrame* frame) {
 
 		viewProjMatrix = p * v;
 
-		auto uiMatrix = viewProjMatrix * AffineMat4f::position({0,0,.2f});
+		auto uiMatrix = viewProjMatrix * AffineMat4f::position({0, 0, .2f});
 
 		// Set viewport
 		gc->setViewport(view.viewport);
@@ -114,7 +114,7 @@ void renderFrame(double millis, XRFrame* frame) {
 
 		drawTriangle(modelMatrix);
 
-		for(uint hand = 0;hand<2;++hand) {
+		for (uint hand = 0; hand < 2; ++hand) {
 
 			auto handMatrix = handPoses[hand].transform * AffineMat4f::rotation({pi * .5f, pi, 0}) *
 							  AffineMat4f::scale({.3f, .3f, .3f});
@@ -132,12 +132,12 @@ int main() {
 
 	window = new GLWindow("Skirmish 2022!", 640, 480);
 
-	device = new GLGraphicsDevice();
+	device = new GLGraphicsDevice(window);
 	gc = graphicsDevice()->createGraphicsContext();
 
 	VertexLayout vertexLayout{
 		{{AttribFormat::float2, 0, 0, 0, sizeof(Vertex)}, {AttribFormat::float4, 0, 1, 8, sizeof(Vertex)}}};
-	float sz=.1f;
+	float sz = .1f;
 	Vertex vertices[] = {{{0, sz}, {1, 0, 0, 1}}, {{sz, -sz}, {0, 1, 0, 1}}, {{-sz, -sz}, {0, 0, 1, 1}}};
 	vbuffer = device->createGraphicsBuffer(BufferType::vertex, sizeof(vertices), vertices);
 	vstate = device->createVertexState({vbuffer}, nullptr, vertexLayout);

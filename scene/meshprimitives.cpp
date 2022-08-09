@@ -70,6 +70,8 @@ Mesh* createSphereMesh(float radius, int hsegs, int vsegs, Material* material) {
 		mesh->addVertex({{0, -radius, 0}, {(i + 0.5f) / hsegs, 1}}); 
 	}
 
+	for(auto& v : mesh->vertices()) v.normal = v.position.normalized();
+
 	// Polygons
 	for (int i = 0; i < hsegs; ++i) { //
 		mesh->addTriangle(i, i + hsegs + 1, i + hsegs); 
@@ -85,7 +87,7 @@ Mesh* createSphereMesh(float radius, int hsegs, int vsegs, Material* material) {
 		mesh->addTriangle(v0, v0 + 1, v0 + hsegs + 1);
 	}
 
-	if (material->flatShaded) updateFlatShading(mesh);
+//	if (material->flatShaded) updateFlatShading(mesh);
 
 	return mesh;
 }

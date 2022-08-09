@@ -1,5 +1,3 @@
 #include "graphicsdevice.h"
 
-namespace sgf {
-
-}
+namespace sgf {}

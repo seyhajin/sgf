@@ -3,37 +3,15 @@
 
 using namespace sgf;
 
-namespace {
-
-struct T {
-	String str;
-
-	T(const char* str)noexcept : str(str){}
-
-	//T(String str) noexcept:str(std::move(str)){}
-
-};
-
-class C {
-public:
-	static inline T t{"T"};
-};
-
-
 GLWindow* window;
 GraphicsDevice* device;
 Scene* scene;
-Camera* camera;
-ModelRenderer* boxRenderer;
-ModelInstance* boxInstance;
-
-} // namespace
 
 int main() {
 
 	window = new GLWindow("Hello Box!", 1280, 720);
 
-	device = new GLGraphicsDevice();
+	device = new GLGraphicsDevice(window);
 
 	// ***** Initialize scene *****
 	//
@@ -41,37 +19,73 @@ int main() {
 	scene->clearColor = Vec4f(0, .25, .5f, 1);
 	scene->ambientLightColor = Vec3f(0, 0, 0);
 	scene->directionalLightVector = Vec3f(1, 1, -1).normalized();
-	scene->directionalLightColor = Vec3f(1);
+	scene->directionalLightColor = Vec3f(0);
 
-	// ***** Initialize camera *****
+	// ***** Create camera *****
 	//
-	camera = new PerspectiveCamera();
-	// camera = new OrthographicCamera();
-	window->sizeChanged.connect([](CVec2i size) { //
-		camera->viewport = Recti(Vec2i(0), size);
-	});
-	camera->viewport = Recti(Vec2i(0), window->size());
-	camera->setPosition(Vec3f(0, 1, -2));
-	camera->lookAt(Vec3f(0, 0, 0));
-	scene->addCamera(camera);
+	auto camera = new PerspectiveCamera(scene);
+	// camera = new OrthographicCamera(scene);
+	camera->setPosition({0, 0, -2});
+	//	camera->lookAt({0, 0, 0});
+	camera->enable();
 
-	// ***** Add new box renderer to scene *****
+	// ***** RGB Create lights *****
 	//
-	auto boxMesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
-	auto boxModel = createModel(boxMesh);
-	boxRenderer = new ModelRenderer(boxModel);
-	scene->addRenderer(boxRenderer);
+	float d = 2;
+	float t = std::sqrt(d);
+	float z = -2;
+	float i = 8;
+	Light* light{};
 
-	// ***** Add new box instance to box renderer *****
+	light = new Light(scene);
+	light->setPosition({0, d, z});
+	light->color = {1, 0, 0};
+	light->intensity = i;
+	light->enable();
+
+	light = new Light(scene);
+	light->setPosition({-t, -t, z});
+	light->color = {0, 1, 0};
+	light->intensity = i;
+	light->enable();
+
+	light = new Light(scene);
+	light->setPosition({t, -t, z});
+	light->color = {0, 0, 1};
+	light->intensity = i;
+	light->enable();
+
+	// ***** Create collider *****
 	//
-	boxInstance = new ModelInstance();
-	boxRenderer->addInstance(boxInstance);
-	boxInstance->color = Vec4(1, 1, 0, 1);
+	// auto collider = new SphereCollider(scene);
+	// collider->radius = 1;
+	// inst->addChild(collider);
+
+	// ***** Create model instance *****
+	//
+	// auto mesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
+	auto mesh = createSphereMesh(1, 128, 64, matteMaterial(Vec4f(1)));
+	auto model = createModel(mesh);
+	auto inst = new ModelInstance(scene);
+	inst->model = model;
+	inst->color = {1, 1, 1, 1};
+	inst->enable();
+
+	// ***** Create collider *****
+	//
+	auto collider = new SphereCollider(scene);
+	collider->radius = 1;
+	inst->addChild(collider);
 
 	// ***** Begin main loop *****
 	//
-	window->run([] {
-		boxInstance->rotate({.007f, .01f, 0});
-		scene->render(window->size());
+	window->run([camera, inst] {
+		if (auto collider = scene->intersectEyeRay(window->mouse()->position(), 0)) { debug() << "### BANG!"; }
+
+		inst->rotate({0, .01f, 0});
+
+		scene->update();
+
+		scene->render();
 	});
 }

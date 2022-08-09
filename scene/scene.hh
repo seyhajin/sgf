@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "camera.h"
+#include "contact.h"
 #include "debugrenderer.h"
 #include "entity.h"
 #include "light.h"
@@ -17,3 +18,4 @@
 #include "renderparams.h"
 #include "renderpass.h"
 #include "scene.h"
+#include "spherecollider.h"
