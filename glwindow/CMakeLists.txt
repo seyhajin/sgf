@@ -20,7 +20,7 @@ add_library(glwindow
     uidevice.cpp
     uidevice.h
     gamepadmappings.inc
-)
+        mouse.cpp mouse.h)
 
 target_link_libraries(glwindow imgui glfw geom core)
 

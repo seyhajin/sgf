@@ -329,14 +329,14 @@ void GLGraphicsContext::drawGeometry(uint order, uint firstVertex, uint numVerti
 
 // ***** GLGraphicsDevice *****
 
-GLGraphicsDevice::GLGraphicsDevice() {
+GLGraphicsDevice::GLGraphicsDevice(GLWindow* window) : GraphicsDevice(window) {
 
 #ifndef USE_OPENGLES
 #if 0
-	auto debugFunc = [](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,
-						const void* userParam) { debug() << message; };
-	glDebugMessageCallback(debugFunc, nullptr);
-	glEnable(GL_DEBUG_OUTPUT);
+auto debugFunc = [](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,
+const void* userParam) { debug() << message; };
+glDebugMessageCallback(debugFunc, nullptr);
+glEnable(GL_DEBUG_OUTPUT);
 #endif
 #endif
 

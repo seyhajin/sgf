@@ -10,7 +10,6 @@ struct SceneParams {
     float renderTime;
     uint debugFlags;
     uint numLights;
-    char _pad[4];
 };
 
 layout (std140) uniform sceneParams {
@@ -43,4 +42,3 @@ vec3 evalDiffuseLighting(vec3 viewPos, vec3 viewNormal) {
 
     return diffuse;
 }
-

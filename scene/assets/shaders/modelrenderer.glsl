@@ -1,5 +1,3 @@
-#define FLAT
-
 //@vertex
 
 #include "camera.glsl"
@@ -19,17 +17,17 @@ layout(location = 12) in vec4 iColor;
 layout(location = 13) in float iMorph;
 
 out vec3 viewPos;
-FLAT out vec3 viewNormal;
+out vec3 viewNormal;
 out vec2 texCoords0;
 out vec4 color;
 
 void main(){
 
     vec4 worldPos = iMatrix * aPosition;
-    vec4 worldNormal = iMatrix * vec4(aNormal, 0.0);
+    vec3 worldNormal = mat3(iMatrix) * aNormal;
 
     viewPos = (camera.viewMatrix * worldPos).xyz;
-    viewNormal = (camera.viewMatrix * worldNormal).xyz;
+    viewNormal = mat3(camera.viewMatrix) * worldNormal;
 
     texCoords0 = aTexCoords0;
     color = iColor * aColor;
@@ -39,8 +37,10 @@ void main(){
 
 //@fragment
 
+#include "scene.glsl"
+
 in vec3 viewPos;
-FLAT in vec3 viewNormal;
+in vec3 viewNormal;
 in vec2 texCoords0;
 in vec4 color;
 
@@ -48,5 +48,7 @@ out vec4 fragColor;
 
 void main(){
 
-    fragColor = color * -viewNormal.z;
+    vec3 diffuse = evalDiffuseLighting(viewPos, viewNormal);
+
+    fragColor = vec4(1.0,1.0,0.0,1.0);//vec4(color.rgb * diffuse, color.a);
 }

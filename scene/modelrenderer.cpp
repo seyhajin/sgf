@@ -21,7 +21,7 @@ ModelRenderer::ModelRenderer(Model* model) : m_model(model), m_vertexLayout(mode
 			AttribFormat::float4, // color
 			AttribFormat::float1  // morph
 		},
-		1, 8,0,1);
+		1, 8, 0, 1);
 }
 
 Vector<RenderPassType> ModelRenderer::renderPasses() const {
@@ -40,12 +40,12 @@ void ModelRenderer::addInstance(ModelInstance* instance) {
 
 void ModelRenderer::removeInstance(ModelInstance* instance) {
 	assert(contains(m_instances, instance));
-	remove(m_instances,instance);
+	remove(m_instances, instance);
 }
 
 void ModelRenderer::sortInstances(CVec3f eyePos) {
 	auto cmpFunc = [eyePos](ModelInstance* x, ModelInstance* y) {
-		return eyePos.distanceSquared(x->position()) > eyePos.distanceSquared(y->position());
+		return eyePos.distanceSquared(x->worldPosition()) > eyePos.distanceSquared(y->worldPosition());
 	};
 	std::sort(m_instances.begin(), m_instances.end(), cmpFunc);
 }
@@ -63,7 +63,7 @@ void ModelRenderer::updateInstanceBuffer() {
 
 	// Update instance buffer
 	Instance* ptr = static_cast<Instance*>(m_instanceBuffer->lockData(0, m_instances.size() * sizeof(Instance)));
-	for (auto model : m_instances) *ptr++={model->matrix(), model->color, model->morph};
+	for (auto model : m_instances) *ptr++ = {model->worldMatrix(), model->color, model->morph};
 	m_instanceBuffer->unlockData();
 }
 
@@ -78,11 +78,7 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
 	if (!m_instances.size()) return;
 
-	if (m_model->hasBlendedSurfaces()) {
-		// Sorting...
-		// debug() << "### Sorting";
-		sortInstances(rc.renderParams()->camera.cameraMatrix.t.xyz());
-	}
+	if (m_model->hasBlendedSurfaces()) { sortInstances(rc.renderParams()->camera.cameraMatrix.t.xyz()); }
 
 	updateInstanceBuffer();
 
@@ -92,14 +88,10 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
 	gc->setVertexState(m_vertexState);
 
-	//gc->setCullMode(CullMode::disable);
-
 	auto& surfaces = (pass == RenderPassType::blended ? m_model->blendedSurfaces : m_model->opaqueSurfaces);
 
 	for (auto& surf : surfaces) {
-
-//		surf.material->bind(gc);
-
+		//		surf.material->bind(gc);
 		gc->drawIndexedGeometry(3, surf.firstIndex, surf.numIndices, m_instances.size());
 	}
 }

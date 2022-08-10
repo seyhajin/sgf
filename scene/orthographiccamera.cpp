@@ -1,15 +1,23 @@
 #include "orthographiccamera.h"
 
+#include "scene.h"
+
+#include <glwindow/glwindow.h>
+
 namespace sgf {
+
+OrthographicCamera::OrthographicCamera(Scene* scene) : Camera(scene) {
+	scene->graphicsDevice()->window->sizeChanged.connect(this, [this](CVec2i) { invalidateViews(); });
+}
 
 Vector<CameraView> OrthographicCamera::validateViews() const {
 
-	float yh = 1;
-	float ar = float(viewport.value().size().x) / float(viewport.value().size().y);
+	Recti viewport{0, scene()->graphicsDevice()->window->size()};
 
-	auto projMatrix = Mat4f::ortho(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
+	float ar = float(viewport.width()) / float(viewport.height());
+	auto projMatrix = Mat4f::ortho(-ar, ar, -1, 1, zNear, zFar);
 
-	return {{projMatrix,matrix()}};
+	return {{viewport, projMatrix, worldMatrix()}};
 }
 
 } // namespace sgf

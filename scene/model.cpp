@@ -1,15 +1,18 @@
 ﻿#include "model.h"
 
+#include "modelrenderer.h"
+#include "scene.h"
+
 namespace sgf {
 
 const VertexAttribs defaultModelAttribs{
-	AttribFormat::float3, 	// position
-	AttribFormat::float3, 	// normal
-	AttribFormat::none,	  	// float4,	//tangent
-	AttribFormat::float2, 	// texCoords0
-	AttribFormat::none,	  	// float2,	//texCoords1
-	AttribFormat::float4,  	// color
-	AttribFormat::none		//morph
+	AttribFormat::float3, // position
+	AttribFormat::float3, // normal
+	AttribFormat::none,	  // float4,	//tangent
+	AttribFormat::float2, // texCoords0
+	AttribFormat::none,	  // float2,	//texCoords1
+	AttribFormat::float4, // color
+	AttribFormat::none	  // morph
 };
 
 namespace {
@@ -54,12 +57,12 @@ uint8_t* copyAttrib(uint8_t* dst, const float* src, AttribFormat format) {
 Model* createModel(const Mesh* mesh, CVertexAttribs attribs) {
 
 	VertexLayout vertexLayout;
-	vertexLayout.addAttribs(attribs,0,0,0,0);
+	vertexLayout.addAttribs(attribs, 0, 0, 0, 0);
 	vertexLayout.indexFormat = IndexFormat::uint32;
 
 	// ***** Create Vertex buffer *****
 	//
-	uint pitch=bytesPerVertex(attribs);
+	uint pitch = bytesPerVertex(attribs);
 
 	Vector<uchar> vertexData(mesh->vertices().size() * pitch);
 	{
@@ -126,6 +129,18 @@ Model* createModel(const Mesh* mesh, CVertexAttribs attribs) {
 
 	return new Model(vertexBuffer, indexBuffer, std::move(surfaces[0]), std::move(surfaces[1]), outlineBuffer,
 					 vertexLayout);
+}
+
+ModelRenderer* Model::getRenderer(Scene* scene) {
+
+	auto it = m_renderers.find(scene);
+	if (it != m_renderers.end()) return it->second;
+
+	auto renderer = new ModelRenderer(this);
+	scene->addRenderer(renderer);
+	m_renderers.insert(std::make_pair(scene, renderer));
+
+	return renderer;
 }
 
 } // namespace sgf

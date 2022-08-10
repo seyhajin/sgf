@@ -4,6 +4,7 @@
 
 namespace sgf {
 
+class GLWindow;
 class GraphicsDevice;
 
 // ***** GraphicsResource ******
@@ -86,7 +87,7 @@ public:
 	uint const height;
 
 protected:
-	FrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture, uint width,uint height)
+	FrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture, uint width, uint height)
 		: GraphicsResource(device), colorTexture(colorTexture), depthTexture(depthTexture), width(width),
 		  height(height) {
 	}
@@ -139,6 +140,8 @@ class GraphicsDevice : public Object {
 public:
 	SGF_OBJECT_TYPE(GraphicsDevice, Object);
 
+	GLWindow* const window;
+
 	virtual Texture* createTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
 								   const void* data) = 0;
 	virtual GraphicsBuffer* createGraphicsBuffer(BufferType type, uint size, const void* data) = 0;
@@ -149,7 +152,7 @@ public:
 	virtual GraphicsContext* createGraphicsContext() = 0;
 
 protected:
-	GraphicsDevice() {
+	GraphicsDevice(GLWindow* window) : window(window) {
 		assert(!g_instance);
 		g_instance = this;
 	}

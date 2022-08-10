@@ -62,7 +62,7 @@ template <class T> struct Rect {
 	}
 
 	bool contains(CVec2<T> v) const {
-		return v.x >= min.x && v.y >= min.y && v.z < max.z;
+		return v.x >= min.x && v.y >= min.y && v.x < max.x && v.y < max.y;
 	}
 
 	bool contains(CRect<T> r) const {

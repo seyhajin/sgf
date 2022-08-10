@@ -10,7 +10,6 @@ template <class ValueTy> class Property : public Object {
 public:
 	using CValueTy = const ValueTy&;
 
-	Signal<CValueTy, CValueTy> valueChanging; //(newValue, oldValue)
 	Signal<CValueTy> valueChanged;			  //(newValue)
 
 	Property() = default;
@@ -26,7 +25,6 @@ public:
 
 	Property& operator=(CValueTy newValue) {
 		if (newValue == m_value) return *this;
-		valueChanging.emit(newValue, m_value);
 		m_value = newValue;
 		valueChanged.emit(newValue);
 		return *this;
@@ -34,7 +32,6 @@ public:
 
 	Property& operator=(Property&& newValue) noexcept {
 		if (newValue == m_value) return *this;
-		valueChanging.emit(newValue, m_value);
 		m_value = std::move(newValue);
 		valueChanged.emit(newValue);
 		return *this;

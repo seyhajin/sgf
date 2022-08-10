@@ -170,7 +170,7 @@ class GLGraphicsDevice : public GraphicsDevice {
 public:
 	SGF_OBJECT_TYPE(GLGraphicsDevice, GraphicsDevice)
 
-	GLGraphicsDevice();
+	GLGraphicsDevice(GLWindow* window);
 
 	FrameBuffer* createFrameBuffer(Texture* colorTexture, Texture* depthTexture) override;
 	GraphicsBuffer* createGraphicsBuffer(BufferType type, uint size, const void* data) override;

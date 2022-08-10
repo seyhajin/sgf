@@ -10,6 +10,7 @@ struct GLFWwindow;
 namespace sgf {
 
 class Keyboard;
+class Mouse;
 class Gamepad;
 
 namespace settings {
@@ -32,7 +33,7 @@ public:
 
 	static constexpr uint maxGamepads = 4;
 
-	Property<bool> keyEventsEnabled{true};
+	Property<bool> inputEventsEnabled{true};
 
 	Signal<uint, bool> gamepadConnectedChanged;
 
@@ -65,6 +66,10 @@ public:
 		return m_keyboard;
 	}
 
+	Mouse* mouse() const {
+		return m_mouse;
+	}
+
 	Gamepad* gamepad(uint index) const {
 		assert(index < maxGamepads);
 		return m_gamepads[index];
@@ -82,12 +87,13 @@ public:
 
 	void close();
 
-private:
 	static GLWindow* getWindow(GLFWwindow* glfwWindow);
 
-	GLFWwindow* m_glfwWindow;
+private:
+	GLFWwindow* m_glfwWindow{};
 
 	Keyboard* m_keyboard;
+	Mouse* m_mouse;
 	Gamepad* m_gamepads[maxGamepads];
 
 	bool m_focus = true;

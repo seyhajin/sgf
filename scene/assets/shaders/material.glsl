@@ -14,4 +14,3 @@ struct MaterialParams {
 layout (std140) uniform materialParams {
     MaterialParams material;
 };
-
