@@ -1,6 +1,11 @@
 ﻿cmake_minimum_required(VERSION 3.8)
 
-##### webrtc #####
+# No windows websockets yet due to SSL issues.
+if (SGF_GITHUB_BUILD OR OS_WINDOWS)
+    return()
+endif ()
+
+##### websockets library #####
 
 project(websockets)
 
@@ -15,27 +20,14 @@ endif ()
 add_library(websockets ${SOURCES})
 
 if (OS_EMSCRIPTEN)
-
     em_link_js_library(websockets "${PROJECT_SOURCE_DIR}/websockets_emscripten.js")
-
     target_link_libraries(websockets core)
-
-else ()
-
+elseif (OS_LINUX)
     target_include_directories(websockets PRIVATE "${PROJECT_SOURCE_DIR}/libixwebsocket/include/ixwebsocket")
-
-    if (OS_LINUX)
-        target_link_libraries(websockets PRIVATE
-                "${PROJECT_SOURCE_DIR}/libixwebsocket/linux_x64/libixwebsocket.a"
-                core ssl crypto z)
-    endif ()
-
+    target_link_libraries(websockets core "${PROJECT_SOURCE_DIR}/libixwebsocket/linux_x64/libixwebsocket.a" ssl crypto z)
 endif ()
 
 ##### websocket tests #####
 
-# No websockets on windows yet soz
-if(NOT OS_WINDOWS)
-    add_executable(websocketstest tests/websocketstest.cpp)
-    target_link_libraries(websocketstest PRIVATE websockets)
-endif()
+add_executable(websocketstest tests/websocketstest.cpp)
+target_link_libraries(websocketstest websockets)

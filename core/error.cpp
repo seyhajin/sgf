@@ -16,7 +16,9 @@ EM_JS(void, jsalert, (const char* msg_cstr), {
 namespace sgf {
 
 void alert(CString msg) {
+
 	std::cout << msg << std::endl;
+
 #ifdef OS_EMSCRIPTEN
 	jsalert(msg.c_str());
 #endif
@@ -24,16 +26,18 @@ void alert(CString msg) {
 
 void fail(CString msg, const char* file, int line) {
 
-	alert( msg + "\n" + file + ": " + std::to_string(line));
+	alert(msg + "\n" + file + ": " + std::to_string(line));
 
 #ifdef RELEASE
-	abort();
+		abort();
 #endif
 
-#ifdef WIN32
-	__debugbreak();
+#if OS_EMSCRIPTEN
+		EM_ASM(debugger;);
+#elif OS_WINDOWS
+		__debugbreak();
 #else
-	__builtin_trap();
+		__builtin_trap();
 #endif
 }
 

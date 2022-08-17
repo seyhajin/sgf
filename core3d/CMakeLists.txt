@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.8)
 
 ##### core3d module #####
@@ -18,10 +17,9 @@ add_library(core3d
         graphicsdevice.h
         )
 
-target_link_libraries(core3d glwindow stb)
+target_link_libraries(core3d window)
 
 ##### core3d tests #####
 
 add_executable(hellotriangle tests/hellotriangle.cpp)
-
 target_link_libraries(hellotriangle core3d)

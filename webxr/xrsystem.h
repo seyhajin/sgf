@@ -7,6 +7,7 @@ namespace sgf {
 class XRFrame;
 class XRSession;
 class XRSystem;
+class GLWindow;
 
 using XRFrameFunc = Function<void(double, XRFrame*)>;
 
@@ -53,23 +54,14 @@ protected:
 
 class XRSystem : public Object {
 public:
-	virtual Promise<bool> isSessionSupported() = 0;
+	GraphicsDevice* const graphicsDevice;
 
 	virtual Promise<XRSession*> requestSession() = 0;
 
 protected:
-	XRSystem() {
-		assert(!g_instance);
-		g_instance = this;
-	}
-
-private:
-	static inline XRSystem* g_instance;
-	friend XRSystem* xrSystem() {
-		return g_instance;
-	}
+	XRSystem(GraphicsDevice* graphicsDevice) : graphicsDevice(graphicsDevice){}
 };
 
-XRSystem* xrSystem();
+XRSystem* createXRSystem(GraphicsDevice* graphicsDevice);
 
 } // namespace sgf

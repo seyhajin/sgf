@@ -2,7 +2,7 @@
 
 #include "scene.h"
 
-#include <glwindow/glwindow.h>
+#include <window/window.h>
 
 namespace sgf {
 

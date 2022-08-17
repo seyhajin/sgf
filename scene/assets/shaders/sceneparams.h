@@ -13,7 +13,7 @@ struct SceneParams {
 	LightParams lights[maxLights];
 	float renderTime = 0;
 	int debugFlags = 0;
-	uint numLights = 0;
+	int numLights = 0;
 	char _pad[4];
 };
 

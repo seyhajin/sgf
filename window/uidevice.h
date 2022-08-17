@@ -4,7 +4,7 @@
 
 namespace sgf {
 
-class GLWindow;
+class Window;
 class Keyboard;
 class Gamepad;
 

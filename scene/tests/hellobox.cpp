@@ -1,17 +1,21 @@
-#include <glwindow/glwindow.hh>
+#include <imgui/imgui.hh>
 #include <scene/scene.hh>
+#include <window/window.hh>
 
 using namespace sgf;
 
-GLWindow* window;
+Window* window;
 GraphicsDevice* device;
 Scene* scene;
 
 int main() {
 
-	window = new GLWindow("Hello Box!", 1280, 720);
+	window = createWindow("Hello Box!", 1280, 720);
 
-	device = new GLGraphicsDevice(window);
+	window->keyboard()->key(SGF_KEY_V).pressed.connect([]{window->vsyncEnabled=!window->vsyncEnabled;});
+	window->keyboard()->key(SGF_KEY_F).pressed.connect([]{window->fullScreenMode=!window->fullScreenMode;});
+
+	device = createGraphicsDevice(window);
 
 	// ***** Initialize scene *****
 	//
@@ -25,8 +29,8 @@ int main() {
 	//
 	auto camera = new PerspectiveCamera(scene);
 	// camera = new OrthographicCamera(scene);
-	camera->setPosition({0, 0, -2});
-	//	camera->lookAt({0, 0, 0});
+	camera->setPosition({0, .5f, -1.5f});
+	camera->lookAt({0, 0, 0});
 	camera->enable();
 
 	// ***** RGB Create lights *****
@@ -55,16 +59,10 @@ int main() {
 	light->intensity = i;
 	light->enable();
 
-	// ***** Create collider *****
-	//
-	// auto collider = new SphereCollider(scene);
-	// collider->radius = 1;
-	// inst->addChild(collider);
-
 	// ***** Create model instance *****
 	//
-	// auto mesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
-	auto mesh = createSphereMesh(1, 128, 64, matteMaterial(Vec4f(1)));
+	auto mesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
+	//auto mesh = createSphereMesh(1, 128, 64, matteMaterial(Vec4f(1)));
 	auto model = createModel(mesh);
 	auto inst = new ModelInstance(scene);
 	inst->model = model;
@@ -73,19 +71,30 @@ int main() {
 
 	// ***** Create collider *****
 	//
-	auto collider = new SphereCollider(scene);
-	collider->radius = 1;
-	inst->addChild(collider);
+	//auto collider = new SphereCollider(scene);
+	//collider->radius = 1;
+	//inst->addChild(collider);
+
+	ImGuiEx::CreateContext(window);
 
 	// ***** Begin main loop *****
 	//
 	window->run([camera, inst] {
+
+		ImGuiEx::NewFrame();
+
+		ImGui::Begin("Settings");
+		ImGuiEx::Checkbox("vsyncEnabled", window->vsyncEnabled);
+		ImGuiEx::Checkbox("fullScreenMode", window->fullScreenMode);
+		ImGui::End();
+
 		if (auto collider = scene->intersectEyeRay(window->mouse()->position(), 0)) { debug() << "### BANG!"; }
 
 		inst->rotate({0, .01f, 0});
 
 		scene->update();
-
 		scene->render();
+
+		ImGuiEx::Render();
 	});
 }

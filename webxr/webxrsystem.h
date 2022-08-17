@@ -34,15 +34,11 @@ private:
 
 class WebXRSystem : public XRSystem {
 public:
-	Promise<bool> isSessionSupported() override;
+	WebXRSystem(GraphicsDevice* graphicsDevice) : XRSystem(graphicsDevice){}
 
 	Promise<XRSession*> requestSession() override;
 
 private:
 };
-
-extern Signal<> startVRButtonClicked;
-
-void setStartVRButtonEnabled(bool enabled);
 
 } // namespace sgf

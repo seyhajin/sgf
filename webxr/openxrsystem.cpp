@@ -6,7 +6,7 @@
 
 #define xrAssert(X) verify((X) >= 0);
 
-//#define CDEBUG debug() << "###"
+// #define CDEBUG debug() << "###"
 #define CDEBUG                                                                                                         \
 	if constexpr (false) debug()
 
@@ -73,8 +73,11 @@ const XRHandPose* OpenXRFrame::getHandPoses() {
 
 // ***** OpenXRSession *****
 
-OpenXRSession::OpenXRSession(OpenXRSystem* system, GLWindow* window, XrInstance instance)
+OpenXRSession::OpenXRSession(OpenXRSystem* system, Window* window, XrInstance instance)
 	: XRSession(system), m_window(window), m_instance(instance) {
+}
+
+bool OpenXRSession::create() {
 
 	// get systemId/systemProperties
 	{
@@ -108,14 +111,17 @@ OpenXRSession::OpenXRSession(OpenXRSystem* system, GLWindow* window, XrInstance 
 			   << XR_VERSION_MINOR(requirements.maxApiVersionSupported);
 
 		XrGraphicsBindingOpenGLWin32KHR binding{XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR};
-		binding.hDC = GetDC(glfwGetWin32Window(m_window->glfwWindow()));
-		binding.hGLRC = glfwGetWGLContext(m_window->glfwWindow());
+
+		auto glfwWindow=m_window->cast<GLWindow>()->glfwWindow();
+
+		binding.hDC = GetDC(glfwGetWin32Window(glfwWindow));
+		binding.hGLRC = glfwGetWGLContext(glfwWindow);
 
 		XrSessionCreateInfo info{XR_TYPE_SESSION_CREATE_INFO};
 		info.next = &binding;
 		info.systemId = m_systemId;
 
-		if (xrCreateSession(m_instance, &info, &m_session) < 0) return;
+		if (xrCreateSession(m_instance, &info, &m_session) < 0) return false;
 	}
 
 	// Create local reference space
@@ -306,7 +312,7 @@ OpenXRSession::OpenXRSession(OpenXRSystem* system, GLWindow* window, XrInstance 
 		xrAssert(xrAttachSessionActionSets(m_session, &attachInfo));
 	}
 
-	m_valid = true;
+	return true;
 }
 
 void OpenXRSession::pollEvents() {
@@ -465,12 +471,9 @@ FrameBuffer* OpenXRSession::frameBuffer() {
 	return m_frameBuffer;
 }
 
-// ***** OpenXRSystem *****
+// ***** OpenXRSystem::requestSession *****
 
-OpenXRSystem::OpenXRSystem(GLWindow* window) : m_window(window) {
-}
-
-Promise<bool> OpenXRSystem::isSessionSupported() {
+Promise<XRSession*> OpenXRSystem::requestSession() {
 
 	if (!m_instance) {
 		const char* exts[] = {"XR_KHR_opengl_enable"};
@@ -485,22 +488,16 @@ Promise<bool> OpenXRSystem::isSessionSupported() {
 		info.enabledExtensionNames = exts;
 
 		if (xrCreateInstance(&info, &m_instance) < 0) m_instance = nullptr;
+
+		if (!m_instance) return {nullptr};
 	}
-	return {m_instance != nullptr};
-}
 
-Promise<XRSession*> OpenXRSystem::requestSession() {
-
-	return isSessionSupported() | [this](bool supported) {
-		if (supported) {
-			m_session = new OpenXRSession(this, m_window, m_instance);
-			if (!m_session->valid()) {
-				delete m_session;
-				m_session = nullptr;
-			}
-		}
-		return Promise<XRSession*>(m_session);
-	};
+	auto session = new OpenXRSession(this, graphicsDevice->window, m_instance);
+	if (!session->create()) {
+		delete session;
+		return {nullptr};
+	}
+	return {session};
 }
 
 } // namespace sgf

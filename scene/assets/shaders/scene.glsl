@@ -8,8 +8,8 @@ struct SceneParams {
     vec4 directionalLightColor;
     LightParams lights[maxLights];
     float renderTime;
-    uint debugFlags;
-    uint numLights;
+    int debugFlags;
+    int numLights;
 };
 
 layout (std140) uniform sceneParams {

@@ -15,5 +15,4 @@ void alert(CString message);
 //! Release mode assert
 #define verify(C)                                                                                                      \
 	if (!(C)) fail(#C, __FILE__, __LINE__);
-
 }

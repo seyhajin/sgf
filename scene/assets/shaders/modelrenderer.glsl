@@ -21,18 +21,18 @@ out vec3 viewNormal;
 out vec2 texCoords0;
 out vec4 color;
 
-void main(){
+void main() {
 
-    vec4 worldPos = iMatrix * aPosition;
-    vec3 worldNormal = mat3(iMatrix) * aNormal;
+	vec4 worldPos = iMatrix * aPosition;
+	vec3 worldNormal = mat3(iMatrix) * aNormal;
 
-    viewPos = (camera.viewMatrix * worldPos).xyz;
-    viewNormal = mat3(camera.viewMatrix) * worldNormal;
+	viewPos = (camera.viewMatrix * worldPos).xyz;
+	viewNormal = mat3(camera.viewMatrix) * worldNormal;
 
-    texCoords0 = aTexCoords0;
-    color = iColor * aColor;
+	texCoords0 = aTexCoords0;
+	color = iColor * aColor;
 
-    gl_Position = camera.projMatrix * vec4(viewPos, 1.0);
+	gl_Position = camera.projMatrix * vec4(viewPos, 1.0);
 }
 
 //@fragment
@@ -46,9 +46,9 @@ in vec4 color;
 
 out vec4 fragColor;
 
-void main(){
+void main() {
 
-    vec3 diffuse = evalDiffuseLighting(viewPos, viewNormal);
+	vec3 diffuse = evalDiffuseLighting(viewPos, viewNormal);
 
-    fragColor = vec4(1.0,1.0,0.0,1.0);//vec4(color.rgb * diffuse, color.a);
+	fragColor = vec4(1.0, 1.0, 0.0, 1.0); // vec4(color.rgb * diffuse, color.a);
 }

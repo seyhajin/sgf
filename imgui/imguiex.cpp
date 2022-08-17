@@ -1,8 +1,33 @@
 #include "imgui.hh"
 
-using namespace sgf;
+#include <window/glwindow.h>
 
-namespace ImGuiEx {
+namespace sgf::ImGuiEx {
+
+void CreateContext(Window* window) {
+	assert(window->instanceOf<GLWindow>());
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplGlfw_InitForOpenGL(window->cast<GLWindow>()->glfwWindow(), true);
+	ImGui_ImplOpenGL3_Init(nullptr);
+}
+
+void DestroyContext() {
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+}
+
+void NewFrame() {
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+}
+
+void Render() {
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
 bool Checkbox(const char* label, Property<bool>& v) {
 	auto value = v.value();

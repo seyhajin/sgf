@@ -43,7 +43,7 @@
 
 	<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
 
-	<menu id="vrbutton" onclick="_sgfStartVRButtonClicked()">VEEEARGH</menu>
+	<!--menu id="vrbutton">Enter VR!</menu-->
 
 </div>
 
@@ -88,6 +88,7 @@ var Module = {
 function onResize(event){
 	var canvas = canvasEl;
 	if(canvas.width == canvas.clientWidth && canvas.height == canvas.clientHeight) return;
+	console.log("On resize JS!",canvas.width,canvas.height);
 	Browser.setCanvasSize(canvas.clientWidth, canvas.clientHeight, false);
 }
 

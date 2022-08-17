@@ -4,6 +4,8 @@
 
 #include <glfw/glfw.hh>
 
+#include <window/glwindow.h>
+
 namespace sgf {
 
 namespace {
@@ -290,7 +292,6 @@ void GLGraphicsContext::drawIndexedGeometry(uint order, uint firstIndex, uint nu
 
 	static constexpr GLenum modes[] = {GL_NONE, GL_POINTS, GL_LINES, GL_TRIANGLES};
 	static constexpr GLenum types[] = {GL_NONE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT};
-	static constexpr uint size[] = {1, 2, 4};
 
 	assert(order > 0 && order < 4);
 
@@ -410,7 +411,7 @@ GraphicsBuffer* GLGraphicsDevice::createGraphicsBuffer(BufferType type, uint siz
 	GLuint glBuffer;
 	glGenBuffers(1, &glBuffer);
 	glBindBuffer(glTarget, glBuffer);
-	glBufferData(glTarget, size, data, data ? GL_STATIC_DRAW : GL_STREAM_DRAW);
+	glBufferData(glTarget, size, data, GL_STATIC_DRAW);//data ? GL_STATIC_DRAW : GL_STATIC_DRAW);
 
 	return new GLGraphicsBuffer(this, type, size, glTarget, glBuffer);
 }

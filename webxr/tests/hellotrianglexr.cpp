@@ -1,7 +1,6 @@
-
 #include <core3d/core3d.hh>
-#include <glwindow/glwindow.h>
 #include <webxr/webxr.hh>
+#include <window/window.h>
 
 #ifdef OS_EMSCRIPTEN
 #include <emscripten.h>
@@ -57,8 +56,8 @@ struct Vertex {
 //clang-format off
 //clang-format on
 
-GLWindow* window;
-GLGraphicsDevice* device;
+Window* window;
+GraphicsDevice* device;
 SharedPtr<GraphicsContext> gc;
 SharedPtr<GraphicsBuffer> vbuffer;
 SharedPtr<VertexState> vstate;
@@ -84,7 +83,7 @@ void renderFrame(double millis, XRFrame* frame) {
 	auto viewerPose = frame->getViewerPose();
 	if (!viewerPose) return;
 
-	window->beginFrame();
+	// window->beginFrame();
 
 	auto handPoses = frame->getHandPoses();
 
@@ -125,14 +124,14 @@ void renderFrame(double millis, XRFrame* frame) {
 		gc->setDepthMode(DepthMode::compare);
 	}
 
-	window->endFrame();
+	// window->endFrame();
 }
 
 int main() {
 
-	window = new GLWindow("Skirmish 2022!", 640, 480);
+	window = createWindow("Skirmish 2022!", 640, 480);
 
-	device = new GLGraphicsDevice(window);
+	device = createGraphicsDevice(window);
 	gc = graphicsDevice()->createGraphicsContext();
 
 	VertexLayout vertexLayout{
@@ -148,36 +147,16 @@ int main() {
 	gc->setUniformBuffer("shaderParams", ubuffer);
 	gc->setShader(shader);
 
-#ifdef EMSCRIPTEN
-	new WebXRSystem();
+	auto xrSystem = createXRSystem(device);
 
-	xrSystem()->isSessionSupported() | [](bool supported) {
-		debug() << ">>> Session supported:" << supported;
-		setStartVRButtonEnabled(supported);
-	};
-
-	startVRButtonClicked.connect([] {
-		debug() << "Requesting session";
-		xrSystem()->requestSession() | [](XRSession* session) { //
-			debug() << "Session created!";
-			session->requestFrame(renderFrame);
-		};
-	});
-
-#else
-	new OpenXRSystem(window);
-
-	xrSystem()->isSessionSupported() | [](bool supported) {
-		if (supported) {
-			debug() << "Requesting session";
-			xrSystem()->requestSession() | [](XRSession* session) { //
-				debug() << "Session created!";
-				session->requestFrame(renderFrame);
-			};
+	xrSystem->requestSession() | [](XRSession* session) {
+		if (!session) {
+			debug() << "Oh dear, failed to create XR session";
+			exit(1);
 		}
+		debug() << "Session created!";
+		session->requestFrame(renderFrame);
 	};
-
-#endif
 
 	runAppEventLoop();
 }

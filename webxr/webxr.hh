@@ -2,8 +2,6 @@
 
 #ifdef OS_EMSCRIPTEN
 #include "webxrsystem.h"
-#endif
-
-#ifdef OS_WINDOWS
+#else
 #include "openxrsystem.h"
 #endif

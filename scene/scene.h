@@ -26,6 +26,8 @@ public:
 	Property<Vec3f> directionalLightVector;
 	Property<Vec3f> directionalLightColor;
 
+	Property<SharedPtr<FrameBuffer>> frameBuffer;
+
 	explicit Scene(GraphicsDevice* graphicsDevice);
 
 	GraphicsDevice* graphicsDevice() const {

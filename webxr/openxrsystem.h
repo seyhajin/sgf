@@ -2,7 +2,7 @@
 
 #include "xrsystem.h"
 
-#include <glwindow/glwindow.hh>
+#include <window/window.hh>
 
 #ifdef OS_WINDOWS
 #include <windows.h>
@@ -37,27 +37,22 @@ private:
 
 class OpenXRSession : public XRSession {
 public:
-	OpenXRSession(OpenXRSystem* system, GLWindow* window, XrInstance instance);
+	OpenXRSession(OpenXRSystem* system, Window* window, XrInstance instance);
 
 	void requestFrame(XRFrameFunc func) override;
 
 	FrameBuffer* frameBuffer() override;
 
-	bool valid() const {
-		return m_valid;
-	}
+	bool create();
 
 private:
 	friend class OpenXRFrame;
 
-	GLWindow* m_window{};
+	Window* m_window{};
 	XrInstance m_instance{};
-	bool m_valid = false;
-
 	XrSystemId m_systemId{};
 	XrSystemProperties m_systemProperties{};
 	XrSession m_session{};
-
 	XrSpace m_localSpace{};
 	Vec2i m_swapchainTextureSize{};
 	GLenum m_swapchainTextureFormat{};
@@ -95,20 +90,14 @@ private:
 
 class OpenXRSystem : public XRSystem {
 public:
-	OpenXRSystem(GLWindow* window);
-
-	Promise<bool> isSessionSupported() override;
+	OpenXRSystem(GraphicsDevice* graphicsDevice) : XRSystem(graphicsDevice){}
 
 	Promise<XRSession*> requestSession() override;
 
 private:
 	friend class OpenXRSession;
 
-	GLWindow* m_window{};
-
 	XrInstance m_instance{};
-
-	OpenXRSession* m_session{};
 };
 
 } // namespace sgf

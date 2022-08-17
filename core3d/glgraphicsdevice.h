@@ -6,6 +6,7 @@
 
 namespace sgf {
 
+class GLWindow;
 class GLGraphicsDevice;
 
 // ***** GLFrameBuffer *****

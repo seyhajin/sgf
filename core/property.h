@@ -10,7 +10,7 @@ template <class ValueTy> class Property : public Object {
 public:
 	using CValueTy = const ValueTy&;
 
-	Signal<CValueTy> valueChanged;			  //(newValue)
+	Signal<CValueTy> valueChanged; //(newValue)
 
 	Property() = default;
 
