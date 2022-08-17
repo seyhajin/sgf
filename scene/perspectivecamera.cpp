@@ -7,7 +7,7 @@
 namespace sgf {
 
 PerspectiveCamera::PerspectiveCamera(Scene* scene) : Camera(scene) {
-	scene->graphicsDevice()->window->sizeChanged.connect(this, [this](CVec2i size) {debug() << "### sizeChanged"<<size;invalidateViews(); });
+	scene->graphicsDevice()->window->sizeChanged.connect(this, [this](CVec2i) {invalidateViews(); });
 	fovY.valueChanged.connect(this, [this](float) { invalidateViews(); });
 }
 
@@ -17,7 +17,6 @@ Vector<CameraView> PerspectiveCamera::validateViews() const {
 
 	static Recti g_viewport;
 	if(viewport!=g_viewport) {
-		debug() << "### ARSE" << viewport;
 		g_viewport=viewport;
 	}
 
