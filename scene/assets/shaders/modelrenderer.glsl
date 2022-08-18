@@ -50,5 +50,5 @@ void main() {
 
 	vec3 diffuse = evalDiffuseLighting(viewPos, viewNormal);
 
-	fragColor = vec4(1.0, 1.0, 0.0, 1.0); // vec4(color.rgb * diffuse, color.a);
+	fragColor = vec4(color.rgb * diffuse, color.a);
 }

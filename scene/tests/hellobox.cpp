@@ -12,8 +12,8 @@ int main() {
 
 	window = createWindow("Hello Box!", 1280, 720);
 
-	window->keyboard()->key(SGF_KEY_V).pressed.connect([]{window->vsyncEnabled=!window->vsyncEnabled;});
-	window->keyboard()->key(SGF_KEY_F).pressed.connect([]{window->fullScreenMode=!window->fullScreenMode;});
+	window->keyboard()->key(SGF_KEY_V).pressed.connect([] { window->vsyncEnabled = !window->vsyncEnabled; });
+	window->keyboard()->key(SGF_KEY_F).pressed.connect([] { window->fullScreenMode = !window->fullScreenMode; });
 
 	device = createGraphicsDevice(window);
 
@@ -62,7 +62,7 @@ int main() {
 	// ***** Create model instance *****
 	//
 	auto mesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
-	//auto mesh = createSphereMesh(1, 128, 64, matteMaterial(Vec4f(1)));
+	// auto mesh = createSphereMesh(1, 128, 64, matteMaterial(Vec4f(1)));
 	auto model = createModel(mesh);
 	auto inst = new ModelInstance(scene);
 	inst->model = model;
@@ -71,19 +71,18 @@ int main() {
 
 	// ***** Create collider *****
 	//
-	//auto collider = new SphereCollider(scene);
-	//collider->radius = 1;
-	//inst->addChild(collider);
+	// auto collider = new SphereCollider(scene);
+	// collider->radius = 1;
+	// inst->addChild(collider);
 
 	ImGuiEx::CreateContext(window);
 
 	// ***** Begin main loop *****
 	//
 	window->run([camera, inst] {
-
 		ImGuiEx::NewFrame();
 
-		ImGui::Begin("Settings");
+		ImGui::Begin("Window settings");
 		ImGuiEx::Checkbox("vsyncEnabled", window->vsyncEnabled);
 		ImGuiEx::Checkbox("fullScreenMode", window->fullScreenMode);
 		ImGui::End();

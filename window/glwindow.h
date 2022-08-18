@@ -40,6 +40,8 @@ public:
 
 	void run(Function<void()> frameFunc) override;
 
+	void stop() override;
+
 	GLFWwindow* glfwWindow() const {
 		return m_glfwWindow;
 	};

@@ -1,6 +1,6 @@
 //@vertex
 
-uniform vec2 viewportSize;
+uniform vec2 sourceSize;
 
 const vec2[] cTexCoords = vec2[](
     vec2(0.0, 1.0), vec2(1.0, 1.0), vec2(1.0, 0.0),
@@ -13,9 +13,9 @@ out vec2 texCoords;
 
 void main(){
 
-    texCoords = cTexCoords[gl_VertexID] * viewportSize;
+    gl_Position = vec4(cTexCoords[gl_VertexID] * 2.0 - 1.0, 0.0, 1.0);
 
-    gl_Position = vec4(texCoords * 2.0 - 1.0, 0.0, 1.0);
+    texCoords = cTexCoords[gl_VertexID] * sourceSize;
 }
 
 //@fragment

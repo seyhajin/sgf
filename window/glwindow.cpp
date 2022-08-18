@@ -293,4 +293,11 @@ void GLWindow::run(Function<void()> runFunc) {
 #endif
 }
 
+void GLWindow::stop() {
+
+	assert(g_running);
+	g_running = nullptr;
+	m_runFunc = {};
+};
+
 } // namespace sgf

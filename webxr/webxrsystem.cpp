@@ -274,6 +274,7 @@ EM_JS(void, sgfXRRequestSession, (Promise<XRSession*> * promise_ptr, XRSession* 
 		// requires manual input to create xr sessions.
 		const vrButton = document.getElementById("vrbutton");
 		vrButton.style.display = "block";
+
 		vrButton.addEventListener("click", target => {
 
 			navigator.xr.requestSession("immersive-vr").then(session => {

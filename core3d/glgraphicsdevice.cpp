@@ -303,11 +303,8 @@ void GLGraphicsContext::drawIndexedGeometry(uint order, uint firstIndex, uint nu
 
 	validate();
 
-	if (numInstances > 1) {
-		glDrawElementsInstanced(modes[order], int(numIndices), type, ptr, int(numInstances));
-	} else {
-		glDrawElements(modes[order], int(numIndices), type, ptr);
-	}
+	// Can't use non-instanced here for numInstances==1, as some attribs may have non-zero divisior.
+	glDrawElementsInstanced(modes[order], int(numIndices), type, ptr, int(numInstances));
 
 	glAssert();
 }
@@ -319,11 +316,8 @@ void GLGraphicsContext::drawGeometry(uint order, uint firstVertex, uint numVerti
 
 	validate();
 
-	if (numInstances > 1) {
-		glDrawArraysInstanced(modes[order], int(firstVertex), int(numVertices), int(numInstances));
-	} else {
-		glDrawArrays(modes[order], int(firstVertex), int(numVertices));
-	}
+	// Can't use non-instanced here for numInstances==1, as some attribs may have non-zero divisior.
+	glDrawArraysInstanced(modes[order], int(firstVertex), int(numVertices), int(numInstances));
 
 	glAssert();
 }
@@ -411,7 +405,7 @@ GraphicsBuffer* GLGraphicsDevice::createGraphicsBuffer(BufferType type, uint siz
 	GLuint glBuffer;
 	glGenBuffers(1, &glBuffer);
 	glBindBuffer(glTarget, glBuffer);
-	glBufferData(glTarget, size, data, GL_STATIC_DRAW);//data ? GL_STATIC_DRAW : GL_STATIC_DRAW);
+	glBufferData(glTarget, size, data, data ? GL_STATIC_DRAW : GL_STREAM_DRAW);
 
 	return new GLGraphicsBuffer(this, type, size, glTarget, glBuffer);
 }

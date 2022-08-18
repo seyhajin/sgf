@@ -35,6 +35,7 @@ public:
 	virtual void close() = 0;
 
 	virtual void run(Function<void()> frameFunc) = 0;
+	virtual void stop() = 0;
 
 	virtual void beginFrame() = 0;
 	virtual void endFrame() = 0;

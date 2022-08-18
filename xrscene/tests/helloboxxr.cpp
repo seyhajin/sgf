@@ -9,104 +9,79 @@ GraphicsDevice* device;
 Scene* scene;
 XRCamera* camera;
 
-void renderFrame(double time,XRFrame* frame) {
+void renderFrame(double time, XRFrame* frame) {
 
 	frame->session->requestFrame(&renderFrame);
 
-	scene->update();
-
-	camera->beginFrame(frame);
-
 	scene->frameBuffer = frame->session->frameBuffer();
 
+	window->beginFrame();
+	camera->beginFrame(frame);
+
+	scene->update();
 	scene->render();
 
 	camera->endFrame();
+	window->endFrame();
+}
+
+void createScene() {
+
+	// Create window.
+	window = new GLWindow("Hello Box XR!", 1280, 720);
+
+	// Create graphics device.
+	device = new GLGraphicsDevice(window);
+
+	// Create scene.
+	scene = new Scene(device);
+	scene->clearColor = Vec4f(.9f, .9f, .7f, 1);
+	scene->ambientLightColor = Vec3f(0);
+	scene->directionalLightColor = Vec3f(0);
+
+	// Create camera.
+	camera = new XRCamera(scene);
+	camera->enable();
+
+	// Create dining room light.
+	auto light = new Light(scene);
+	light->setPosition({0, 2, -2});
+	light->color = {1, 0, 0};
+	light->enable();
+
+	// Create model instance.
+	auto mesh = createBoxMesh(.64f, .38f, .05f, matteMaterial(Vec4f(1)));
+	auto model = createModel(mesh);
+	auto inst = new ModelInstance(scene);
+	inst->model = model;
+	inst->color = {.1f, .1f, .1f, 1};
+	inst->translate({0, -.14f, .78f});
+	inst->rotate({.2f, 0, 0});
+	inst->enable();
 }
 
 int main() {
 
-	window = new GLWindow("Hello Box XR!", 1280, 720);
-
-	device = new GLGraphicsDevice(window);
-
-	// ***** Initialize scene *****
-	//
-	scene = new Scene(device);
-	scene->clearColor = Vec4f(1, .25, .5f, 1);
-	scene->ambientLightColor = Vec3f(0, 0, 0);
-	scene->directionalLightVector = Vec3f(1, 1, -1).normalized();
-	scene->directionalLightColor = Vec3f(0);
-
-	// ***** Create camera *****
-	//
-	camera = new XRCamera(scene);
-	//auto camera = new PerspectiveCamera(scene);
-	camera->setPosition({0, 1, -3});
-	camera->lookAt({0, 0, 0});
-	camera->enable();
-
-	// ***** Some nice RGB lights *****
-	//
-	float d = 2;
-	float t = std::sqrt(d);
-	float z = -2;
-	float i = 8;
-	Light* light{};
-
-	light = new Light(scene);
-	light->setPosition({0, d, z});
-	light->color = {1, 0, 0};
-	light->intensity = i;
-	light->enable();
-
-	light = new Light(scene);
-	light->setPosition({-t, -t, z});
-	light->color = {0, 1, 0};
-	light->intensity = i;
-	light->enable();
-
-	light = new Light(scene);
-	light->setPosition({t, -t, z});
-	light->color = {0, 0, 1};
-	light->intensity = i;
-	light->enable();
-
-	// ***** Create model instance *****
-	//
-	auto mesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
-	//auto mesh = createSphereMesh(1, 128, 64, matteMaterial(Vec4f(1)));
-	auto model = createModel(mesh);
-	auto inst = new ModelInstance(scene);
-	inst->model = model;
-	inst->color = {1, 1, 1, 1};
-	inst->enable();
-
-	// ***** Add collider *****
-	//
-	// auto collider = new SphereCollider(scene);
-	// collider->radius = 1;
-	// inst->addChild(collider);
+	createScene();
 
 	auto xrSystem = createXRSystem(device);
 
 	xrSystem->requestSession() | [](XRSession* session) {
-		if(!session) {
-			debug() << "Failed to create session";
+		if (!session) {
+			debug() << "Failed to create session, make sure headset is active before launching app.";
 			exit(1);
 		}
 		// Note: session->frameBuffer doesn't seem to be valid here...maybe move to XRFrame?
 		// scene->frameBuffer = session->frameBuffer();
 		session->requestFrame(&renderFrame);
+
+		window->stop();
+
+		runAppEventLoop();
 	};
 
-	runAppEventLoop();
-
-	window->run([=]{
+	window->run([]{
 		scene->update();
 		scene->render();
 	});
-
-//	runAppEventLoop();
-
 }

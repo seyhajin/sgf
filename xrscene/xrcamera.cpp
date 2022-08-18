@@ -2,9 +2,10 @@
 
 #include <new>
 
-#include <window/window.h>
 #include <scene/scene.h>
 #include <webxr/xrsystem.h>
+#include <window/mouse.h>
+#include <window/window.h>
 
 namespace sgf {
 
@@ -20,13 +21,28 @@ Vector<CameraView> XRCamera::validateViews() const {
 
 	if (!m_frame) {
 		// Default to plain perspective camera if not inside an XRFrame...
-		Recti viewport{0, scene()->graphicsDevice()->window->size()};
+		Recti viewport{0, scene()->graphicsDevice->window->size()};
 
 		float yh = std::tan(fovY * degreesToRadians) * zNear;
 		float ar = float(viewport.width()) / float(viewport.height());
 		auto projMatrix = Mat4f::frustum(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
 
-		return {{viewport, projMatrix, worldMatrix()}};
+		// Attempt a coolio 'neos vr' style mouse->eye effect.
+		//
+		auto coords = scene()->graphicsDevice->window->mouse()->position();
+		Vec2f tcoords = coords - viewport.origin();
+		tcoords = tcoords / viewport.size() * 2 - 1;
+		tcoords.y = -tcoords.y;
+
+		auto tv = projMatrix.inverse() * Vec4f(tcoords, 0, 1);
+
+		Mat3f r;
+		r.k = (tv.xyz() / tv.w).normalized();
+		r.j = Vec3f{0,1,0};
+		r.i = r.j.cross(r.k).normalized();
+		r.j = r.k.cross(r.i).normalized();
+
+		return {{viewport, projMatrix, {r, position()}}};
 	}
 
 	auto viewerPose = m_frame->getViewerPose();
