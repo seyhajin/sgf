@@ -35,19 +35,16 @@ namespace {
 
 constexpr auto c_localSpace = "localSpace";
 
-void flipZ(Mat4f& p) {
-	p.k.x = -p.k.x;
-	p.k.y = -p.k.y;
-	p.k.w = -p.k.w;
-	p.t.z = -p.t.z;
-}
-
 void flipZ(AffineMat4f& t) {
 	t.m.i.z = -t.m.i.z;
 	t.m.j.z = -t.m.j.z;
 	t.m.k.x = -t.m.k.x;
 	t.m.k.y = -t.m.k.y;
-	t.t.z = -t.t.z;
+	t.t.z   = -t.t.z;
+}
+
+void flipZ(Mat4f& p) {
+	p.k = -p.k;
 }
 
 } // namespace
@@ -163,13 +160,11 @@ const XRViewerPose* WebXRFrame::getViewerPose() {
 		debug() << "### sgfXRGetViewerPose() returned nullptr";
 		return nullptr;
 	}
-
 	flipZ(viewerPose->transform);
 
 	for (uint eye = 0; eye < 2; ++eye) {
 		auto& view = viewerPose->views[eye];
 		flipZ(view.projectionMatrix);
-
 		flipZ(view.transform);
 	}
 

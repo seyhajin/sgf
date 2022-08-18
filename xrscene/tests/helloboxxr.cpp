@@ -5,6 +5,8 @@
 using namespace sgf;
 
 GLWindow* window;
+
+
 GraphicsDevice* device;
 Scene* scene;
 XRCamera* camera;
@@ -50,12 +52,14 @@ void createScene() {
 	light->enable();
 
 	// Create model instance.
-	auto mesh = createBoxMesh(.64f, .38f, .05f, matteMaterial(Vec4f(1)));
+	auto material = new Material();
+	material->emissiveTexture = TextureLoader("images/clion.png");
+	auto mesh = createBoxMesh(.64f, .38f, .05f, material);
 	auto model = createModel(mesh);
 	auto inst = new ModelInstance(scene);
 	inst->model = model;
 	inst->color = {.1f, .1f, .1f, 1};
-	inst->translate({0, -.14f, .78f});
+	inst->translate({0, -.14f, .58f});
 	inst->rotate({.2f, 0, 0});
 	inst->enable();
 }
@@ -80,7 +84,8 @@ int main() {
 		runAppEventLoop();
 	};
 
-	window->run([]{
+	window->run([] {
+
 		scene->update();
 		scene->render();
 	});

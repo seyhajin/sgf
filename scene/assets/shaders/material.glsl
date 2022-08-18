@@ -1,6 +1,6 @@
 uniform sampler2D baseColorTexture;
-uniform sampler2D metallicRoughnessTexture;
 uniform sampler2D emissiveTexture;
+uniform sampler2D metallicRoughnessTexture;
 uniform sampler2D occlusionTexture;
 uniform sampler2D normalTexture;
 

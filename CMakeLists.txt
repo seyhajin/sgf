@@ -117,7 +117,7 @@ endif ()
 if (OS_EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     add_link_options(--shell-file "${CMAKE_SOURCE_DIR}/embuild/index_template.html")
-    add_link_options("SHELL:--emrun -s TOTAL_MEMORY=8mb -s ASSERTIONS=1 -s EXPORTED_FUNCTIONS=_main,_free")
+    add_link_options("SHELL:--emrun -s TOTAL_MEMORY=64mb -s ASSERTIONS=1 -s EXPORTED_FUNCTIONS=_main,_free")
 endif ()
 
 # Copy assets from 'source' target to 'target' target (usually an exe)

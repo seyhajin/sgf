@@ -21,5 +21,6 @@ target_link_libraries(xrscene webxr scene)
 add_executable(helloboxxr tests/helloboxxr.cpp )
 
 target_link_libraries(helloboxxr xrscene)
+target_copy_assets(helloboxxr xrscene)
 target_copy_assets(helloboxxr scene)
 target_link_assets(helloboxxr)

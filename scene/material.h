@@ -22,7 +22,7 @@ public:
 
 	Property<bool> flatShaded;
 
-	Material(CVec4f baseColor);
+	Material(CVec4f baseColor={1});
 
 	void bind(GraphicsContext* gc);
 
@@ -33,7 +33,6 @@ private:
 	SharedPtr<GraphicsBuffer> m_uniformBuffer;
 };
 
-Material* matteMaterial(CVec4f color);
 Material* errorMaterial();
 
 } // namespace sgf

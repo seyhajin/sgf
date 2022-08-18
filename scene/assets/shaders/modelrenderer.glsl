@@ -19,7 +19,7 @@ layout(location = 13) in float iMorph;
 out vec3 viewPos;
 out vec3 viewNormal;
 out vec2 texCoords0;
-out vec4 color;
+out vec4 modelColor;
 
 void main() {
 
@@ -30,7 +30,7 @@ void main() {
 	viewNormal = mat3(camera.viewMatrix) * worldNormal;
 
 	texCoords0 = aTexCoords0;
-	color = iColor * aColor;
+	modelColor = iColor * aColor;
 
 	gl_Position = camera.projMatrix * vec4(viewPos, 1.0);
 }
@@ -38,17 +38,28 @@ void main() {
 //@fragment
 
 #include "scene.glsl"
+#include "material.glsl"
 
 in vec3 viewPos;
 in vec3 viewNormal;
 in vec2 texCoords0;
-in vec4 color;
+in vec4 modelColor;
 
 out vec4 fragColor;
 
+// TODO: Move me to material...
+vec4 evalLighting(vec3 viewPos, vec3 viewNormal, vec2 texCoords, vec4 color) {
+
+	vec4 baseColor = texture(baseColorTexture, texCoords) * material.baseColorFactor;
+
+	vec3 diffuse = evalDiffuseLighting(viewPos, viewNormal) * baseColor.rgb * color.rgb;
+
+	vec3 emissive = texture(emissiveTexture, texCoords).rgb * material.emissiveFactor;
+
+	return vec4(diffuse + emissive, baseColor.a);
+}
+
 void main() {
 
-	vec3 diffuse = evalDiffuseLighting(viewPos, viewNormal);
-
-	fragColor = vec4(color.rgb * diffuse, color.a);
+	fragColor = evalLighting(viewPos, viewNormal, texCoords0, modelColor);
 }

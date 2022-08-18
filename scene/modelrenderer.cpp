@@ -91,7 +91,9 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 	auto& surfaces = (pass == RenderPassType::blended ? m_model->blendedSurfaces : m_model->opaqueSurfaces);
 
 	for (auto& surf : surfaces) {
-		//		surf.material->bind(gc);
+
+		surf.material->bind(gc);
+
 		gc->drawIndexedGeometry(3, surf.firstIndex, surf.numIndices, m_instances.size());
 	}
 }

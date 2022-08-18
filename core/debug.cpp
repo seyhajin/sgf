@@ -43,7 +43,7 @@ DebugStream::~DebugStream() {
 	String timestamp = debugTimestamp(m_rep->time);
 	String fileinfo = String("[") + m_rep->file + ":" + std::to_string(m_rep->line) + "]";
 	String debug = m_rep->buf.str();
-	debugOutputFunc(timestamp+" : "+debug+" "+fileinfo);
+	debugOutputFunc(timestamp+" : "+debug);//+" "+fileinfo);
 	delete m_rep;
 }
 

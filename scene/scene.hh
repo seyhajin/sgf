@@ -5,6 +5,7 @@
 #include "debugrenderer.h"
 #include "entity.h"
 #include "light.h"
+#include "material.h"
 #include "mesh.h"
 #include "meshbuilder.h"
 #include "meshprimitives.h"

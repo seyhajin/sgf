@@ -61,8 +61,7 @@ int main() {
 
 	// ***** Create model instance *****
 	//
-	auto mesh = createBoxMesh(1, 1, 1, matteMaterial(Vec4f(1)));
-	// auto mesh = createSphereMesh(1, 128, 64, matteMaterial(Vec4f(1)));
+	auto mesh = createBoxMesh(1, 1, 1, new Material());
 	auto model = createModel(mesh);
 	auto inst = new ModelInstance(scene);
 	inst->model = model;
