@@ -8,42 +8,74 @@ Texture* createTexture(uint rgba);
 Texture* createTexture(CVec4f color);
 Texture* loadTexture(CString path, TextureFormat format, TextureFlags flags);
 
+struct TextureLoader;
+using CTextureLoader = const TextureLoader&;
+
 struct TextureLoader {
-	TextureLoader(Texture* texture) {
-		assert(texture);
-		m_texture=texture;
+
+	TextureLoader() {
+		m_loader = []()->Texture*{return nullptr;};
 	}
 
-	TextureLoader(CVec4f color = {1, 0, 1, 1}) {
-		m_loadFunc = [color] { return createTexture(color); };
+	TextureLoader(CTextureLoader that) {
+		m_texture = that.m_texture;
+		m_loader = that.m_loader;
+	}
+
+	TextureLoader(TextureLoader&& that) noexcept{
+		m_texture = std::move(that.m_texture);
+		m_loader = std::move(that.m_loader);
+	}
+
+	TextureLoader(CVec4f color) {
+		m_loader = [color] { return createTexture(color); };
 	};
 
-	TextureLoader(CString assetPath, TextureFormat format = TextureFormat::srgba32, TextureFlags flags = TextureFlags::mipmap) {
-		m_loadFunc = [assetPath, format, flags] { return loadTexture(resolveAssetPath(assetPath), format, flags); };
+	TextureLoader(Texture* texture) {
+		assert(texture);
+		m_texture = texture;
+	}
+	
+	TextureLoader(CString path, TextureFormat format = TextureFormat::srgba32,
+				  TextureFlags flags = TextureFlags::mipmap) {
+		m_loader = [path, format, flags] { return loadTexture(resolveAssetPath(path), format, flags); };
+	}
+
+	TextureLoader& operator=(CTextureLoader that) {
+		m_texture = that.m_texture;
+		m_loader = that.m_loader;
+		return *this;
+	}
+
+	TextureLoader& operator=(TextureLoader&& that) noexcept {
+		if (*this == that) return *this;
+		m_texture = std::move(that.m_texture);
+		m_loader = std::move(that.m_loader);
+		return *this;
+	}
+
+	bool operator==(CTextureLoader that) const {
+		return m_loader == that.m_loader;
+	}
+
+	bool operator!=(CTextureLoader that) const {
+		return m_loader != that.m_loader;
+	}
+
+	bool operator<(CTextureLoader that) const {
+		return m_loader < that.m_loader;
 	}
 
 	Texture* open() const {
-		if (!m_texture) m_texture = m_loadFunc();
+		if (!m_texture) m_texture = m_loader();
 		return m_texture;
 	}
 
-	bool operator==(const TextureLoader& that) const {
-		return m_loadFunc == that.m_loadFunc;
-	}
-
-	bool operator!=(const TextureLoader& that) const {
-		return m_loadFunc != that.m_loadFunc;
-	}
-
-	bool operator<(const TextureLoader& that) const {
-		return m_loadFunc < that.m_loadFunc;
-	}
-
 private:
-	using LoadFunc = Function<Texture*()>;
+	using loader = Function<Texture*()>;
 
 	mutable SharedPtr<Texture> m_texture;
-	LoadFunc m_loadFunc;
+	loader m_loader;
 };
 
 } // namespace sgf

@@ -177,6 +177,7 @@ add_subdirectory(imgui)         # deps: window
 add_subdirectory(opengl)        # deps: core
 add_subdirectory(scene)         # deps: imgui, core3d
 add_subdirectory(stb)           # deps: core
+add_subdirectory(gltf)          # deps: scene stb
 add_subdirectory(window)        # deps: glfw, image
 add_subdirectory(websockets)    # deps: core
 add_subdirectory(webxr)         # deps: core3d
