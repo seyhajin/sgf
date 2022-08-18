@@ -4,6 +4,8 @@
 
 #include <glfw/glfw.hh>
 
+#include <window/glwindow.h>
+
 namespace sgf {
 
 namespace {
@@ -290,7 +292,6 @@ void GLGraphicsContext::drawIndexedGeometry(uint order, uint firstIndex, uint nu
 
 	static constexpr GLenum modes[] = {GL_NONE, GL_POINTS, GL_LINES, GL_TRIANGLES};
 	static constexpr GLenum types[] = {GL_NONE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT};
-	static constexpr uint size[] = {1, 2, 4};
 
 	assert(order > 0 && order < 4);
 
@@ -302,11 +303,8 @@ void GLGraphicsContext::drawIndexedGeometry(uint order, uint firstIndex, uint nu
 
 	validate();
 
-	if (numInstances > 1) {
-		glDrawElementsInstanced(modes[order], int(numIndices), type, ptr, int(numInstances));
-	} else {
-		glDrawElements(modes[order], int(numIndices), type, ptr);
-	}
+	// Can't use non-instanced here for numInstances==1, as some attribs may have non-zero divisior.
+	glDrawElementsInstanced(modes[order], int(numIndices), type, ptr, int(numInstances));
 
 	glAssert();
 }
@@ -318,11 +316,8 @@ void GLGraphicsContext::drawGeometry(uint order, uint firstVertex, uint numVerti
 
 	validate();
 
-	if (numInstances > 1) {
-		glDrawArraysInstanced(modes[order], int(firstVertex), int(numVertices), int(numInstances));
-	} else {
-		glDrawArrays(modes[order], int(firstVertex), int(numVertices));
-	}
+	// Can't use non-instanced here for numInstances==1, as some attribs may have non-zero divisior.
+	glDrawArraysInstanced(modes[order], int(firstVertex), int(numVertices), int(numInstances));
 
 	glAssert();
 }

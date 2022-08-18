@@ -1,5 +1,5 @@
 
-#include "glwindow/glwindow.hh"
+#include <window/window.hh>
 
 #include <core3d/core3d.hh>
 
@@ -60,9 +60,9 @@ int main() {
 	uint width = 1280;
 	uint height = 720;
 
-	auto window = new GLWindow("Skirmish 2022!", width, height);
+	auto window = createWindow("Skirmish 2022!", width, height);
 
-	auto device = new GLGraphicsDevice(window);
+	auto device = createGraphicsDevice(window);
 
 	auto context = device->createGraphicsContext();
 

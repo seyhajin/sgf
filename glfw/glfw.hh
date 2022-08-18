@@ -11,5 +11,7 @@
 #define GLFW_EXPOSE_NATIVE_X11 1
 #define GLFW_EXPOSE_NATIVE_GLX 1
 #endif
+
 #include <GLFW/glfw3native.h>
+
 #endif

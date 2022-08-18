@@ -9,4 +9,6 @@ add_library(stb
         stb.hh
         )
 
-#target_include_directories(stb PUBLIC ${PROJECT_SOURCE_DIR}/libstb)
+target_include_directories(stb PUBLIC ${PROJECT_SOURCE_DIR}/libstb)
+
+target_link_libraries(stb core)

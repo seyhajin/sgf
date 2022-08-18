@@ -4,7 +4,7 @@
 
 namespace sgf {
 
-class GLWindow;
+class Window;
 class GraphicsDevice;
 
 // ***** GraphicsResource ******
@@ -140,7 +140,7 @@ class GraphicsDevice : public Object {
 public:
 	SGF_OBJECT_TYPE(GraphicsDevice, Object);
 
-	GLWindow* const window;
+	Window* const window;
 
 	virtual Texture* createTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
 								   const void* data) = 0;
@@ -152,7 +152,7 @@ public:
 	virtual GraphicsContext* createGraphicsContext() = 0;
 
 protected:
-	GraphicsDevice(GLWindow* window) : window(window) {
+	GraphicsDevice(Window* window) : window(window) {
 		assert(!g_instance);
 		g_instance = this;
 	}
@@ -163,6 +163,8 @@ private:
 		return g_instance;
 	}
 };
+
+GraphicsDevice* createGraphicsDevice(Window* window);
 
 GraphicsDevice* graphicsDevice();
 

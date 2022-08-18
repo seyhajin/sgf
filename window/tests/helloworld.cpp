@@ -1,5 +1,5 @@
 
-#include "glwindow/glwindow.hh"
+#include "window/window.hh"
 
 #include <opengl/opengl.hh>
 
@@ -7,7 +7,7 @@ using namespace sgf;
 
 int main() {
 
-	auto window = new GLWindow("Skirmish 2022!", 1280, 720);
+	auto window = new GLWindow("Hello World", 1280, 720);
 
 	glClearColor(.25f, 0, 1, 1);
 

@@ -21,16 +21,16 @@ class Scene : public Object {
 public:
 	SGF_OBJECT_TYPE(Scene, Object);
 
+	GraphicsDevice* const graphicsDevice;
+
 	Property<Vec4f> clearColor;
 	Property<Vec3f> ambientLightColor;
 	Property<Vec3f> directionalLightVector;
 	Property<Vec3f> directionalLightColor;
 
-	explicit Scene(GraphicsDevice* graphicsDevice);
+	Property<SharedPtr<FrameBuffer>> frameBuffer;
 
-	GraphicsDevice* graphicsDevice() const {
-		return m_graphicsDevice;
-	}
+	explicit Scene(GraphicsDevice* graphicsDevice);
 
 	float renderTime() const {
 		return m_renderTime;
@@ -66,7 +66,6 @@ public:
 	void updateCollider(Collider* collider);
 
 private:
-	GraphicsDevice* m_graphicsDevice;
 	SharedPtr<GraphicsContext> m_graphicsContext;
 	SharedPtr<GraphicsBuffer> m_cameraParams;
 	SharedPtr<GraphicsBuffer> m_sceneParams;

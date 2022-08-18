@@ -48,10 +48,7 @@ class Any {
 public:
 	Any() = default;
 
-	template <class ValueTy> explicit Any(const ValueTy& value) : m_rep(new RepImpl<ValueTy>(value)) {
-	}
-
-	template <class ValueTy> explicit Any(ValueTy&& value) noexcept : m_rep(new RepImpl<ValueTy>(std::move(value))) {
+	template <class ValueTy> Any(const ValueTy& value) : m_rep(new RepImpl<ValueTy>(value)) {
 	}
 
 	Any(const Any& any) : m_rep(any.m_rep) {

@@ -3,6 +3,7 @@
 #include "function.h"
 #include "std.h"
 
+#include <chrono>
 #include <cstdio>
 #include <sstream>
 
@@ -18,11 +19,18 @@ String debugTimestamp();
 
 class DebugStream {
 
+	using time_point = std::chrono::time_point<std::chrono::system_clock>;
+
 	struct Rep {
+		time_point time;
+		const char* file;
+		int line;
 		std::stringstream buf;
+
+		Rep(time_point time, const char*file, int line) : time(time),file(file),line(line){}
 	};
 
-	Rep* m_rep = new Rep;
+	Rep* m_rep;
 
 	template <class ValueTy> friend DebugStream&& operator<<(DebugStream&& dbgstream, const ValueTy& value) {
 		auto rep = dbgstream.m_rep;
@@ -32,12 +40,9 @@ class DebugStream {
 	}
 
 public:
-	DebugStream() = default;
+	DebugStream(const char* file, int line);
 
-	~DebugStream() {
-		debugOutputFunc(debugTimestamp() + " " + m_rep->buf.str());
-		delete m_rep;
-	}
+	~DebugStream();
 
 	DebugStream(const DebugStream&) = delete;
 
@@ -54,8 +59,6 @@ public:
 	}
 };
 
-inline DebugStream debug() {
-	return {};
-}
+#define debug() DebugStream(__FILE__, __LINE__)
 
 } // namespace sgf

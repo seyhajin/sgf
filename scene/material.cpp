@@ -15,9 +15,9 @@ Material::Material(CVec4f baseColor) {
 	auto paramChanged = [this](const auto& param) { m_dirtyParams = true; };
 
 	baseColorTexture = TextureLoader(Vec4f(1));
-	emissiveTexture = TextureLoader(Vec4f(1));
+	emissiveTexture = TextureLoader(Vec4f(0));
 	baseColorFactor = baseColor;
-	emissiveFactor = 0;
+	emissiveFactor = 1;
 
 	baseColorTexture.valueChanged.connect(paramChanged);
 	metallicRoughnessTexture.valueChanged.connect(paramChanged);
@@ -33,19 +33,20 @@ Material::Material(CVec4f baseColor) {
 
 void Material::bind(GraphicsContext* gc) {
 
+	gc->setTexture("baseColorTexture", baseColorTexture.value().open());
+	gc->setTexture("emissiveTexture", emissiveTexture.value().open());
+#if 0
+	gc->setTexture("metallicRoughnessTexture", metallicRoughnessTexture.value().open());
+	gc->setTexture("occlusionTexture", occlusionTexture.value().open());
+	gc->setTexture("normalTexture", normalTexture.value().open());
+#endif
+
 	if (m_dirtyParams) {
 		m_materialParams.baseColorFactor = baseColorFactor;
 		m_materialParams.emissiveFactor = emissiveFactor;
 		m_uniformBuffer->updateData(0, sizeof(m_materialParams), &m_materialParams);
 		m_dirtyParams = false;
 	}
-
-	gc->setTexture("baseColorTexture", baseColorTexture.value().open());
-	gc->setTexture("metallicRoughnessTexture", metallicRoughnessTexture.value().open());
-	gc->setTexture("emissiveTexture", emissiveTexture.value().open());
-	gc->setTexture("occlusionTexture", occlusionTexture.value().open());
-	gc->setTexture("normalTexture", normalTexture.value().open());
-
 	gc->setUniformBuffer("materialParams", m_uniformBuffer);
 
 	gc->setBlendMode(blendMode);

@@ -35,19 +35,16 @@ namespace {
 
 constexpr auto c_localSpace = "localSpace";
 
-void flipZ(Mat4f& p) {
-	p.k.x = -p.k.x;
-	p.k.y = -p.k.y;
-	p.k.w = -p.k.w;
-	p.t.z = -p.t.z;
-}
-
 void flipZ(AffineMat4f& t) {
 	t.m.i.z = -t.m.i.z;
 	t.m.j.z = -t.m.j.z;
 	t.m.k.x = -t.m.k.x;
 	t.m.k.y = -t.m.k.y;
-	t.t.z = -t.t.z;
+	t.t.z   = -t.t.z;
+}
+
+void flipZ(Mat4f& p) {
+	p.k = -p.k;
 }
 
 } // namespace
@@ -102,7 +99,7 @@ EM_JS(XRViewerPose*, sgfXRGetViewerPose, (XRFrame* frame_ptr, XRViewerPose* view
 	const localSpace = _sgfGetObject(localSpace_ptr);
 
 	const viewer = frame.getViewerPose(localSpace);
-	console.log("### sfgGetViewerPos frame:", frame, "localSpace:", localSpace, "viewerPose:", viewer);
+//	console.log("### sfgGetViewerPos frame:", frame, "localSpace:", localSpace, "viewerPose:", viewer);
 
 	if(!viewer) return 0;
 
@@ -163,13 +160,11 @@ const XRViewerPose* WebXRFrame::getViewerPose() {
 		debug() << "### sgfXRGetViewerPose() returned nullptr";
 		return nullptr;
 	}
-
 	flipZ(viewerPose->transform);
 
 	for (uint eye = 0; eye < 2; ++eye) {
 		auto& view = viewerPose->views[eye];
 		flipZ(view.projectionMatrix);
-
 		flipZ(view.transform);
 	}
 
@@ -189,15 +184,11 @@ EMSCRIPTEN_CALLBACK void sgfXRRequestFrameReady(XRFrameFunc* func_ptr, XRFrame* 
 // clang-format off
 EM_JS(void, sgfXRRequestFrame, (XRSession* session_ptr, XRFrameFunc* func_ptr, XRFrame* frame_ptr),{
 
-	console.log( "### sgfRequestFrame frame_ptr:", frame_ptr);
-
 	const session = _sgfGetObject(session_ptr);
 
 	session.requestAnimationFrame((time, frame) => {
 
 		_sgfRegisterObject(frame, frame_ptr);
-
-		console.log("### Got frame!", time, frame);
 
 		_sgfXRRequestFrameReady(func_ptr, frame_ptr, time);
 
@@ -228,7 +219,6 @@ EM_JS(GLuint, sgfXRGetFrameBuffer, (XRSession* session_ptr, Vec2i* size_ptr),{
 	const buffer = layer.framebuffer;
 
 	if(!buffer.name) {
-		console.log("### Creating new framebuffer id");
 		const name = GL.getNewId(GL.framebuffers);
 		GL.framebuffers[name] = buffer;
 		buffer.name = name;
@@ -245,38 +235,10 @@ FrameBuffer* WebXRSession::frameBuffer() {
 
 	if (!m_frameBuffer || m_frameBuffer->width != size.x || m_frameBuffer->height != size.y ||
 		m_frameBuffer->glFramebuffer != glFramebuffer) {
-		debug() << "### Rebuilding framebuffer size:" << size << "glFramebuffer" << glFramebuffer;
 		m_frameBuffer = new GLFrameBuffer(graphicsDevice(), nullptr, nullptr, size.x, size.y, glFramebuffer);
 	}
 
 	return m_frameBuffer;
-}
-
-// ***** WebXRSystem::isSessionSupported *****
-
-EMSCRIPTEN_CALLBACK void sgfXRIsSessionSupportedResolved(Promise<bool>* promise_ptr, bool supported) {
-	promise_ptr->resolve(supported);
-	delete promise_ptr;
-}
-
-// clang-format off
-EM_JS(void, sgfXRIsSessionSupported, (Promise<bool>* promise_ptr), {
-	if (!navigator.xr) {
-		_sgfXRIsSessionSupportedResolved(promise_ptr, false);
-		return;
-	}
-	navigator.xr.isSessionSupported("immersive-vr").then(supported => {
-		_sgfXRIsSessionSupportedResolved(promise_ptr, supported);
-	});
-});
-// clang-format on
-
-Promise<bool> WebXRSystem::isSessionSupported() {
-
-	auto promise_ptr = new Promise<bool>;
-	sgfXRIsSessionSupported(promise_ptr);
-
-	return *promise_ptr;
 }
 
 // ***** WebXRSystem::requestSession *****
@@ -300,30 +262,34 @@ EM_JS(void, sgfXRRequestSession, (Promise<XRSession*> * promise_ptr, XRSession* 
 	}
 	navigator.xr.isSessionSupported("immersive-vr").then(supported => {
 		if (!supported) {
-
 			_sgfXRRequestSessionError(promise_ptr, session_ptr);
-
 			return;
 		}
-		navigator.xr.requestSession("immersive-vr").then(session => {
+		// enable VR button on index.html page: webxr
+		// requires manual input to create xr sessions.
+		const vrButton = document.getElementById("vrbutton");
+		vrButton.style.display = "block";
 
-			_sgfRegisterObject(session, session_ptr);
+		vrButton.addEventListener("click", target => {
 
-			Module.ctx.makeXRCompatible().then(() => {
+			navigator.xr.requestSession("immersive-vr").then(session => {
 
-				const state = {baseLayer: new XRWebGLLayer(session, Module.ctx), depthNear: .1, depthFar: 100.0};
+				_sgfRegisterObject(session, session_ptr);
 
-				session.updateRenderState(state);
+				Module.ctx.makeXRCompatible().then(() => {
 
-				session.addEventListener("end", () => {});
+					const state = {baseLayer: new XRWebGLLayer(session, Module.ctx), depthNear: .1, depthFar: 100.0};
 
-				session.requestReferenceSpace("local").then(localSpace => {
+					session.updateRenderState(state);
 
-					_sgfRegisterObject(localSpace, localSpace_ptr);
+					session.addEventListener("end", () => {});
 
-					console.log("### sgfRequestSession: localSpace:",localSpace);
+					session.requestReferenceSpace("local").then(localSpace => {
 
-					_sgfXRRequestSessionResolved(promise_ptr, session_ptr);
+						_sgfRegisterObject(localSpace, localSpace_ptr);
+
+						_sgfXRRequestSessionResolved(promise_ptr, session_ptr);
+					});
 				});
 			});
 		});
@@ -339,18 +305,6 @@ Promise<XRSession*> WebXRSystem::requestSession() {
 	sgfXRRequestSession(promise_ptr, session_ptr, c_localSpace);
 
 	return *promise_ptr;
-}
-
-// ***** StartVRButton handling *****
-
-Signal<> startVRButtonClicked;
-
-EMSCRIPTEN_CALLBACK void sgfStartVRButtonClicked() {
-	startVRButtonClicked.emit();
-}
-
-void setStartVRButtonEnabled(bool enabled) {
-	EM_ASM({ document.getElementById("vrbutton").style.display = $0 ? "block" : "none"; }, enabled);
 }
 
 } // namespace sgf

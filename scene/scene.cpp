@@ -7,7 +7,7 @@
 #include "linearspace.h"
 #include "shaderloader.h"
 
-#include <glwindow/glwindow.h>
+#include <window/window.h>
 
 namespace sgf {
 
@@ -17,9 +17,9 @@ ShaderLoader g_copyShader("shaders/fbcopy.glsl");
 
 } // namespace
 
-Scene::Scene(GraphicsDevice* graphicsDevice) : m_graphicsDevice(graphicsDevice) {
+Scene::Scene(GraphicsDevice* device) : graphicsDevice(device) {
 
-	if(!m_defaultScene) m_defaultScene = this;
+	if (!m_defaultScene) m_defaultScene = this;
 
 	m_renderPasses.resize(numRenderPassTypes);
 
@@ -44,10 +44,10 @@ Scene::Scene(GraphicsDevice* graphicsDevice) : m_graphicsDevice(graphicsDevice) 
 	m_renderPasses[int(RenderPassType::overlay)] =
 		new RenderPass(RenderPassType::overlay, DepthMode::compare, BlendMode::alpha, CullMode::back);
 
-	m_graphicsContext = m_graphicsDevice->createGraphicsContext();
+	m_graphicsContext = graphicsDevice->createGraphicsContext();
 
-	m_cameraParams = m_graphicsDevice->createGraphicsBuffer(BufferType::uniform, sizeof(CameraParams), nullptr);
-	m_sceneParams = m_graphicsDevice->createGraphicsBuffer(BufferType::uniform, sizeof(SceneParams), nullptr);
+	m_cameraParams = graphicsDevice->createGraphicsBuffer(BufferType::uniform, sizeof(CameraParams), nullptr);
+	m_sceneParams = graphicsDevice->createGraphicsBuffer(BufferType::uniform, sizeof(SceneParams), nullptr);
 
 	m_graphicsContext->setUniformBuffer("cameraParams", m_cameraParams);
 	m_graphicsContext->setUniformBuffer("sceneParams", m_sceneParams);
@@ -171,8 +171,8 @@ Collider* Scene::intersectEyeRay(CVec2f coords, float radius) const {
 void Scene::update() {
 
 	// Update actors in typeId order
-	for(auto& actors : m_actors) {
-		for(auto actor : actors) actor->update();
+	for (auto& actors : m_actors) {
+		for (auto actor : actors) actor->update();
 	}
 
 	// Update orphans
@@ -181,12 +181,18 @@ void Scene::update() {
 
 void Scene::render() {
 
-	Vec2i size = m_graphicsDevice->window->size();
-
 	float elapsed = 1.0f / 60.0f;
 	m_renderTime += elapsed;
 
 	for (RenderPass* p : m_renderPasses) { p->update(); }
+
+	Vec2i size{};
+	for (auto camera : m_cameras) {
+		for (auto& view : camera->views()) {
+			size.x = std::max(size.x, view.viewport.width());
+			size.y = std::max(size.y, view.viewport.height());
+		}
+	}
 
 	RenderParams renderParams;
 
@@ -229,7 +235,7 @@ void Scene::render() {
 		//
 		for (auto& view : camera->views()) {
 
-			auto& viewport = view.viewport;
+			auto viewport = view.viewport;
 
 			rcamera.projMatrix = view.projectionMatrix;
 			rcamera.invProjMatrix = rcamera.projMatrix.inverse();
@@ -239,7 +245,7 @@ void Scene::render() {
 
 			rcamera.directionalLightVector = rcamera.viewMatrix * rscene.directionalLightVector;
 
-			for (uint i = 0; i < rscene.numLights; ++i) {
+			for (int i = 0; i < rscene.numLights; ++i) {
 				rcamera.lightPositions[i] = rcamera.viewMatrix * rscene.lights[i].position;
 			}
 
@@ -247,7 +253,7 @@ void Scene::render() {
 
 			m_renderContext.beginScene(gc, &renderParams, size.x, size.y);
 
-			gc->setViewport(viewport);
+			gc->setViewport({0, viewport.size()});
 
 			gc->clear(rscene.clearColor);
 
@@ -255,16 +261,31 @@ void Scene::render() {
 
 			auto sourceTexture = m_renderContext.endScene();
 
-			gc->setFrameBuffer(nullptr);
+			gc->setFrameBuffer(frameBuffer.value() ? frameBuffer.value() : nullptr);
+			gc->setViewport(viewport);
 
 			gc->setDepthMode(DepthMode::disable);
 			gc->setBlendMode(BlendMode::disable);
 			gc->setCullMode(CullMode::disable);
 			gc->setTexture("sourceTexture", sourceTexture);
+			gc->setUniform("sourceSize", Vec2f(viewport.size()) / Vec2f(size));
+
 			gc->setShader(g_copyShader.open());
 
 			gc->drawGeometry(3, 0, 6, 1);
 		}
+
+		// Little hack to show last rendered eye to window
+		if(frameBuffer.value()) {
+
+			auto viewport = Recti(0,graphicsDevice->window->size());
+
+			gc->setFrameBuffer(nullptr);
+			gc->setViewport(viewport);
+
+			gc->drawGeometry(3, 0, 6, 1);
+		}
+
 	}
 }
 

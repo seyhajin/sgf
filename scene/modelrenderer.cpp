@@ -55,7 +55,7 @@ void ModelRenderer::updateInstanceBuffer() {
 	if (!m_instanceBuffer || m_instances.size() * sizeof(Instance) > m_instanceBuffer->size) {
 		// Resize instance buffer
 		m_instanceBuffer =
-			graphicsDevice()->createGraphicsBuffer(BufferType::vertex, m_instances.size() * sizeof(Instance), nullptr);
+			graphicsDevice()->createGraphicsBuffer(BufferType::vertex, m_instances.size() * sizeof(Instance) * 8, nullptr);
 
 		m_vertexState = graphicsDevice()->createVertexState({m_model->vertexBuffer, m_instanceBuffer},
 															m_model->indexBuffer, m_vertexLayout);
@@ -91,7 +91,9 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 	auto& surfaces = (pass == RenderPassType::blended ? m_model->blendedSurfaces : m_model->opaqueSurfaces);
 
 	for (auto& surf : surfaces) {
-		//		surf.material->bind(gc);
+
+		surf.material->bind(gc);
+
 		gc->drawIndexedGeometry(3, surf.firstIndex, surf.numIndices, m_instances.size());
 	}
 }

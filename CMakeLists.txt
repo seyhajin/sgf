@@ -86,7 +86,7 @@ else ()
     add_link_options(-fno-rtti -fno-exceptions)
 endif ()
 
-# Release optimization levels
+# Release/debug optimization levels and debug info.
 #
 if (RELEASE)
     if (OS_EMSCRIPTEN)
@@ -95,9 +95,14 @@ if (RELEASE)
     elseif (OS_LINUX)
         add_compile_options(-O3)
     endif ()
+elseif (DEBUG)
+    if (OS_EMSCRIPTEN)
+        add_compile_options(-gsource-map)
+        add_link_options(-gsource-map)
+    endif ()
 endif ()
 
-# TODO: Get memory sanitizer working on other systems:
+# TODO: Get memory sanitizer working on other systems.
 #
 if (OS_LINUX AND DEBUG)
     set(SANITIZER_OPTIONS -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
@@ -107,79 +112,72 @@ if (OS_LINUX AND DEBUG)
     message("### Address sanitizer enabled: ${SANITIZER_OPTIONS}")
 endif ()
 
-# Output html for emscripten builds
+# Some default emscripten settings.
 #
 if (OS_EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     add_link_options(--shell-file "${CMAKE_SOURCE_DIR}/embuild/index_template.html")
-    add_link_options("SHELL:--emrun -s TOTAL_MEMORY=8mb -s ASSERTIONS=1 -s EXPORTED_FUNCTIONS=_main,_free")
+    add_link_options("SHELL:--emrun -s TOTAL_MEMORY=64mb -s ASSERTIONS=1 -s EXPORTED_FUNCTIONS=_main,_free")
 endif ()
 
+# Copy assets from 'source' target to 'target' target (usually an exe)
+#
+# Pretty ugly as it also checks for modified asset files but it (almost) seems to work.
+#
+# Also, asset files are only enumed at cmake config time, so if you add an asset you'll have to run cmake config again.
+#
 function(target_copy_assets target source)
 
-    get_target_property(SRC_DIR "${source}" "SOURCE_DIR")
-    set(SRC_DIR "${SRC_DIR}/assets")
+    get_target_property(SRC_DIR ${source} SOURCE_DIR)
+    get_target_property(DST_DIR ${target} BINARY_DIR)
 
-    get_target_property(DST_DIR "${target}" "BINARY_DIR")
-    set(DST_DIR "${DST_DIR}/assets")
+    set(SRC_ASSETS_DIR "${SRC_DIR}/assets")
+    set(DST_ASSETS_DIR "${DST_DIR}/assets")
+    set(STAMP_FILE "${DST_DIR}/${source}_assets.stamp")
+    file(GLOB_RECURSE SRC_FILES "${SRC_ASSETS_DIR}/*")
 
-    get_target_property(STAMP_FILE "${target}" "BINARY_DIR")
-    set(STAMP_FILE "${STAMP_FILE}/${source}_assets.stamp")
+    #message("SRC_ASSETS_DIR: ${SRC_ASSETS_DIR}")
+    #message("DST_ASSETS_DIR: ${DST_ASSETS_DIR}")
+    #message("STAMP_FILE: ${STAMP_FILE}")
+    #message("SRC_FILES: ${SRC_FILES}")
 
-    file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*")
-
-    message("SRC_DIR: ${SRC_DIR}")
-    message("DST_DIR: ${DST_DIR}")
-    message("STAMP_FILE: ${STAMP_FILE}")
-    message("SRC_FILES: ${SRC_FILES}")
-
+    # Copy assets dir and touch stampfile.
     add_custom_command(
-            OUTPUT "${STAMP_FILE}"
-            COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP_FILE}"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${SRC_DIR}" "${DST_DIR}"
-            DEPENDS "${SRC_FILES}"
+        OUTPUT "${STAMP_FILE}"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${SRC_ASSETS_DIR}" "${DST_ASSETS_DIR}"
+        COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP_FILE}"
+        DEPENDS "${SRC_FILES}"
+        VERBATIM
     )
 
-    add_custom_target(${source}_assets DEPENDS "${STAMP_FILE}")
-    add_dependencies(${target} ${source}_assets)
+    # Make target dependent on stampfile.
+    set(assets_target ${target}_${source}_assets)
+    add_custom_target(${assets_target} DEPENDS "${STAMP_FILE}")
+    add_dependencies(${target} ${assets_target})
 
 endfunction()
 
 function(target_link_assets target)
     if (OS_EMSCRIPTEN)
-        target_link_options(${target} PRIVATE --preload-file "$<TARGET_PROPERTY:${target},BINARY_DIR>/assets@/")
+        get_target_property(DST_DIR ${target} BINARY_DIR)
+        target_link_options(${target} PRIVATE --preload-file "${DST_DIR}/assets@/")
     endif ()
 endfunction()
 
 include_directories(${CMAKE_SOURCE_DIR})
 
-add_subdirectory(audio)
+add_subdirectory(audio)         # deps: core
 add_subdirectory(core)
-add_subdirectory(core3d)
-add_subdirectory(fetch)
-add_subdirectory(geom)
-add_subdirectory(glfw)
-add_subdirectory(glwindow)
-add_subdirectory(image)
-add_subdirectory(imgui)
-add_subdirectory(opengl)
-add_subdirectory(scene)
-add_subdirectory(stb)
-
-# WebRTC only on emscripten
-if (OS_EMSCRIPTEN)
-    #    add_subdirectory(webrtc)
-endif ()
-
-# Websockets only on emscripten or linux
-if (OS_EMSCRIPTEN OR OS_LINUX)
-    # Fails to build on github
-    if (NOT SGF_GITHUB_BUILD)
-        add_subdirectory(websockets)
-    endif ()
-endif ()
-
-# WebXR only on emscripten or windows
-if (OS_EMSCRIPTEN OR OS_WINDOWS)
-    add_subdirectory(webxr)
-endif ()
+add_subdirectory(core3d)        # deps: window
+add_subdirectory(fetch)         # deps: core
+add_subdirectory(geom)          # deps: core
+add_subdirectory(glfw)          # deps: opengl
+add_subdirectory(image)         # deps: geom, stb
+add_subdirectory(imgui)         # deps: window
+add_subdirectory(opengl)        # deps: core
+add_subdirectory(scene)         # deps: imgui, core3d
+add_subdirectory(stb)           # deps: core
+add_subdirectory(window)        # deps: glfw, image
+add_subdirectory(websockets)    # deps: core
+add_subdirectory(webxr)         # deps: core3d
+add_subdirectory(xrscene)       # deps: scene, webxr
