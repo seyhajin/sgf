@@ -1,7 +1,5 @@
 #include "material.h"
 
-#include "textureloader.h"
-
 namespace sgf {
 
 namespace {
@@ -14,8 +12,8 @@ Material::Material(CVec4f baseColor) {
 
 	auto paramChanged = [this](const auto& param) { m_dirtyParams = true; };
 
-	baseColorTexture = TextureLoader(Vec4f(1));
-	emissiveTexture = TextureLoader(Vec4f(0));
+	baseColorTexture = Vec4f(1);
+	emissiveTexture = Vec4f(0);
 	baseColorFactor = baseColor;
 	emissiveFactor = 1;
 

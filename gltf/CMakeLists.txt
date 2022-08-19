@@ -12,3 +12,5 @@ add_library(gltf
 target_include_directories(gltf PRIVATE ${PROJECT_SOURCE_DIR}/libtinygltf)
 
 target_link_libraries(gltf scene stb)
+
+add_subdirectory(tests)

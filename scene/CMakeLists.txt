@@ -56,12 +56,12 @@ add_library(scene
         scene.cpp
         scene.h
         scene.hh
-        shaderloader.cpp
-        shaderloader.h
+        shaderasset.cpp
+        shaderasset.h
         spherecollider.cpp
         spherecollider.h
-        textureloader.cpp
-        textureloader.h
+        textureasset.cpp
+        textureasset.h
         )
 
 target_link_libraries(scene imgui core3d)

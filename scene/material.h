@@ -1,6 +1,6 @@
 #pragma once
 
-#include "textureloader.h"
+#include "textureasset.h"
 
 #include "renderparams.h"
 
@@ -8,11 +8,11 @@ namespace sgf {
 
 class Material : public Shared {
 public:
-	Property<TextureLoader> baseColorTexture;
-	Property<TextureLoader> metallicRoughnessTexture;
-	Property<TextureLoader> emissiveTexture;
-	Property<TextureLoader> occlusionTexture;
-	Property<TextureLoader> normalTexture;
+	Property<TextureAsset> baseColorTexture;
+	Property<TextureAsset> metallicRoughnessTexture;
+	Property<TextureAsset> emissiveTexture;
+	Property<TextureAsset> occlusionTexture;
+	Property<TextureAsset> normalTexture;
 
 	Property<Vec4f> baseColorFactor;
 	Property<Vec3f> emissiveFactor;

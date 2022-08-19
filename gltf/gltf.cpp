@@ -10,9 +10,6 @@
 #define TINYGLTF_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-narrowing-conversions"
-
 #define CDEBUG(EXPR)                                                                                                   \
 	if (true) debug() << "### GLTF:" << __FILE__ << EXPR;
 
@@ -108,7 +105,7 @@ Material* loadMaterial(const tinygltf::Material& gltfMat, const tinygltf::Model&
 
 	auto material = new Material;
 
-	material->blendMode  = (gltfMat.alphaMode == "BLEND") ? BlendMode::alpha : BlendMode::disable;
+	material->blendMode = (gltfMat.alphaMode == "BLEND") ? BlendMode::alpha : BlendMode::disable;
 	material->cullMode = gltfMat.doubleSided ? CullMode::disable : CullMode::back;
 	material->flatShaded = false;
 
@@ -292,14 +289,16 @@ bool strEndsWith(CString str, CString ext) {
 	return str.size() >= ext.size() && str.substr(str.size() - ext.size()) == ext;
 }
 
-Mesh* loadGltfMesh(CString path) {
+Mesh* loadGltfMesh(CString assetPath) {
 
-	CDEBUG("Loading model" << path);
+	CDEBUG("Loading model" << assetPath);
 
 	std::string err;
 	std::string warn;
 	tinygltf::Model gltfModel;
 	tinygltf::TinyGLTF gltfLoader;
+
+	auto path = resolveAssetPath(assetPath);
 
 	bool res;
 	if (strEndsWith(path, ".gltf")) {
@@ -312,7 +311,7 @@ Mesh* loadGltfMesh(CString path) {
 		debug() << "Tiny gltf warning: " << warn << "\n\n";
 	}
 	if (!res) {
-		debug() << "Tiny gltf failed to load file: " << path;
+		debug() << "Tiny gltf failed to load file: " << assetPath;
 		abort();
 	}
 
@@ -333,69 +332,16 @@ Mesh* loadGltfMesh(CString path) {
 
 } // namespace
 
-#if 0
-Mesh* loadMesh(CString path, bool cache) {
+Mesh* loadMesh(CString assetPath) {
 
-	if (cache) {
-		auto it = g_meshCache.find(path);
-		if (it != g_meshCache.end()) return it->second;
-	}
-
-	Mesh* mesh = loadGltfMesh(path);
-
-	if (cache) {
-		g_meshCache.insert(std::make_pair(path, mesh));
-		g_meshPaths.insert(std::make_pair(mesh, path));
-		mesh->deleted.connect([mesh, path]() {
-			g_meshPaths.erase(mesh);
-			g_meshCache.erase(path);
-		});
-	}
-
-	return mesh;
+	return loadGltfMesh(assetPath);
 }
 
-String cachedMeshPath(Mesh* mesh) {
+Model* loadModel(CString assetPath) {
 
-	auto it = g_meshPaths.find(mesh);
-	return it != g_meshPaths.end() ? it->second : String();
+	auto mesh = loadMesh(assetPath);
+
+	return createModel(mesh);
 }
-
-Model* loadModel(CString path, bool flatShaded, bool cache) {
-
-	if (cache) {
-		auto it = g_modelCache.find(path);
-		if (it != g_modelCache.end()) return it->second;
-	}
-
-	auto mesh = loadMesh(path, false);
-
-	if (flatShaded) {
-		for (auto material : mesh->materials()) material->flatShaded = true;
-		updateFlatShading(mesh);
-	}
-
-	auto model = createModel(mesh, vertexFormatPNC);
-
-	if (cache) {
-		g_modelCache.insert(std::make_pair(path, model));
-		g_modelPaths.insert(std::make_pair(model, path));
-		model->deleted.connect([model, path] {
-			g_modelPaths.erase(model);
-			g_modelCache.erase(path);
-		});
-	}
-
-	return model;
-}
-
-String cachedModelPath(Model* model) {
-
-	auto it = g_modelPaths.find(model);
-	return it != g_modelPaths.end() ? it->second : String();
-}
-#endif
 
 } // namespace sgf
-
-#pragma clang diagnostic pop

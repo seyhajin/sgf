@@ -30,14 +30,13 @@ public:
 	Vector<Surface> const blendedSurfaces;
 	VertexLayout const vertexLayout;
 
-	mutable Map<Scene*,ModelRenderer*> m_renderers;
-
+	mutable Map<Scene*, ModelRenderer*> m_renderers;
 
 	Model(GraphicsBuffer* vertexBuffer, GraphicsBuffer* indexBuffer, Vector<Surface> opaqueSurfaces,
 		  Vector<Surface> blendedSurfaces, GraphicsBuffer* outlineBuffer, VertexLayout vertexLayout)
 		: vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), outlineBuffer(outlineBuffer),
 		  opaqueSurfaces(std::move(opaqueSurfaces)), blendedSurfaces(std::move(blendedSurfaces)),
-		  vertexLayout(std::move(vertexLayout)){
+		  vertexLayout(std::move(vertexLayout)) {
 	}
 
 	bool hasOpaqueSurfaces() const {

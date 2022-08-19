@@ -6,7 +6,6 @@ using namespace sgf;
 
 GLWindow* window;
 
-
 GraphicsDevice* device;
 Scene* scene;
 XRCamera* camera;
@@ -53,7 +52,7 @@ void createScene() {
 
 	// Create model instance.
 	auto material = new Material();
-	material->emissiveTexture = TextureLoader("images/clion.png");
+	material->emissiveTexture = loadTexture("images/clion.png");
 	auto mesh = createBoxMesh(.64f, .38f, .05f, material);
 	auto model = createModel(mesh);
 	auto inst = new ModelInstance(scene);
@@ -85,7 +84,6 @@ int main() {
 	};
 
 	window->run([] {
-
 		scene->update();
 		scene->render();
 	});

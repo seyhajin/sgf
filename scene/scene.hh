@@ -19,4 +19,6 @@
 #include "renderparams.h"
 #include "renderpass.h"
 #include "scene.h"
+#include "shaderasset.h"
 #include "spherecollider.h"
+#include "textureasset.h"

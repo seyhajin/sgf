@@ -1,13 +1,13 @@
 ﻿#include "modelrenderer.h"
 
 #include "modelinstance.h"
-#include "shaderloader.h"
+#include "shaderasset.h"
 
 namespace sgf {
 
 namespace {
 
-ShaderLoader g_shader("shaders/modelrenderer.glsl");
+ShaderAsset g_shader("shaders/modelrenderer.glsl");
 
 } // namespace
 
@@ -54,8 +54,8 @@ void ModelRenderer::updateInstanceBuffer() {
 
 	if (!m_instanceBuffer || m_instances.size() * sizeof(Instance) > m_instanceBuffer->size) {
 		// Resize instance buffer
-		m_instanceBuffer =
-			graphicsDevice()->createGraphicsBuffer(BufferType::vertex, m_instances.size() * sizeof(Instance) * 8, nullptr);
+		m_instanceBuffer = graphicsDevice()->createGraphicsBuffer(BufferType::vertex,
+																  m_instances.size() * sizeof(Instance) * 8, nullptr);
 
 		m_vertexState = graphicsDevice()->createVertexState({m_model->vertexBuffer, m_instanceBuffer},
 															m_model->indexBuffer, m_vertexLayout);

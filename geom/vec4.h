@@ -13,7 +13,6 @@ using Vec4f = Vec4<float>;
 using CVec4f = CVec4<float>;
 
 template <class T> struct Vec4 {
-
 	using CVec4 = const Vec4&;
 
 	T x = 0;
@@ -25,12 +24,16 @@ template <class T> struct Vec4 {
 
 	Vec4(T s) : x(s), y(s), z(s), w(s) {
 	}
+
 	Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {
 	}
+
 	Vec4(CVec2<T> v, T z, T w) : x(v.x), y(v.y), z(z), w(w) {
 	}
+
 	Vec4(CVec3<T> v, T w) : x(v.x), y(v.y), z(v.z), w(w) {
 	}
+
 	template <class C> constexpr Vec4(const Vec4<C>& v) : x(T(v.x)), y(T(v.y)), z(T(v.z)), w(T(v.w)) {
 	}
 
@@ -97,6 +100,17 @@ template <class T> struct Vec4 {
 
 	bool operator==(CVec4 that)const{return x==that.x && y==that.y && z==that.z && w==that.w;}
 	bool operator!=(CVec4 that)const{return !operator==(that);}
+
+	uint rgba()const{
+		constexpr T sc=T(255);
+		return (uint(w * sc) << 24) | (uint(z * sc) << 16) | (uint(y * sc) << 8) | uint(x * sc);
+	}
+
+	static Vec4 rgba(uint rgba) {
+		constexpr T sc = T(1)/T(255);
+		return  {T(rgba & 255) * sc, T((rgba >> 8) & 255) * sc, T((rgba >> 16) & 255) * sc, T(rgba >> 24) * sc};
+	}
+
 	// clang-format on
 
 	friend std::ostream& operator<<(std::ostream& str, CVec4& v) {
