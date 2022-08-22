@@ -9,4 +9,6 @@ endif ()
 
 add_executable(emgdb emgdb.cpp)
 
-target_link_libraries(emgdb)# core)
+if(OS_LINUX)
+    target_link_libraries(emgdb pthread)
+endif()
