@@ -11,6 +11,15 @@
 #define XR_USE_PLATFORM_WIN32 1
 #define XR_USE_GRAPHICS_API_OPENGL 1
 #else
+typedef unsigned long XID;
+typedef XID GLXContextID;
+typedef XID GLXPixmap;
+typedef XID GLXDrawable;
+typedef XID GLXWindow;
+typedef XID GLXFBConfigID;
+typedef struct _XDisplay Display;
+typedef struct __GLXcontextRec *GLXContext;
+typedef struct __GLXFBConfigRec *GLXFBConfig;
 #define XR_USE_PLATFORM_XLIB 1
 #define XR_USE_GRAPHICS_API_OPENGL 1
 #endif
