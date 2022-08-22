@@ -545,7 +545,7 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 			glGetShaderInfoLog(shader, length, nullptr, log);
 			log[length - 1] = 0;
 			debug() << "Compile shader failed:";
-			auto lines = stringSplit(source, "\n");
+			auto lines = split(source, "\n");
 			for (size_t i = 0; i < lines.size(); ++i) { debug() << i + 1 << " : " << lines[i]; }
 			debug() << log;
 			delete[] log;
@@ -556,10 +556,10 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 	};
 
 	size_t i0 = source.find("\n//@vertex");
-	verify(i0 != String::npos);
+	assert(i0 != String::npos);
 
 	size_t i1 = source.find("\n//@fragment", i0);
-	verify(i1 != String::npos);
+	assert(i1 != String::npos);
 
 	String vsource = source.substr(0, i1);
 	String fsource = source.substr(0, i0) + source.substr(i1);

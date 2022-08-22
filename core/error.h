@@ -1,5 +1,6 @@
 #pragma once
 
+#include "debug.h"
 #include "std.h"
 
 namespace sgf {
@@ -7,12 +8,8 @@ namespace sgf {
 void alert(CString message);
 
 //! Abort with message and source info
-[[noreturn]] void fail(CString cond, const char* file, int line);
+DebugStream panicex(CString message, const char* file = nullptr, int line = -1);
 
-//! Abort with message
-#define panic(C) fail(C, __FILE__, __LINE__);
+#define panic(MSG) panicex(#MSG, __FILE__, __LINE__)
 
-//! Release mode assert
-#define verify(C)                                                                                                      \
-	if (!(C)) fail(#C, __FILE__, __LINE__);
-}
+} // namespace sgf

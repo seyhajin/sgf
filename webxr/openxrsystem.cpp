@@ -4,7 +4,8 @@
 
 #include <opengl/opengl.hh>
 
-#define xrAssert(X) verify((X) >= 0);
+#define xrAssert(X)                                                                                                    \
+	if ((X) < 0) panic("OpenXR function " #X " failed!");
 
 // #define CDEBUG debug() << "###"
 #define CDEBUG                                                                                                         \
@@ -112,7 +113,7 @@ bool OpenXRSession::create() {
 
 		XrGraphicsBindingOpenGLWin32KHR binding{XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR};
 
-		auto glfwWindow=m_window->cast<GLWindow>()->glfwWindow();
+		auto glfwWindow = m_window->cast<GLWindow>()->glfwWindow();
 
 		binding.hDC = GetDC(glfwGetWin32Window(glfwWindow));
 		binding.hGLRC = glfwGetWGLContext(glfwWindow);
@@ -327,7 +328,7 @@ void OpenXRSession::pollEvents() {
 				if (m_ready) panic("OOPS");
 				XrSessionBeginInfo info{XR_TYPE_SESSION_BEGIN_INFO};
 				info.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-				verify(xrBeginSession(m_session, &info) == 0);
+				xrAssert(xrBeginSession(m_session, &info));
 				m_ready = true;
 			} else if (ev->state == XR_SESSION_STATE_SYNCHRONIZED) {
 			} else if (ev->state == XR_SESSION_STATE_VISIBLE) {

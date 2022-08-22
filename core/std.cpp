@@ -1,11 +1,13 @@
-﻿#include "std.h"
+﻿
+#include "std.h"
 
 #ifndef OS_EMSCRIPTEN
 #include <thread>
 #endif
 
 #ifdef ASAN_ENABLED
-// The mere presence of this magic bit of code causes debugger to popup when address sanitizer detects corruption at runtime.
+// The mere presence of this magic bit of code causes debugger to popup when address sanitizer detects corruption at
+// runtime.
 extern "C" const char* __asan_default_options() { // NOLINT (unused function)
 	return "abort_on_error=1:detect_leaks=0";
 }
@@ -13,15 +15,15 @@ extern "C" const char* __asan_default_options() { // NOLINT (unused function)
 
 namespace sgf {
 
-namespace{
+namespace {
 
 #ifndef OS_EMSCRIPTEN
 std::thread::id g_mainThreadId = std::this_thread::get_id();
 #endif
 
-}
+} // namespace
 
-String stringReplace(CString str, CString find, CString rep) {
+String replace(CString str, CString find, CString rep) {
 	auto r = str;
 	for (size_t pos = 0; pos < r.size();) {
 		pos = r.find(find, pos);
@@ -32,7 +34,7 @@ String stringReplace(CString str, CString find, CString rep) {
 	return r;
 }
 
-Vector<String> stringSplit(CString str, CString sep) {
+Vector<String> split(CString str, CString sep) {
 	Vector<String> bits;
 	for (size_t i0 = 0; i0 < str.size();) {
 		size_t i = str.find(sep, i0);
@@ -47,16 +49,24 @@ Vector<String> stringSplit(CString str, CString sep) {
 	return bits;
 }
 
-String StringtoUpper(CString cstr) {
-	auto str=cstr;
+String toUpper(CString cstr) {
+	auto str = cstr;
 	std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::toupper(c); });
 	return str;
 }
 
-String StringtoLower(CString cstr) {
-	auto str=cstr;
+String toLower(CString cstr) {
+	auto str = cstr;
 	std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
 	return str;
+}
+
+bool startsWith(CString string, CString substr) {
+	return string.size() >= substr.size() && string.compare(0, substr.size(), substr) == 0;
+}
+
+bool endsWith(CString string, CString substr) {
+	return string.size() >= substr.size() && string.compare(string.size()-substr.size(), substr.size(), substr) == 0;
 }
 
 bool mainThread() {

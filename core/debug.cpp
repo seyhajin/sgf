@@ -34,17 +34,25 @@ void defaultDebugOutputFunc(CString str) {
 
 thread_local DebugOutputFunc debugOutputFunc(&defaultDebugOutputFunc);
 
-DebugStream::DebugStream(const char* file, int line) {
-	String label = debugTimestamp() + " [" + file + ":" + std::to_string(line) + "] : ";
-	m_rep = new Rep(std::chrono::system_clock::now(), file, line);
+DebugStream::DebugStream(Emit emit) : m_rep(new Rep(std::move(emit))) {
 }
 
 DebugStream::~DebugStream() {
-	String timestamp = debugTimestamp(m_rep->time);
-	String fileinfo = String("[") + m_rep->file + ":" + std::to_string(m_rep->line) + "]";
-	String debug = m_rep->buf.str();
-	debugOutputFunc(timestamp+" : "+debug);//+" "+fileinfo);
+
+	if (m_rep && m_rep->emit) m_rep->emit(m_rep->buf.str());
+
 	delete m_rep;
+}
+
+DebugStream debug(const char* file, int line) {
+
+	auto now = debugTimestamp();
+
+	return {[file, line, now](CString str) {
+		String fileinfo = file ? (String("[") + file + ":" + std::to_string(line) + "]") : String();
+
+		debugOutputFunc(now + " : " + str); //+" "+fileinfo);
+	}};
 }
 
 } // namespace sgf

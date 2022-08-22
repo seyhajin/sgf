@@ -18,7 +18,7 @@ size_t findLine(CString str, CString substr, size_t pos = 0) {
 
 void loadFrags(CString assetPath, String frags[]) {
 
-	auto path=resolveAssetPath(assetPath);
+	auto path = resolveAssetPath(assetPath);
 	String source = loadString(path);
 
 	auto i0 = findLine(source, "//@vertex");
@@ -62,17 +62,17 @@ Shader* loadShader(CString assetPath) {
 
 		for (size_t pos = 0;;) {
 
-			pos = findLine(source, "#include", pos);
+			pos = findLine(source, "//@include", pos);
 			if (pos == String::npos) break;
 
 			auto sol = pos;
 			auto eol = source.find('\n', sol);
-			verify(eol != String::npos);
+			assert(eol != String::npos);
 
 			auto i0 = source.find('\"', sol);
-			verify(i0 != String::npos);
+			assert(i0 != String::npos);
 			auto i1 = source.find('\"', ++i0);
-			verify(i1 != String::npos && i1 < eol);
+			assert(i1 != String::npos && i1 < eol);
 
 			auto ipath = source.substr(i0, i1 - i0);
 

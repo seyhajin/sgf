@@ -18,11 +18,11 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebugInfo)
 endif ()
 
-message("### Configuring project for:")
-message("### CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+message("### Configuring Simple Game Framework for:")
 message("### CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+message("### CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 message("### CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}")
-message("### SGF_GITHUB_BUILD=${SGF_GITHUB_BUILD}")
+#message("### SGF_GITHUB_BUILD=${SGF_GITHUB_BUILD}")
 
 # Build type
 #
@@ -42,6 +42,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(OS_WINDOWS 1)
     add_compile_definitions(OS_WINDOWS=1)
+    if (NOT WIN32)
+        message("!!! Yikes, WIN32 variable MIA again!?!")
+        set(WIN32 1)
+    endif ()
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(OS_LINUX 1)
     add_compile_definitions(OS_LINUX=1)
@@ -97,8 +101,10 @@ if (RELEASE)
     endif ()
 elseif (DEBUG)
     if (OS_EMSCRIPTEN)
-        add_compile_options(-gsource-map)
-        add_link_options(-gsource-map)
+#        add_compile_options(-gsource-map)
+#        add_link_options(-gsource-map)
+        add_compile_options(-g3)
+        add_link_options(-g3)
     endif ()
 endif ()
 
@@ -141,13 +147,19 @@ function(target_copy_assets target source)
     #message("STAMP_FILE: ${STAMP_FILE}")
     #message("SRC_FILES: ${SRC_FILES}")
 
+    # Create stamp files. We need to do this so GLOB_RECURSE in target_link_assets
+    # can correctly enumerate all stampfile at cmake config time.
+    execute_process(
+            COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP_FILE}"
+    )
+
     # Copy assets dir and touch stampfile.
     add_custom_command(
-        OUTPUT "${STAMP_FILE}"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${SRC_ASSETS_DIR}" "${DST_ASSETS_DIR}"
-        COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP_FILE}"
-        DEPENDS "${SRC_FILES}"
-        VERBATIM
+            OUTPUT "${STAMP_FILE}"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${SRC_ASSETS_DIR}" "${DST_ASSETS_DIR}"
+            COMMAND "${CMAKE_COMMAND}" -E touch "${STAMP_FILE}"
+            DEPENDS "${SRC_FILES}"
+            VERBATIM
     )
 
     # Make target dependent on stampfile.
@@ -160,6 +172,9 @@ endfunction()
 function(target_link_assets target)
     if (OS_EMSCRIPTEN)
         get_target_property(DST_DIR ${target} BINARY_DIR)
+        file(GLOB_RECURSE STAMP_FILES "${DST_DIR}/*_assets.stamp")
+
+        set_target_properties(${target} PROPERTIES LINK_DEPENDS "${STAMP_FILES}")
         target_link_options(${target} PRIVATE --preload-file "${DST_DIR}/assets@/")
     endif ()
 endfunction()
@@ -169,6 +184,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 add_subdirectory(audio)         # deps: core
 add_subdirectory(core)
 add_subdirectory(core3d)        # deps: window
+add_subdirectory(emgdb)         # deps: core
 add_subdirectory(fetch)         # deps: core
 add_subdirectory(geom)          # deps: core
 add_subdirectory(glfw)          # deps: opengl

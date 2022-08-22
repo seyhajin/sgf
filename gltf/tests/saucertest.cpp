@@ -11,7 +11,7 @@ Scene* scene;
 int main() {
 
 	// Create window
-	window = createWindow("Saucer test", 1280, 720);
+	window = createWindow("Saucer test!", 1280, 720);
 
 	// Create graphics device
 	grdevice = createGraphicsDevice(window);

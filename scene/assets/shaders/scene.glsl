@@ -1,5 +1,5 @@
-#include "light.glsl"
-#include "camera.glsl"
+//@include "light.glsl"
+//@include "camera.glsl"
 
 struct SceneParams {
     vec4 clearColor;
