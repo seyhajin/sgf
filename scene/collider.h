@@ -12,7 +12,7 @@ public:
 	Collider(Scene* scene) : Entity(scene) {
 	}
 
-	virtual bool intersectRay(CLinef ray, float radius, Contact& contact) = 0;
+	virtual bool intersectRay(CLinef ray, float radius, Contact& contact) const = 0;
 
 private:
 	void onEnable() override;

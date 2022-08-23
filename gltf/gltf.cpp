@@ -334,14 +334,23 @@ Mesh* loadGltfMesh(CString assetPath) {
 
 Mesh* loadMesh(CString assetPath) {
 
-	return loadGltfMesh(assetPath);
+	auto mesh=loadGltfMesh(assetPath);
+	return mesh;
 }
 
-Model* loadModel(CString assetPath) {
+Model* loadModel(CString assetPath, Scene* scene, bool withCollider) {
 
 	auto mesh = loadMesh(assetPath);
 
-	return createModel(mesh);
-}
+	auto model = new Model(scene);
+	model->renderData = createModelRenderData(mesh);
 
+	if(withCollider) {
+		auto collider = new MeshCollider(scene);
+		collider->colliderData = new MeshColliderData(mesh);
+		model->addChild(collider);
+	}
+
+	return model;
+}
 } // namespace sgf

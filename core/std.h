@@ -41,9 +41,11 @@ using uint = unsigned int;
 #endif
 
 constexpr float pi = 3.14159265359f;
-constexpr float twoPi = pi * 2;
+constexpr float twoPi = pi * 2.0f;
 constexpr float halfPi = pi * .5f;
-constexpr float degreesToRadians = .0174533f;
+constexpr float degreesToRadians = .01745329252f;
+constexpr float radiansToDegrees = 57.295779513f;
+constexpr float unitLengthEpsilon = 1e-6f;		// 1/1000 of a millimeter (micrometer?)
 
 using String = std::string;
 using CString = const String&;

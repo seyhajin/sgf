@@ -29,7 +29,7 @@ int main() {
 	//
 	auto camera = new PerspectiveCamera(scene);
 	// camera = new OrthographicCamera(scene);
-	camera->setPosition({0, .5f, -1.5f});
+	camera->setPosition({0, 0, -2.5f});
 	camera->lookAt({0, 0, 0});
 	camera->enable();
 
@@ -61,24 +61,27 @@ int main() {
 
 	// ***** Create model instance *****
 	//
-	auto mesh = createBoxMesh(1, 1, 1, new Material());
-	auto model = createModel(mesh);
-	auto inst = new ModelInstance(scene);
-	inst->model = model;
-	inst->color = {1, 1, 1, 1};
-	inst->enable();
+	auto mesh = createBoxMesh(1, 3.2, 1, new Material());
+	//auto mesh = createSphereMesh(1, 4, 4, new Material());
+	auto model = new Model(scene);
+	model->renderData=createModelRenderData(mesh);
+	model->enable();
 
 	// ***** Create collider *****
 	//
-	// auto collider = new SphereCollider(scene);
-	// collider->radius = 1;
-	// inst->addChild(collider);
+	auto collider = new MeshCollider(scene);
+	collider->colliderData = new MeshColliderData(mesh);
+	//auto collider = new SphereCollider(scene);
+	//collider->radius = 1;
+	model->addChild(collider);
 
-	ImGuiEx::CreateContext(window);
+	//model->rotate({0, .1f, 0});
 
 	// ***** Begin main loop *****
 	//
-	window->run([camera, inst] {
+	ImGuiEx::CreateContext(window);
+
+	window->run([camera, model] {
 		ImGuiEx::NewFrame();
 
 		ImGui::Begin("Window settings");
@@ -86,9 +89,7 @@ int main() {
 		ImGuiEx::Checkbox("fullScreenMode", window->fullScreenMode);
 		ImGui::End();
 
-		if (auto collider = scene->intersectEyeRay(window->mouse()->position(), 0)) { debug() << "### BANG!"; }
-
-		inst->rotate({0, .01f, 0});
+		if (auto collider = scene->intersectEyeRay(window->mouse()->position(), 0.0001f)) { debug() << "### BANG!"; }
 
 		scene->update();
 		scene->render();

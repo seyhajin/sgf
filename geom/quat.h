@@ -53,16 +53,32 @@ template <class T> struct Quat {
 		return {-v, w};
 	}
 
+	Quat operator+(CQuat q) const {
+		return {v + q.v, w + q.w};
+	}
+
 	Quat operator*(CQuat q) const {
 		return {q.v.cross(v) + q.v * w + v * q.w, w * q.w - v.dot(q.v)};
 	}
 
-	Vec3f operator*(CVec3 vec) const {
-		return (*this * Quat(vec, 0) * -*this).v;
+	Quat operator*(T s) const {
+		return {v * s, w * s};
+	}
+
+	Quat& operator+=(CQuat q) {
+		return *this = *this + q;
 	}
 
 	Quat& operator*=(CQuat q) {
 		return *this = *this * q;
+	}
+
+	Quat& operator*=(T s) {
+		return *this = *this * s;
+	}
+
+	Vec3f operator*(CVec3 qv) const {
+		return (*this * Quatf(qv, 0) * -*this).v;
 	}
 
 	T dot(CQuat& q) const {

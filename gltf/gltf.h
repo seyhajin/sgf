@@ -1,10 +1,12 @@
 #pragma once
 
-#include <scene/model.h>
+#include <scene/scene.hh>
 
 namespace sgf {
 
 Mesh* loadMesh(CString assetPath);
+
+Model* loadModel(CString assetPath, Scene* scene, bool withCollider);
 
 #if 0
 Model* loadModel(CString assetPath);

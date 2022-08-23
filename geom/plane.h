@@ -14,9 +14,6 @@ using CPlanef = CPlane<float>;
 
 template <class T> struct Plane {
 
-	// One tenth of a mm.
-	static constexpr float degenerateNormalLength = .0001f;
-
 	Vec3<T> n;
 	T d = 0;
 
@@ -30,13 +27,12 @@ template <class T> struct Plane {
 		assert(!degenerate());
 	}
 
-	Plane(CVec3<T> v0, CVec3<T> v1, CVec3<T> v2) : n((v1 - v0).cross(v2 - v0)), d(-n.dot(v0)) {
+	Plane(CVec3<T> v0, CVec3<T> v1, CVec3<T> v2) : n((v1 - v0).cross(v2 - v0).normalized()), d(-n.dot(v0)) {
 		assert(!degenerate());
-		this->n.normalize();
 	}
 
 	bool degenerate() const {
-		return std::abs(n.length()) < degenerateNormalLength;
+		return n.length() <= unitLengthEpsilon;
 	}
 
 	bool operator==(CPlane<T>& that) const {

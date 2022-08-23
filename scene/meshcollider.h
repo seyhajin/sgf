@@ -1,16 +1,20 @@
-//
-// Created by marks on 23/08/2022.
-//
+#pragma once
 
-#ifndef SIMPLE_GAME_FRAMEWORK_MESHCOLLIDER_H
-#define SIMPLE_GAME_FRAMEWORK_MESHCOLLIDER_H
+#include "collider.h"
+#include "meshcolliderdata.h"
 
+namespace sgf {
 
+class MeshCollider : public Collider {
+public:
+	SGF_OBJECT_TYPE(MeshCollider, Collider);
 
-class meshcollider {
+	Property<SharedPtr<MeshColliderData>> colliderData;
 
+	MeshCollider(Scene* scene) : Collider(scene) {
+	}
+
+	bool intersectRay(CLinef worldRay, float radius, Contact& contact) const override;
 };
 
-
-
-#endif //SIMPLE_GAME_FRAMEWORK_MESHCOLLIDER_H
+} // namespace sgf

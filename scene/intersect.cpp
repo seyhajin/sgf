@@ -4,17 +4,9 @@
 
 namespace sgf {
 
-namespace {
-
-bool isUnit(float n) {
-	return std::abs(n - 1) < .0001f;
-}
-
-} // namespace
-
 bool intersectRaySphere(CLinef worldRay, CVec3f v0, float radius, Contact& contact) {
 
-	assert(isUnit(worldRay.d.length()));
+	assert(isUnit(worldRay));
 
 	Linef ray = worldRay - v0;
 
@@ -39,7 +31,7 @@ bool intersectRaySphere(CLinef worldRay, CVec3f v0, float radius, Contact& conta
 
 bool intersectRayCapsule(CLinef worldRay, CVec3f v0, CVec3f dir, float length, float radius, Contact& contact) {
 
-	assert(isUnit(worldRay.d.length()) && isUnit(dir.length()));
+	assert(isUnit(worldRay) && isUnit(dir));
 
 	Linef ray = worldRay - v0;
 
@@ -87,7 +79,7 @@ bool intersectRayCapsule(CLinef worldRay, CVec3f v0, CVec3f dir, float length, f
 
 bool intersectRayCylinder(CLinef worldRay, CVec3f v0, CVec3f dir, float length, float radius, Contact& contact) {
 
-	assert(isUnit(worldRay.d.length()) && isUnit(dir.length()));
+	assert(isUnit(worldRay) && isUnit(dir));
 
 	Linef ray = worldRay - v0;
 
@@ -119,49 +111,9 @@ bool intersectRayCylinder(CLinef worldRay, CVec3f v0, CVec3f dir, float length, 
 	return true;
 }
 
-bool intersectRayTriangle(CLinef worldRay, CVec3f v0, CVec3f v1, CVec3f v2, float radius, Contact& contact) {
+bool intersectRayEdge(CLinef worldRay, float radius, CVec3f v0, CVec3f v1, Contact& contact) {
 
-	assert(isUnit(worldRay.d.length()));
-
-	Planef plane(v0, v1, v2);
-
-	if (std::abs(plane.distance(worldRay.o)) < .0001f) debug() << "### Ray origin very near triangle plane!";
-
-	if (plane.n.dot(worldRay.d) >= 0) return false;
-
-	plane.d -= radius;
-	float t = plane.t_intersect(worldRay);
-	if (t >= contact.time) return false;
-
-	Vec3f hp = worldRay * t;
-
-	Planef p0(v0 + plane.n, v1, v0);
-	bool f0 = p0.distance(hp) >= 0;
-
-	Planef p1(v1 + plane.n, v2, v1);
-	bool f1 = p1.distance(hp) >= 0;
-
-	Planef p2(v2 + plane.n, v0, v2);
-	bool f2 = p2.distance(hp) >= 0;
-
-	if (t >= 0 && f0 && f1 && f2) {
-		contact.point = worldRay * t;
-		contact.normal = plane.n;
-		contact.time = t;
-		//		debug() << "### RayTriangle plane" << Contact.normal.length() << Contact.time;
-		return true;
-	}
-
-	bool collision = false;
-	if (!f0) collision |= intersectRayEdge(worldRay, v0, v1, radius, contact);
-	if (!f1) collision |= intersectRayEdge(worldRay, v1, v2, radius, contact);
-	if (!f2) collision |= intersectRayEdge(worldRay, v2, v0, radius, contact);
-	return collision;
-}
-
-bool intersectRayEdge(CLinef worldRay, CVec3f v0, CVec3f v1, float radius, Contact& contact) {
-
-	assert(isUnit(worldRay.d.length()));
+	assert(isUnit(worldRay));
 
 	float length = v0.distance(v1);
 	Vec3f dir = (v1 - v0) / length;
@@ -208,6 +160,43 @@ bool intersectRayEdge(CLinef worldRay, CVec3f v0, CVec3f v1, float radius, Conta
 	}
 
 	return true;
+}
+
+bool intersectRayTriangle(CLinef ray, float radius, CVec3f v0, CVec3f v1, CVec3f v2, Contact& contact) {
+
+	assert(isUnit(ray));
+
+	Planef plane(v0, v1, v2);
+	if (plane.n.dot(ray.d) >= 0) return false;
+
+	plane.d -= radius;
+	float t = plane.t_intersect(ray);
+	if (t >= contact.time) return false;
+
+	Vec3f hp = ray * t;
+
+	Planef p0(v0 + plane.n, v1, v0);
+	bool f0 = p0.distance(hp) >= 0;
+
+	Planef p1(v1 + plane.n, v2, v1);
+	bool f1 = p1.distance(hp) >= 0;
+
+	Planef p2(v2 + plane.n, v0, v2);
+	bool f2 = p2.distance(hp) >= 0;
+
+	if (t >= 0 && f0 && f1 && f2) {
+		contact.point = hp;
+		contact.normal = plane.n;
+		contact.time = t;
+		// debug() << "### RayTriangle plane" << Contact.normal.length() << Contact.time;
+		return true;
+	}
+	
+	bool collision = false;
+	if (!f0) collision |= intersectRayEdge(ray, radius, v0, v1, contact);
+	if (!f1) collision |= intersectRayEdge(ray, radius, v1, v2, contact);
+	if (!f2) collision |= intersectRayEdge(ray, radius, v2, v0, contact);
+	return collision;
 }
 
 } // namespace sgf

@@ -1,6 +1,8 @@
 ﻿#include "modelrenderer.h"
 
-#include "modelinstance.h"
+#include "modelrenderdata.h"
+#include "model.h"
+
 #include "shaderasset.h"
 
 namespace sgf {
@@ -11,7 +13,7 @@ ShaderAsset g_shader("shaders/modelrenderer.glsl");
 
 } // namespace
 
-ModelRenderer::ModelRenderer(Model* model) : m_model(model), m_vertexLayout(model->vertexLayout) {
+ModelRenderer::ModelRenderer(ModelRenderData* renderData) : m_renderData(renderData), m_vertexLayout(renderData->vertexLayout) {
 	m_vertexLayout.addAttribs(
 		{
 			AttribFormat::float4, // location=8 : vec4 matrix[0]
@@ -25,26 +27,26 @@ ModelRenderer::ModelRenderer(Model* model) : m_model(model), m_vertexLayout(mode
 }
 
 Vector<RenderPassType> ModelRenderer::renderPasses() const {
-	if (m_model->hasOpaqueSurfaces()) {
-		if (m_model->hasBlendedSurfaces()) return {RenderPassType::opaque, RenderPassType::blended};
+	if (m_renderData->hasOpaqueSurfaces()) {
+		if (m_renderData->hasBlendedSurfaces()) return {RenderPassType::opaque, RenderPassType::blended};
 		return {RenderPassType::opaque};
 	}
-	if (m_model->hasBlendedSurfaces()) return {RenderPassType::blended};
+	if (m_renderData->hasBlendedSurfaces()) return {RenderPassType::blended};
 	return {};
 }
 
-void ModelRenderer::addInstance(ModelInstance* instance) {
+void ModelRenderer::addInstance(Model* instance) {
 	assert(!contains(m_instances, instance));
 	m_instances.push_back(instance);
 }
 
-void ModelRenderer::removeInstance(ModelInstance* instance) {
+void ModelRenderer::removeInstance(Model* instance) {
 	assert(contains(m_instances, instance));
 	remove(m_instances, instance);
 }
 
 void ModelRenderer::sortInstances(CVec3f eyePos) {
-	auto cmpFunc = [eyePos](ModelInstance* x, ModelInstance* y) {
+	auto cmpFunc = [eyePos](Model* x, Model* y) {
 		return eyePos.distanceSquared(x->worldPosition()) > eyePos.distanceSquared(y->worldPosition());
 	};
 	std::sort(m_instances.begin(), m_instances.end(), cmpFunc);
@@ -57,8 +59,8 @@ void ModelRenderer::updateInstanceBuffer() {
 		m_instanceBuffer = graphicsDevice()->createGraphicsBuffer(BufferType::vertex,
 																  m_instances.size() * sizeof(Instance) * 8, nullptr);
 
-		m_vertexState = graphicsDevice()->createVertexState({m_model->vertexBuffer, m_instanceBuffer},
-															m_model->indexBuffer, m_vertexLayout);
+		m_vertexState = graphicsDevice()->createVertexState({m_renderData->vertexBuffer, m_instanceBuffer},
+															m_renderData->indexBuffer, m_vertexLayout);
 	}
 
 	// Update instance buffer
@@ -78,7 +80,7 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
 	if (!m_instances.size()) return;
 
-	if (m_model->hasBlendedSurfaces()) { sortInstances(rc.renderParams()->camera.cameraMatrix.t.xyz()); }
+	if (m_renderData->hasBlendedSurfaces()) { sortInstances(rc.renderParams()->camera.cameraMatrix.t.xyz()); }
 
 	updateInstanceBuffer();
 
@@ -88,7 +90,7 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
 	gc->setVertexState(m_vertexState);
 
-	auto& surfaces = (pass == RenderPassType::blended ? m_model->blendedSurfaces : m_model->opaqueSurfaces);
+	auto& surfaces = (pass == RenderPassType::blended ? m_renderData->blendedSurfaces : m_renderData->opaqueSurfaces);
 
 	for (auto& surf : surfaces) {
 

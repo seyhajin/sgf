@@ -2,13 +2,17 @@
 
 #include "intersect.h"
 
+#include <imgui/imgui.hh>
+
 namespace sgf {
 
-bool SphereCollider::intersectRay(CLinef ray, float r, Contact& contact) {
+bool SphereCollider::intersectRay(CLinef ray, float rayRadius, Contact& contact) const {
 
-	if (!intersectRaySphere(ray, worldPosition(), radius + r, contact)) return false;
+	ImGuiEx::Debug("SphereCollider ray") << worldMatrix().inverse() * ray;
 
-	contact.point -= contact.normal * r;
+	if (!intersectRaySphere(ray, worldPosition(), radius + rayRadius, contact)) return false;
+
+	contact.point -= contact.normal * rayRadius;
 
 	return true;
 }

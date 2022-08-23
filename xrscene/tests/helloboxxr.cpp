@@ -54,13 +54,12 @@ void createScene() {
 	auto material = new Material();
 	material->emissiveTexture = loadTexture("images/clion.png");
 	auto mesh = createBoxMesh(.64f, .38f, .05f, material);
-	auto model = createModel(mesh);
-	auto inst = new ModelInstance(scene);
-	inst->model = model;
-	inst->color = {.1f, .1f, .1f, 1};
-	inst->translate({0, -.14f, .58f});
-	inst->rotate({.2f, 0, 0});
-	inst->enable();
+	auto model = new Model(scene);
+	model->renderData=createModelRenderData(mesh);
+	model->color = {.1f, .1f, .1f, 1};
+	model->translate({0, -.14f, .58f});
+	model->rotate({.2f, 0, 0});
+	model->enable();
 }
 
 int main() {

@@ -44,6 +44,8 @@ protected:
 		Emit emit;
 
 		Rep(Emit emit) : emit(std::move(emit)) {
+			buf.setf(std::ios::fixed);
+			buf.precision(4);
 		}
 	};
 

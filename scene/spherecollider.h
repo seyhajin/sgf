@@ -13,7 +13,7 @@ public:
 	SphereCollider(Scene* scene) : Collider(scene) {
 	}
 
-	bool intersectRay(CLinef ray, float radius, Contact& contact) override;
+	bool intersectRay(CLinef ray, float radius, Contact& contact) const override;
 };
 
 } // namespace sgf

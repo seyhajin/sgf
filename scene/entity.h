@@ -21,6 +21,8 @@ public:
 
 	void removeChild(Entity* child);
 
+	void setParent(Entity* parent);
+
 	Entity* parent() const {
 		return m_parent;
 	}
@@ -91,6 +93,12 @@ public:
 	void lookAt(CVec3f target, CVec3f up = {0, 1, 0});
 
 protected:
+	void updateWorldMatrix(CAffineMat4f worldMatrix) {
+		assert(!g_worldMatrixUpdated);
+		m_worldMatrix = worldMatrix;
+		g_worldMatrixUpdated=true;
+	}
+
 	virtual void onEnable() {
 	}
 
