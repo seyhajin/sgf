@@ -29,6 +29,14 @@ void Render() {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+DebugStream Debug(CString label) {
+	return {[label](CString str){
+		if(!label.empty()) ImGui::Begin(label.c_str());
+		ImGui::Text("%s",str.c_str());
+		if(!label.empty()) ImGui::End();
+	}};
+}
+
 bool Checkbox(const char* label, Property<bool>& v) {
 	auto value = v.value();
 	if (!ImGui::Checkbox(label, &value)) return false;

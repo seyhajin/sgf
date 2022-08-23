@@ -2,7 +2,7 @@
 // Created by marksibly on 20/06/22.
 //
 
-#include "shaderloader.h"
+#include "shaderasset.h"
 
 namespace sgf {
 
@@ -16,9 +16,11 @@ size_t findLine(CString str, CString substr, size_t pos = 0) {
 	}
 }
 
-void loadFrags(CString path, String frags[]) {
+void loadFrags(CString assetPath, String frags[]) {
 
+	auto path = resolveAssetPath(assetPath);
 	String source = loadString(path);
+
 	auto i0 = findLine(source, "//@vertex");
 
 	if (i0 == String::npos) {
@@ -44,14 +46,14 @@ void loadFrags(CString path, String frags[]) {
 
 } // namespace
 
-Shader* loadShader(CString path) {
+Shader* loadShader(CString assetPath) {
 
 	String idir;
-	auto i = path.rfind('/');
-	if (i != String::npos) idir = path.substr(0, i + 1);
+	auto i = assetPath.rfind('/');
+	if (i != String::npos) idir = assetPath.substr(0, i + 1);
 
 	String frags[2];
-	loadFrags(path, frags);
+	loadFrags(assetPath, frags);
 
 	for (uint frag = 0; frag < 2; ++frag) {
 
@@ -60,17 +62,17 @@ Shader* loadShader(CString path) {
 
 		for (size_t pos = 0;;) {
 
-			pos = findLine(source, "#include", pos);
+			pos = findLine(source, "//@include", pos);
 			if (pos == String::npos) break;
 
 			auto sol = pos;
 			auto eol = source.find('\n', sol);
-			verify(eol != String::npos);
+			assert(eol != String::npos);
 
 			auto i0 = source.find('\"', sol);
-			verify(i0 != String::npos);
+			assert(i0 != String::npos);
 			auto i1 = source.find('\"', ++i0);
-			verify(i1 != String::npos && i1 < eol);
+			assert(i1 != String::npos && i1 < eol);
 
 			auto ipath = source.substr(i0, i1 - i0);
 

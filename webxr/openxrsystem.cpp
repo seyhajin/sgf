@@ -1,12 +1,11 @@
 #include "openxrsystem.h"
 
 #include <glfw/glfw.hh>
-
 #include <opengl/opengl.hh>
 
-#define xrAssert(X) verify((X) >= 0);
+#define xrAssert(X)                                                                                                    \
+	if ((X) < 0) panic("OpenXR function " #X " failed!");
 
-// #define CDEBUG debug() << "###"
 #define CDEBUG                                                                                                         \
 	if constexpr (false) debug()
 
@@ -110,13 +109,17 @@ bool OpenXRSession::create() {
 		CDEBUG << "Requirements -  max gl version:" << XR_VERSION_MAJOR(requirements.maxApiVersionSupported) << "."
 			   << XR_VERSION_MINOR(requirements.maxApiVersionSupported);
 
+		auto glfwWindow = m_window->cast<GLWindow>()->glfwWindow();
+
+#if OS_WINDOWS
+
 		XrGraphicsBindingOpenGLWin32KHR binding{XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR};
-
-		auto glfwWindow=m_window->cast<GLWindow>()->glfwWindow();
-
 		binding.hDC = GetDC(glfwGetWin32Window(glfwWindow));
 		binding.hGLRC = glfwGetWGLContext(glfwWindow);
 
+#elif OS_LINUX
+		XrGraphicsBindingOpenGLXlibKHR binding{};
+#endif
 		XrSessionCreateInfo info{XR_TYPE_SESSION_CREATE_INFO};
 		info.next = &binding;
 		info.systemId = m_systemId;
@@ -234,9 +237,15 @@ bool OpenXRSession::create() {
 		auto locname = "Gameplay Actions";
 
 		XrActionSetCreateInfo createSetInfo{XR_TYPE_ACTION_SET_CREATE_INFO};
+
+#if OS_WINDOWS
 		strncpy_s(createSetInfo.actionSetName, XR_MAX_ACTION_SET_NAME_SIZE, "actionset", XR_MAX_ACTION_SET_NAME_SIZE);
 		strncpy_s(createSetInfo.localizedActionSetName, XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE, "ActionSet",
 				  XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
+#else
+		std::strncpy(createSetInfo.actionSetName, "actionset", XR_MAX_ACTION_SET_NAME_SIZE);
+		std::strncpy(createSetInfo.localizedActionSetName, "ActionSet", XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
+#endif
 
 		xrAssert(xrCreateActionSet(m_instance, &createSetInfo, &m_actionSet));
 		m_activeActionSets.actionSet = m_actionSet;
@@ -254,6 +263,7 @@ bool OpenXRSession::create() {
 		createInfo.countSubactionPaths = 2;
 		createInfo.subactionPaths = handPaths;
 
+#if OS_WINDOWS
 		strncpy_s(createInfo.actionName, XR_MAX_ACTION_NAME_SIZE, "aimposes", XR_MAX_ACTION_NAME_SIZE);
 		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, "Aim Poses",
 				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
@@ -263,6 +273,15 @@ bool OpenXRSession::create() {
 		strncpy_s(createInfo.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE, "Grip Poses",
 				  XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
 		xrAssert(xrCreateAction(m_actionSet, &createInfo, &m_gripPoseAction));
+#else
+		std::strncpy(createInfo.actionName, "aimposes", XR_MAX_ACTION_NAME_SIZE);
+		std::strncpy(createInfo.localizedActionName, "Aim Poses", XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+		xrAssert(xrCreateAction(m_actionSet, &createInfo, &m_aimPoseAction));
+
+		std::strncpy(createInfo.actionName, "gripposes", XR_MAX_ACTION_NAME_SIZE);
+		std::strncpy(createInfo.localizedActionName, "Grip Poses", XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+		xrAssert(xrCreateAction(m_actionSet, &createInfo, &m_gripPoseAction));
+#endif
 
 		// Create aim pose spaces and grip pose spaces
 		//
@@ -327,7 +346,7 @@ void OpenXRSession::pollEvents() {
 				if (m_ready) panic("OOPS");
 				XrSessionBeginInfo info{XR_TYPE_SESSION_BEGIN_INFO};
 				info.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-				verify(xrBeginSession(m_session, &info) == 0);
+				xrAssert(xrBeginSession(m_session, &info));
 				m_ready = true;
 			} else if (ev->state == XR_SESSION_STATE_SYNCHRONIZED) {
 			} else if (ev->state == XR_SESSION_STATE_VISIBLE) {
@@ -478,10 +497,18 @@ Promise<XRSession*> OpenXRSystem::requestSession() {
 	if (!m_instance) {
 		const char* exts[] = {"XR_KHR_opengl_enable"};
 		XrInstanceCreateInfo info{XR_TYPE_INSTANCE_CREATE_INFO};
+
+		// WTF, Grauda Linux doesn't have strncpy_s?!?
+#if OS_WINDOWS
 		strncpy_s(info.applicationInfo.applicationName, XR_MAX_APPLICATION_NAME_SIZE, "SGF App",
 				  XR_MAX_APPLICATION_NAME_SIZE);
-		info.applicationInfo.applicationVersion = XR_VERSION_1_0;
 		strncpy_s(info.applicationInfo.engineName, XR_MAX_ENGINE_NAME_SIZE, "SGF", XR_MAX_ENGINE_NAME_SIZE);
+#elif OS_LINUX
+		std::strncpy(info.applicationInfo.applicationName, "SGF App", XR_MAX_APPLICATION_NAME_SIZE);
+		std::strncpy(info.applicationInfo.engineName, "SGF", XR_MAX_ENGINE_NAME_SIZE);
+#endif
+
+		info.applicationInfo.applicationVersion = XR_VERSION_1_0;
 		info.applicationInfo.engineVersion = XR_VERSION_1_0;
 		info.applicationInfo.apiVersion = 0x0001000000000000L;
 		info.enabledExtensionCount = std::size(exts);

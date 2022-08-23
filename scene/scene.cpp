@@ -5,7 +5,7 @@
 #include "debugrenderer.h"
 #include "light.h"
 #include "linearspace.h"
-#include "shaderloader.h"
+#include "shaderasset.h"
 
 #include <window/window.h>
 
@@ -13,7 +13,7 @@ namespace sgf {
 
 namespace {
 
-ShaderLoader g_copyShader("shaders/fbcopy.glsl");
+ShaderAsset g_copyShader("shaders/fbcopy.glsl");
 
 } // namespace
 
@@ -276,16 +276,15 @@ void Scene::render() {
 		}
 
 		// Little hack to show last rendered eye to window
-		if(frameBuffer.value()) {
+		if (frameBuffer.value()) {
 
-			auto viewport = Recti(0,graphicsDevice->window->size());
+			auto viewport = Recti(0, graphicsDevice->window->size());
 
 			gc->setFrameBuffer(nullptr);
 			gc->setViewport(viewport);
 
 			gc->drawGeometry(3, 0, 6, 1);
 		}
-
 	}
 }
 

@@ -1,7 +1,7 @@
 ﻿#include "debugrenderer.h"
 
 #include "mesh.h"
-#include "shaderloader.h"
+#include "shaderasset.h"
 
 namespace sgf {
 
@@ -16,7 +16,7 @@ VertexLayout vertexLayout {{
 }};
 // clang-format on
 
-ShaderLoader g_shader("shaders/debugrenderer.glsl");
+ShaderAsset g_shader("shaders/debugrenderer.glsl");
 
 } // namespace
 
@@ -91,8 +91,9 @@ void DebugRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 	auto gc = rc.graphicsContext();
 
 	if (!m_vertexBuffer || m_vertices.size() * sizeof(Vertex) > m_vertexBuffer->size) {
-		m_vertexBuffer = graphicsDevice()->createGraphicsBuffer(BufferType::vertex, m_vertices.size() * sizeof(Vertex), nullptr);
-		m_vertexState = graphicsDevice()->createVertexState({m_vertexBuffer},nullptr,vertexLayout);
+		m_vertexBuffer =
+			graphicsDevice()->createGraphicsBuffer(BufferType::vertex, m_vertices.size() * sizeof(Vertex), nullptr);
+		m_vertexState = graphicsDevice()->createVertexState({m_vertexBuffer}, nullptr, vertexLayout);
 	}
 	m_vertexBuffer->updateData(0, m_vertices.size() * sizeof(Vertex), m_vertices.data());
 

@@ -17,6 +17,8 @@ void NewFrame();
 
 void Render();
 
+DebugStream Debug(CString label);
+
 bool Checkbox(const char* label, sgf::Property<bool>& v);
 
 bool InputInt(const char* label, sgf::Property<int>& v, int step = 1, int step_fast = 100,

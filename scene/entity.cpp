@@ -49,9 +49,7 @@ void Entity::update() {
 }
 
 void Entity::onUpdate() {
-	assert(!g_worldMatrixUpdated);
-	m_worldMatrix = m_parent ? m_parent->worldMatrix() * matrix() : matrix();
-	g_worldMatrixUpdated = true;
+	updateWorldMatrix(m_parent ? m_parent->worldMatrix() * matrix() : matrix());
 }
 
 void Entity::lookAt(CVec3f target, CVec3f up) {

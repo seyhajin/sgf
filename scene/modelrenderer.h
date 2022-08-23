@@ -1,33 +1,31 @@
 ﻿#pragma once
 
-#include "model.h"
 #include "renderer.h"
-#include "modelinstance.h"
+#include "modelrenderdata.h"
 
 namespace sgf {
+
+class Model;
 
 class ModelRenderer : public Renderer {
 public:
 	SGF_OBJECT_TYPE(ModelRenderer,Renderer);
 
-	ModelRenderer(Model* model);
+	ModelRenderer(ModelRenderData* renderData);
 
-	void addInstance(ModelInstance* instance);
-	void removeInstance(ModelInstance* instance);
+	void addInstance(Model* instance);
+	void removeInstance(Model* instance);
 
 private:
 	struct Instance {
 		Mat4f matrix;
 		Vec4f color;
-		float morph;
-
-//		Instance(CMat4f matrix, CVec4f color, float morph) : matrix(matrix), color(color), morph(morph) {
-//		}
+		float morph{};
 	};
 
-	SharedPtr<Model> m_model;
+	SharedPtr<ModelRenderData> m_renderData;
 	VertexLayout m_vertexLayout;
-	Vector<ModelInstance*> m_instances;
+	Vector<Model*> m_instances;
 	SharedPtr<GraphicsBuffer> m_instanceBuffer;
 	SharedPtr<VertexState> m_vertexState;
 
@@ -40,8 +38,6 @@ private:
 	void onUpdate() override;
 
 	void onRender(RenderContext& rc, RenderPassType pass) override;
-
-	void renderDebug(RenderContext& rc);
 };
 
 } // namespace sgf

@@ -1,11 +1,21 @@
 
-DIR_NAME="ixwebsocket"
+# Note: On Windows, you'll have to manually install zlib somewhere cmake can see it to be able to build this.
+
+OUTPUT_NAME="ixwebsocket"
+BUILD_CONFIG="-DUSE_TLS=1 -DUSE_OPEN_SSL=1 -DUSE_ZLIB=0"
 
 CHECKOUT_URL=https://github.com/blitz-research/IXWebSocket.git
-CHECKOUT_DIR="$PWD/${DIR_NAME}-checkout"
+CHECKOUT_DIR="$PWD/${OUTPUT_NAME}-checkout"
+BUILD_DIR="$PWD/${OUTPUT_NAME}-build/release"
+BUILD_OPTS=""
 
-BUILD_CONFIG="-DUSE_TLS=1 -DCMAKE_BUILD_TYPE=Release -G Ninja"
-BUILD_DIR="$PWD/${DIR_NAME}-build/release"
+if test -d "$WINDIR" ; then
+	export CMAKE_GENERATOR="Visual Studio 17 2022"
+	BUILD_OPTS="--config Release"
+else
+	BUILD_CONFIG="${BUILD_CONFIG} -DCMAKE_BUILD_TYPE=Release -G Ninja"
+	build_OPTS=""
+fi
 
 if test ! -f "$CHECKOUT_DIR/.okay" ; then
 	echo "Checking out $CHECKOUT_URL to $CHECKOUT_DIR..."
@@ -22,5 +32,5 @@ if test ! -f "$BUILD_DIR/.okay" ; then
 fi
 
 echo "Building $BUILD_TARGET..."
-cmake --build "$BUILD_DIR" || exit 1
+cmake --build "$BUILD_DIR" $BUILD_OPTS || exit 1
 echo "Done."

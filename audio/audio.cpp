@@ -19,7 +19,7 @@ Sound::~Sound() {
 Sound* loadSound(CString path) {
 
 	drwav wav;
-	verify(drwav_init_file(&wav, path.c_str(), nullptr));
+	assert(drwav_init_file(&wav, path.c_str(), nullptr));
 
 	size_t size = wav.totalPCMFrameCount * wav.channels * sizeof(drwav_int16);
 
@@ -118,16 +118,16 @@ void AudioDevice::setListenerVelocity(CVec3f vel) {
 }
 
 AudioDevice::AudioDevice() {
-	verify(!g_audioDevice);
+	assert(!g_audioDevice);
 	g_audioDevice = this;
 
 	m_alDevice = alcOpenDevice(nullptr);
-	verify(m_alDevice != nullptr);
+	assert(m_alDevice != nullptr);
 
 	m_alContext = alcCreateContext(m_alDevice, nullptr);
-	verify(m_alContext != nullptr);
+	assert(m_alContext != nullptr);
 
-	verify(alcMakeContextCurrent(m_alContext));
+	assert(alcMakeContextCurrent(m_alContext));
 
 	ALuint sources[maxChannels];
 	alGenSources(maxChannels, sources);

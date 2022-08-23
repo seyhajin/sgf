@@ -37,8 +37,8 @@ add_library(scene
         meshutils.h
         model.cpp
         model.h
-        modelinstance.cpp
-        modelinstance.h
+        modelrenderdata.cpp
+        modelrenderdata.h
         modelrenderer.cpp
         modelrenderer.h
         orthographiccamera.cpp
@@ -56,12 +56,18 @@ add_library(scene
         scene.cpp
         scene.h
         scene.hh
-        shaderloader.cpp
-        shaderloader.h
+        shaderasset.cpp
+        shaderasset.h
         spherecollider.cpp
         spherecollider.h
-        textureloader.cpp
-        textureloader.h
+        textureasset.cpp
+        textureasset.h
+        meshcollider.cpp
+        meshcollider.h
+        meshcolliderdata.cpp
+        meshcolliderdata.h
+        rigidbody.cpp
+        rigidbody.h
         )
 
 target_link_libraries(scene imgui core3d)

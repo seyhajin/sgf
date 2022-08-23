@@ -99,7 +99,8 @@ void Gamepad::onPoll() {
 			return;
 		}
 
-		m_name = glfwGetGamepadName(m_id);
+		auto p = glfwGetGamepadName(m_id);
+		m_name = p ? String(p) : String();
 
 		const char* guid = glfwGetJoystickGUID(m_id);
 		assert(strlen(guid) == 32);

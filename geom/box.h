@@ -14,23 +14,23 @@ using CBoxf = CBox<float>;
 
 template <class T> struct Box {
 
-	using L = std::numeric_limits<T>;
+//	using Limits = std::numeric_limits<T>;
 
 	Vec3<T> min{std::numeric_limits<T>::max()};
-	Vec3<T> max{std::numeric_limits<T>::lowest()}; // Grrr...lowest instead of min?!?
+	Vec3<T> max{std::numeric_limits<T>::lowest()};
 
 	Box() = default;
 
 	Box(CVec3<T> min, CVec3<T> max) : min(min), max(max) {
 	}
-	Box(float radius) : min(-radius), max(radius) {
+	Box(T minx, T miny, T minz, T maxx, T maxy, T maxz) : min(minx, miny, minz), max(maxx, maxy, maxz) {
 	}
 	Box(CVec3<T> point) : min(point), max(point) {
 	}
 	Box(CLine<T> line) : Box(line.o) {
 		operator|=(line.o + line.d);
 	}
-	Box(T minx, T miny, T minz, T maxx, T maxy, T maxz) : min(minx, miny, minz), max(maxx, maxy, maxz) {
+	Box(float size) : min(-size), max(size) {
 	}
 
 	T width() const {
@@ -91,15 +91,6 @@ template <class T> struct Box {
 			   min.z <= b.max.z;
 	}
 
-	Box expanded(float size) const {
-		return {min - size, max + size};
-	}
-
-	void expand(float size) {
-		min -= size;
-		max += size;
-	}
-
 	bool operator==(CBox<T> b) const {
 		return min == b.min && max == b.max;
 	}
@@ -114,6 +105,16 @@ template <class T> struct Box {
 		return {min - v, max - v};
 	}
 
+	Box& operator+=(CVec3<T> v) {
+		return *this = operator+(v);
+	}
+	Box& operator-=(CVec3<T> v) {
+		return *this = operator-(v);
+	}
+
+	Box operator|(T n) const {
+		return {min - n, max + n};
+	}
 	Box operator|(CVec3<T> v) const {
 		return {min.min(v), max.max(v)};
 	}
@@ -124,13 +125,9 @@ template <class T> struct Box {
 		return {min.max(b.min), max.min(b.max)};
 	}
 
-	Box& operator+=(CVec3<T> v) {
-		return *this = operator+(v);
+	Box& operator|=(T n) {
+		return *this = operator|(n);
 	}
-	Box& operator-=(CVec3<T> v) {
-		return *this = operator-(v);
-	}
-
 	Box& operator|=(CVec3<T> v) {
 		return *this = operator|(v);
 	}

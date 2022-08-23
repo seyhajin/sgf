@@ -1,4 +1,4 @@
-#include "light.glsl"
+//@include "light.glsl"
 
 struct CameraParams {
     mat4 projMatrix;

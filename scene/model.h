@@ -1,56 +1,27 @@
 ﻿#pragma once
 
-#include "mesh.h"
+#include "entity.h"
+#include "modelrenderer.h"
 
 namespace sgf {
 
-extern const VertexAttribs defaultModelAttribs;
-
-class Scene;
-class ModelRenderer;
-
-class Model : public Shared {
+class Model : public Entity {
 public:
-	SGF_OBJECT_TYPE(Model, Shared);
+	SGF_OBJECT_TYPE(Model, Entity);
 
-	struct Surface {
-		SharedPtr<Material> const material;
-		uint const firstIndex;
-		uint const numIndices;
+	Property<SharedPtr<ModelRenderData>> renderData;
+	Property<Vec4f> color{1};
+	Property<float> morph;
 
-		Surface(Material* material, uint firstIndex, uint numIndices)
-			: material(material), firstIndex(firstIndex), numIndices(numIndices) {
-		}
-	};
+	Model(Scene* scene);
 
-	SharedPtr<GraphicsBuffer> const vertexBuffer;
-	SharedPtr<GraphicsBuffer> const indexBuffer;
-	SharedPtr<GraphicsBuffer> const outlineBuffer;
-	Vector<Surface> const opaqueSurfaces;
-	Vector<Surface> const blendedSurfaces;
-	VertexLayout const vertexLayout;
+protected:
+	void onEnable() override;
 
-	mutable Map<Scene*,ModelRenderer*> m_renderers;
+	void onDisable() override;
 
-
-	Model(GraphicsBuffer* vertexBuffer, GraphicsBuffer* indexBuffer, Vector<Surface> opaqueSurfaces,
-		  Vector<Surface> blendedSurfaces, GraphicsBuffer* outlineBuffer, VertexLayout vertexLayout)
-		: vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), outlineBuffer(outlineBuffer),
-		  opaqueSurfaces(std::move(opaqueSurfaces)), blendedSurfaces(std::move(blendedSurfaces)),
-		  vertexLayout(std::move(vertexLayout)){
-	}
-
-	bool hasOpaqueSurfaces() const {
-		return !opaqueSurfaces.empty();
-	}
-
-	bool hasBlendedSurfaces() const {
-		return !blendedSurfaces.empty();
-	}
-
-	ModelRenderer* getRenderer(Scene* scene);
+private:
+	ModelRenderer* m_renderer{};
 };
-
-Model* createModel(const Mesh* mesh, CVertexAttribs attribFormats = defaultModelAttribs);
 
 } // namespace sgf
