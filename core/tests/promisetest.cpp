@@ -1,29 +1,22 @@
-
 #include <core/core.hh>
 
 #include <thread>
 
+#if OS_EMSCRIPTEN
+#error OOPS
+#endif
+
 using namespace sgf;
 
-namespace sgf {
-using Thread = std::thread;
-using CThread = const Thread&;
-template <class T> using Duration = std::chrono::duration<T>;
-namespace ThisThread = std::this_thread;
-}
+Promise<bool> delay(double seconds) {
 
-template <class T> sgf::Duration<T> duration(T seconds) {
-	return sgf::Duration<T>(seconds);
-}
+	Promise<bool> promise;
 
-sgf::Promise<bool> delay(double seconds) {
+	std::thread thread([promise, seconds]() mutable {
 
-	sgf::Promise<bool> promise;
-
-	sgf::Thread thread([promise, seconds]() mutable {
 		sgf::debug() << "sleeping...";
 
-		sgf::ThisThread::sleep_for(duration(seconds));
+		std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
 
 		sgf::debug() << "...awake!";
 
@@ -54,8 +47,5 @@ int main() {
 		std::exit(0);
 	};
 
-	for (;;) {
-		sgf::debug() << "Waiting for app events";
-		sgf::waitAppEvents();
-	}
+	runAppEventLoop();
 }

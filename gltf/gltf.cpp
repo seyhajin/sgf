@@ -342,13 +342,13 @@ Model* loadModel(CString assetPath, Scene* scene, bool withCollider) {
 
 	auto mesh = loadMesh(assetPath);
 
-	auto model = new Model(scene);
+	auto model = new Model();
 	model->renderData = createModelRenderData(mesh);
 
 	if(withCollider) {
-		auto collider = new MeshCollider(scene);
+		auto collider = new MeshCollider();
 		collider->colliderData = new MeshColliderData(mesh);
-		model->addChild(collider);
+		collider->setParent(model);
 	}
 
 	return model;

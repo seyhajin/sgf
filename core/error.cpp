@@ -28,7 +28,7 @@ void alert(CString msg) {
 
 DebugStream panicex(CString msg, const char* file, int line) {
 
-	auto now = debugTimestamp();
+	auto now = debugTimeStamp();
 
 	return {
 

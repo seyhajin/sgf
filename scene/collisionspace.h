@@ -14,7 +14,7 @@ public:
 
 	virtual void updateCollider(Collider* collider) = 0;
 
-	virtual Collider* intersectRay(CLinef ray, float radius, Contact& contact) = 0;
+	virtual Collider* intersectRay(CLinef ray, float radius, Contact& contact, const Collider* ignore) = 0;
 };
 
 } // namespace sgf

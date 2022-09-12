@@ -1,9 +1,13 @@
 #include "meshcollider.h"
 #include <imgui/imgui.hh>
 
-#include "intersect.h"
-
 namespace sgf {
+
+MeshCollider::MeshCollider(MeshColliderData* data) : colliderData(data) {}
+
+MeshCollider::MeshCollider(const Mesh* mesh) {
+	colliderData = new MeshColliderData(mesh);
+}
 
 bool MeshCollider::intersectRay(CLinef worldRay, float rayRadius, Contact& contact) const {
 

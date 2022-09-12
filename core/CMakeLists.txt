@@ -40,8 +40,6 @@ add_library(core
         signal_impl.inl
         std.cpp
         std.h
-        weakptr.cpp
-        weakptr.h
         )
 
 if (OS_EMSCRIPTEN)
@@ -51,10 +49,4 @@ elseif (OS_LINUX)
     target_link_libraries(core pthread)
 endif ()
 
-##### core tests #####
-
-add_executable(promisetest tests/promisetest.cpp)
-target_link_libraries(promisetest PRIVATE core)
-
-add_executable(signaltest tests/signaltest.cpp)
-target_link_libraries(signaltest PRIVATE core)
+add_subdirectory(tests)

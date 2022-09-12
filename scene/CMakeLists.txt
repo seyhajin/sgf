@@ -7,6 +7,8 @@ project(scene)
 add_library(scene
         actor.cpp
         actor.h
+        actortype.cpp
+        actortype.h
         camera.cpp
         camera.h
         collider.cpp
@@ -31,8 +33,10 @@ add_library(scene
         mesh.h
         meshbuilder.cpp
         meshbuilder.h
-        meshprimitives.cpp
-        meshprimitives.h
+        meshcollider.cpp
+        meshcollider.h
+        meshcolliderdata.cpp
+        meshcolliderdata.h
         meshutils.cpp
         meshutils.h
         model.cpp
@@ -43,6 +47,12 @@ add_library(scene
         modelrenderer.h
         orthographiccamera.cpp
         orthographiccamera.h
+        physicsmaterial.cpp
+        physicsmaterial.h
+        planecollider.cpp
+        planecollider.h
+        primitives.cpp
+        primitives.h
         perspectivecamera.cpp
         perspectivecamera.h
         rendercontext.cpp
@@ -62,19 +72,10 @@ add_library(scene
         spherecollider.h
         textureasset.cpp
         textureasset.h
-        meshcollider.cpp
-        meshcollider.h
-        meshcolliderdata.cpp
-        meshcolliderdata.h
         rigidbody.cpp
         rigidbody.h
         )
 
 target_link_libraries(scene imgui core3d)
 
-##### scene tests #####
-
-add_executable(hellobox tests/hellobox.cpp)
-target_link_libraries(hellobox scene)
-target_copy_assets(hellobox scene)
-target_link_assets(hellobox)
+add_subdirectory(tests)

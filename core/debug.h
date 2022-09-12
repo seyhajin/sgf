@@ -15,13 +15,12 @@ extern thread_local DebugOutputFunc debugOutputFunc;
 
 void defaultDebugOutputFunc(CString);
 
-String debugTimestamp();
+String debugTimeStamp();
 
 class DebugStream {
 public:
-	using Emit = Function<void(CString)>;
 
-	DebugStream(Emit emit);
+	DebugStream(DebugOutputFunc outputFunc,String separator=" ");
 
 	~DebugStream();
 
@@ -40,12 +39,13 @@ protected:
 		using clock = std::chrono::system_clock;
 		using time_point = std::chrono::time_point<clock>;
 
+		DebugOutputFunc outputFunc;
+		String separator;
 		std::stringstream buf;
-		Emit emit;
 
-		Rep(Emit emit) : emit(std::move(emit)) {
+		Rep(DebugOutputFunc outputFunc,String separator = " ") : outputFunc(std::move(outputFunc)),separator(std::move(separator)) {
 			buf.setf(std::ios::fixed);
-			buf.precision(4);
+			buf.precision(6);
 		}
 	};
 
@@ -53,7 +53,7 @@ protected:
 
 	template <class ValueTy> friend DebugStream&& operator<<(DebugStream&& strstream, const ValueTy& value) {
 		auto rep = strstream.m_rep;
-		if (rep->buf.tellp()) rep->buf << ' ';
+		if (rep->buf.tellp()) rep->buf << rep->separator;
 		rep->buf << value;
 		return std::move(strstream);
 	}

@@ -15,10 +15,13 @@ void LinearSpace::removeCollider(Collider* collider) {
 void LinearSpace::updateCollider(Collider* collider) {
 }
 
-Collider* LinearSpace::intersectRay(CLinef ray, float radius, Contact& contact) {
+Collider* LinearSpace::intersectRay(CLinef ray, float radius, Contact& contact, const Collider* ignore) {
 	Collider* hit{};
 	for (auto c : m_colliders) {
-		if (c->intersectRay(ray, 0, contact)) hit = c;
+		if (c == ignore) continue;
+		if (!c->intersectRay(ray, radius, contact)) continue;
+		assert(isUnit(contact.normal));
+		hit = c;
 	}
 	return hit;
 }

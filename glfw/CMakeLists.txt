@@ -7,7 +7,7 @@ project(glfw)
 add_library(glfw
         glfw.cpp
         glfw.hh
-        )
+        native.cpp native.h)
 
 target_compile_definitions(glfw PUBLIC GLFW_INCLUDE_NONE)
 

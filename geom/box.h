@@ -14,8 +14,6 @@ using CBoxf = CBox<float>;
 
 template <class T> struct Box {
 
-//	using Limits = std::numeric_limits<T>;
-
 	Vec3<T> min{std::numeric_limits<T>::max()};
 	Vec3<T> max{std::numeric_limits<T>::lowest()};
 
@@ -23,14 +21,15 @@ template <class T> struct Box {
 
 	Box(CVec3<T> min, CVec3<T> max) : min(min), max(max) {
 	}
+
 	Box(T minx, T miny, T minz, T maxx, T maxy, T maxz) : min(minx, miny, minz), max(maxx, maxy, maxz) {
 	}
+
 	Box(CVec3<T> point) : min(point), max(point) {
 	}
+
 	Box(CLine<T> line) : Box(line.o) {
 		operator|=(line.o + line.d);
-	}
-	Box(float size) : min(-size), max(size) {
 	}
 
 	T width() const {

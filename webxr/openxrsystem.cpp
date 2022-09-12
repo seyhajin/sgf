@@ -1,6 +1,7 @@
 #include "openxrsystem.h"
 
 #include <glfw/glfw.hh>
+#include <glfw/native.h>
 #include <opengl/opengl.hh>
 
 #define xrAssert(X)                                                                                                    \

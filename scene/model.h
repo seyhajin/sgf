@@ -13,7 +13,11 @@ public:
 	Property<Vec4f> color{1};
 	Property<float> morph;
 
-	Model(Scene* scene);
+	Model() = default;
+
+	Model(ModelRenderData* data);
+
+	Model(const Mesh* mesh);
 
 protected:
 	void onEnable() override;

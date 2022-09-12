@@ -111,7 +111,6 @@ public:
 
 	explicit GLGraphicsContext(GraphicsDevice* device) : GraphicsContext(device) {
 	}
-
 	void setFrameBuffer(FrameBuffer* frameBuffer) override;
 	void setViewport(CRecti viewport) override;
 	void setDepthMode(DepthMode mode) override;
@@ -131,22 +130,25 @@ public:
 	void drawGeometry(uint order, uint firstVertex, uint numVertices, uint numInstances) override;
 
 private:
-	enum struct Dirty {
-		// clang-format off
-		none = 					0x0000,
-		frameBuffer = 			0x0001,
-		viewport =				0x0002,
-		depthMode = 			0x0004,
-		blendMode = 			0x0008,
-		cullMode = 				0x0010,
-		vertexState =			0x0020,
-		shader = 				0x0040,
-		uniformBlockBindings =	0x0080,
-		textureBindings = 		0x0100,
-		uniformBindings =		0x0200,
-		all = 					0x03ff,
-		// clang-format on
-	};
+
+	friend class GLGraphicsDevice;
+
+		enum struct Dirty {
+			// clang-format off
+			none = 					0x0000,
+			frameBuffer = 			0x0001,
+			viewport =				0x0002,
+			depthMode = 			0x0004,
+			blendMode = 			0x0008,
+			cullMode = 				0x0010,
+			vertexState =			0x0020,
+			shader = 				0x0040,
+			uniformBlockBindings =	0x0080,
+			textureBindings = 		0x0100,
+			uniformBindings =		0x0200,
+			all = 					0x03ff,
+			// clang-format on
+		};
 
 	Dirty m_dirty = Dirty::all;
 
@@ -168,6 +170,7 @@ private:
 // ***** GCGraphicsDevice *****
 
 class GLGraphicsDevice : public GraphicsDevice {
+	using Dirty = GLGraphicsContext::Dirty;
 public:
 	SGF_OBJECT_TYPE(GLGraphicsDevice, GraphicsDevice)
 
@@ -183,6 +186,12 @@ public:
 	GraphicsContext* createGraphicsContext() override;
 
 	Texture* wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags, GLuint texture);
+
+	void bindAndValidate(GLGraphicsContext* gc);
+
+private:
+	SharedPtr<GLGraphicsContext> m_boundContext;
+	Dirty m_dirty = Dirty::none;
 };
 
 } // namespace sgf

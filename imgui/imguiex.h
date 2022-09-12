@@ -17,7 +17,9 @@ void NewFrame();
 
 void Render();
 
-DebugStream Debug(CString label);
+DebugStream Debug();
+
+DebugStream DebugRow();
 
 bool Checkbox(const char* label, sgf::Property<bool>& v);
 

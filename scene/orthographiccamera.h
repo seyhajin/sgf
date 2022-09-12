@@ -8,7 +8,7 @@ class OrthographicCamera : public Camera {
 public:
 	SGF_OBJECT_TYPE(OrthographicCamera, Camera);
 
-	OrthographicCamera(Scene* scene);
+	OrthographicCamera();
 
 private:
 	Vector<CameraView> validateViews() const override;

@@ -118,6 +118,8 @@ void glAssert() {
 
 void bindGLUniform(GLenum glType, GLint glLocation, CAny value) {
 
+	assert(value.exists());
+
 	switch (glType) {
 	case GL_FLOAT:
 		glUniform1fv(glLocation, 1, GL_FLOAT_PTR(&value.get<float>()));

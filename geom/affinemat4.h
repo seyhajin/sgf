@@ -10,6 +10,7 @@
 
 namespace sgf {
 
+template <class T> struct Quat;
 template <class T> struct AffineMat4;
 template <class T> using CAffineMat4 = const AffineMat4<T>&;
 using AffineMat4f = AffineMat4<float>;

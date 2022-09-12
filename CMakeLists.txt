@@ -3,11 +3,14 @@
 # cmake -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=Release -GNinja ..
 #
 # Note: Env var EMSCRIPTEN must be set to something like emsdk/upstream/emscripten or root dir of github emscripten checkout.
-
+#
 # To build in build subdir:
 #
 # cmake --build .
-
+#
+# TODO: This is probably getting to be too bit, some of it should be moved to core/CMakeLists.txt
+#
+# TODO: What should this really be?
 cmake_minimum_required(VERSION 3.8)
 
 project("Simple Game Framework")
@@ -42,10 +45,6 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(OS_WINDOWS 1)
     add_compile_definitions(OS_WINDOWS=1)
-    if (NOT WIN32)
-        message("!!! Yikes, WIN32 variable MIA again!?!")
-        set(WIN32 1)
-    endif ()
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(OS_LINUX 1)
     add_compile_definitions(OS_LINUX=1)
@@ -90,7 +89,7 @@ else ()
     add_link_options(-fno-rtti -fno-exceptions)
 endif ()
 
-# Release/debug optimization levels and debug info.
+# Optimization levels and debug info.
 #
 if (RELEASE)
     if (OS_EMSCRIPTEN)
@@ -108,17 +107,25 @@ elseif (DEBUG)
     endif ()
 endif ()
 
-# TODO: Get memory sanitizer working on other systems.
-#
-if (OS_LINUX AND DEBUG)
-    set(SANITIZER_OPTIONS -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+if(OS_LINUX)
+    set(ASAN_ENABLED 1)
+endif()
+
+if(ASAN_ENABLED)
+    if(OS_WINDOWS)
+        set(SANITIZER_OPTIONS /fsanitize=address)
+    elseif(OS_LINUX)
+        set(SANITIZER_OPTIONS -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+    else()
+        message(FATAL_ERROR "Address sanitizer not supported for this target.")
+    endif()
     add_compile_options(${SANITIZER_OPTIONS})
     add_link_options(${SANITIZER_OPTIONS})
     add_compile_definitions(ASAN_ENABLED=1)
     message("### Address sanitizer enabled: ${SANITIZER_OPTIONS}")
-endif ()
+endif()
 
-# Some default emscripten settings.
+# Some miscellaneous emscripten settings.
 #
 if (OS_EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")

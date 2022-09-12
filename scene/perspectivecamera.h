@@ -10,7 +10,7 @@ public:
 
 	Property<float> fovY{45.0f};
 
-	PerspectiveCamera(Scene* scene);
+	PerspectiveCamera();
 
 private:
 	Vector<CameraView> validateViews() const override;

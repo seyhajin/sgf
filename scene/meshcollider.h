@@ -11,8 +11,11 @@ public:
 
 	Property<SharedPtr<MeshColliderData>> colliderData;
 
-	MeshCollider(Scene* scene) : Collider(scene) {
-	}
+	MeshCollider() = default;
+
+	MeshCollider(MeshColliderData* data);
+
+	MeshCollider(const Mesh* mesh);
 
 	bool intersectRay(CLinef worldRay, float radius, Contact& contact) const override;
 };
