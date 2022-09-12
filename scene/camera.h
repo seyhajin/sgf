@@ -17,7 +17,7 @@ public:
 	Property<float> zNear{.1f};
 	Property<float> zFar{100.0f};
 
-	Camera(Scene* scene);
+	Camera();
 
 	CVector<CameraView> views() const;
 
@@ -27,10 +27,6 @@ protected:
 	void invalidateViews() {
 		m_viewsDirty = true;
 	}
-
-	void onEnable() override;
-
-	void onDisable() override;
 
 	void onUpdate() override;
 

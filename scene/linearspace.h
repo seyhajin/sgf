@@ -12,7 +12,7 @@ public:
 
 	void updateCollider(Collider* collider) override;
 
-	Collider* intersectRay(CLinef ray, float radius, Contact& contact) override;
+	Collider* intersectRay(CLinef ray, float radius, Contact& contact, const Collider* ignore) override;
 
 private:
 	Vector<Collider*> m_colliders;

@@ -2,6 +2,7 @@
 
 #include "contact.h"
 #include "entity.h"
+#include "physicsmaterial.h"
 
 namespace sgf {
 
@@ -9,17 +10,20 @@ class Collider : public Entity {
 public:
 	SGF_OBJECT_TYPE(Collider, Entity);
 
-	Collider(Scene* scene) : Entity(scene) {
-	}
+	Property<PhysicsMaterial> material;
 
-	virtual bool intersectRay(CLinef ray, float radius, Contact& contact) const = 0;
+	//! Returns a point/normal on the margin
+	virtual bool intersectRay(CLinef ray, float margin, Contact& contact) const = 0;
 
-private:
+protected:
 	void onEnable() override;
 
 	void onDisable() override;
 
 	void onUpdate() override;
+
+private:
+	AffineMat4f m_pivot;
 };
 
 } // namespace sgf

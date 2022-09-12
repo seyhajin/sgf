@@ -9,11 +9,11 @@ void Actor::create() {
 
 	m_state = ActorState::creating;
 
-	scene()->addActor(this);
+	enable();
+
+	scene->addEntity(this);
 
 	onCreate();
-
-	enable();
 
 	m_state = ActorState::active;
 }
@@ -23,11 +23,11 @@ void Actor::destroy() {
 
 	m_state = ActorState::destroying;
 
-	disable();
+	scene->removeEntity(this);
 
 	onDestroy();
 
-	scene()->removeActor(this);
+	disable();
 
 	m_state = ActorState::destroyed;
 }

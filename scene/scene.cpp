@@ -7,6 +7,8 @@
 #include "linearspace.h"
 #include "shaderasset.h"
 
+#include <imgui/imgui.hh>
+
 #include <window/window.h>
 
 namespace sgf {
@@ -17,9 +19,9 @@ ShaderAsset g_copyShader("shaders/fbcopy.glsl");
 
 } // namespace
 
-Scene::Scene(GraphicsDevice* device) : graphicsDevice(device) {
+Scene::Scene(GraphicsDevice* device) : graphicsDevice(device), window(device->window) {
 
-	if (!m_defaultScene) m_defaultScene = this;
+	if (!g_defaultScene) g_defaultScene = this;
 
 	m_renderPasses.resize(numRenderPassTypes);
 
@@ -53,9 +55,9 @@ Scene::Scene(GraphicsDevice* device) : graphicsDevice(device) {
 	m_graphicsContext->setUniformBuffer("sceneParams", m_sceneParams);
 
 	clearColor = Vec4f(.25f, .5f, 1, 1);
-	ambientLightColor = Vec3f(.075f);
-	directionalLightVector = Vec3f(0.0f, 0.25f, 1.0f).normalized();
-	directionalLightColor = Vec3f(.85f);
+	ambientLightColor = Vec3f(.25f);
+	directionalLightVector = Vec3f(0, 0, 1);
+	directionalLightColor = Vec3f(0);
 
 	m_collisionSpace = new LinearSpace();
 }
@@ -71,62 +73,39 @@ void Scene::removeRenderer(Renderer* renderer) {
 }
 
 void Scene::addEntity(Entity* entity) {
-	if (!entity->parent()) m_orphans.push_back(entity);
+
+	if (auto camera = entity->cast<Camera>()) {
+		m_cameras.push_back(camera);
+	} else if (auto light = entity->cast<Light>()) {
+		m_lights.push_back(light);
+	}
+
+	if (entity->parent()) return;
+
+	if (auto actor = entity->cast<Actor>()) {
+		auto typeId = actor->dynamicType()->typeId;
+		m_actors[typeId].push_back(actor);
+	} else {
+		m_orphans.push_back(entity);
+	}
 }
 
 void Scene::removeEntity(Entity* entity) {
-	if (!entity->parent()) remove(m_orphans, entity);
-}
 
-void Scene::addCamera(Camera* camera) {
-	assert(!contains(m_cameras, camera));
-	m_cameras.push_back(camera);
-	addEntity(camera);
-}
+	if (auto camera = entity->cast<Camera>()) {
+		remove(m_cameras, camera);
+	} else if (auto light = entity->cast<Light>()) {
+		remove(m_lights, light);
+	}
 
-void Scene::removeCamera(Camera* camera) {
-	assert(contains(m_cameras, camera));
-	remove(m_cameras, camera);
-	removeEntity(camera);
-}
+	if (entity->parent()) return;
 
-void Scene::addLight(Light* light) {
-	assert(!contains(m_lights, light));
-	m_lights.push_back(light);
-	addEntity(light);
-}
-
-void Scene::removeLight(Light* light) {
-	assert(contains(m_lights, light));
-	remove(m_lights, light);
-	removeEntity(light);
-}
-
-void Scene::addActor(Actor* actor) {
-	auto& actors = m_actors[actor->typeId()];
-	assert(!contains(actors, actor));
-	assert(!actor->parent());
-	actors.push_back(actor);
-	actor->create();
-}
-
-void Scene::removeActor(Actor* actor) {
-	auto& actors = m_actors[actor->typeId()];
-	assert(contains(actors, actor));
-	remove(actors, actor);
-	actor->destroy();
-}
-
-void Scene::addCollider(Collider* collider) {
-	m_collisionSpace->addCollider(collider);
-}
-
-void Scene::removeCollider(Collider* collider) {
-	m_collisionSpace->removeCollider(collider);
-}
-
-void Scene::updateCollider(Collider* collider) {
-	m_collisionSpace->updateCollider(collider);
+	if (auto actor = entity->cast<Actor>()) {
+		auto typeId = actor->dynamicType()->typeId;
+		remove(m_actors[typeId], actor);
+	} else {
+		remove(m_orphans, entity);
+	}
 }
 
 bool Scene::eyeRay(CVec2f coords, Linef& ray) const {
@@ -152,8 +131,9 @@ bool Scene::eyeRay(CVec2f coords, Linef& ray) const {
 	return false;
 }
 
-Collider* Scene::intersectRay(CLinef ray, float radius, Contact& contact) const {
-	return m_collisionSpace->intersectRay(ray, radius, contact);
+Collider* Scene::intersectRay(CLinef ray, float radius, Contact& contact, const Collider* ignore) const {
+
+	return m_collisionSpace->intersectRay(ray, radius, contact, ignore);
 }
 
 Collider* Scene::intersectEyeRay(CVec2f coords, float radius) const {
@@ -165,21 +145,49 @@ Collider* Scene::intersectEyeRay(CVec2f coords, float radius) const {
 	contact.time = ray.d.length();
 	ray.d.normalize();
 
-	return intersectRay(ray, radius, contact);
+	return intersectRay(ray, radius, contact, nullptr);
+}
+
+namespace {
+
+void debugEntity(Entity* entity, CString indent = {}) {
+	ImGuiEx::DebugRow() << indent + entity->dynamicType()->name << ('\"' + entity->name() + '"') << entity->worldPosition() << entity->worldRotation();
+	for (auto child : entity->children()) { debugEntity(child, indent + " "); }
+}
+
+} // namespace
+
+void Scene::debugEntities() {
+
+	if(!ImGui::Begin("Scene")) {
+		ImGui::End();
+		return;
+	}
+
+	ImGui::BeginTable("Entities",4);
+
+	for (auto& actors : m_actors) {
+		for (auto actor : actors) debugEntity(actor);
+	}
+	for (auto entity : m_orphans) debugEntity(entity);
+
+	ImGui::EndTable();
+
+	ImGui::End();
 }
 
 void Scene::update() {
 
-	// Update actors in typeId order
 	for (auto& actors : m_actors) {
-		for (auto actor : actors) actor->update();
+		for (auto actor : actors) { actor->update(); }
 	}
 
-	// Update orphans
-	for (auto orphan : m_orphans) orphan->update();
+	for (auto orphan : m_orphans) { orphan->update(); }
 }
 
 void Scene::render() {
+
+	debugEntities();
 
 	float elapsed = 1.0f / 60.0f;
 	m_renderTime += elapsed;
@@ -203,15 +211,15 @@ void Scene::render() {
 	rscene.ambientLightColor = Vec4f(ambientLightColor, 1);
 	rscene.directionalLightColor = Vec4f(directionalLightColor, 1);
 	rscene.directionalLightVector = Vec4f(directionalLightVector, 0);
-	rscene.debugFlags = 0; // settings::debugTriangles;
+	rscene.debugFlags = 0;
 	rscene.renderTime = m_renderTime;
 
-	if (m_lights.size() >= maxLights) {
-		// TODO, multiple lighting passes...
-		// debug() << "!!! Too many lights in scene:" << m_lights.size() << "max:" << maxLights;
-	}
+	//	if (m_lights.size() >= maxLights) {
+	// TODO, multiple lighting passes...
+	// debug() << "!!! Too many lights in scene:" << m_lights.size() << "max:" << maxLights;
+	//	}
 
-	rscene.numLights = std::min((int)m_lights.size(), maxLights);
+	rscene.numLights = std::min(int(m_lights.size()), maxLights);
 	for (uint i = 0; i < m_lights.size(); ++i) {
 		auto& rlight = rscene.lights[i];
 		auto light = m_lights[i];
@@ -253,6 +261,8 @@ void Scene::render() {
 
 			m_renderContext.beginScene(gc, &renderParams, size.x, size.y);
 
+			ImGuiEx::Debug() << "### setting viewport" << viewport << "size" << size;
+
 			gc->setViewport({0, viewport.size()});
 
 			gc->clear(rscene.clearColor);
@@ -278,7 +288,9 @@ void Scene::render() {
 		// Little hack to show last rendered eye to window
 		if (frameBuffer.value()) {
 
-			auto viewport = Recti(0, graphicsDevice->window->size());
+			exit(1);
+
+			auto viewport = Recti(0, window->size());
 
 			gc->setFrameBuffer(nullptr);
 			gc->setViewport(viewport);

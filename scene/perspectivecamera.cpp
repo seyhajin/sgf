@@ -4,21 +4,18 @@
 
 #include <window/window.h>
 
+#include <imgui/imgui.hh>
+
 namespace sgf {
 
-PerspectiveCamera::PerspectiveCamera(Scene* scene) : Camera(scene) {
-	scene->graphicsDevice->window->sizeChanged.connect(this, [this](CVec2i) {invalidateViews(); });
+PerspectiveCamera::PerspectiveCamera() {
+	scene->window->sizeChanged.connect(this, [this](CVec2i) { invalidateViews(); });
 	fovY.valueChanged.connect(this, [this](float) { invalidateViews(); });
 }
 
 Vector<CameraView> PerspectiveCamera::validateViews() const {
 
-	Recti viewport{0, scene()->graphicsDevice->window->size()};
-
-	static Recti g_viewport;
-	if(viewport!=g_viewport) {
-		g_viewport=viewport;
-	}
+	Recti viewport{0, scene->window->size()};
 
 	float yh = std::tan(fovY * degreesToRadians) * zNear;
 	float ar = float(viewport.width()) / float(viewport.height());

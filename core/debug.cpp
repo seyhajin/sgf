@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <ctime>
+#include <iomanip>
+#include <sstream>
 
 #ifdef COMPILER_MSVC
 #pragma warning(disable : 4996)
@@ -9,22 +11,25 @@
 
 namespace sgf {
 
-String debugTimestamp(std::chrono::time_point<std::chrono::system_clock> now) {
+using Clock = std::chrono::steady_clock;
+//using Clock = std::chrono::system_clock;
+//using Clock = std::chrono::high_resolution_clock;
 
-	char buf[80];
-	auto time = std::chrono::system_clock::to_time_t(now);
-	auto localTime = localtime(&time);
-	std::strftime(buf, sizeof(buf), "%F %H:%M:%S", localTime);
+static String debugTimeStamp(const Clock::time_point& tp) {
 
-	char tbuf[120];
-	ulong millis = (now.time_since_epoch().count() / 1000000) % 1000;
-	std::snprintf(tbuf, sizeof(tbuf), "%s:%03d", buf, (int)millis);
+	auto dur= tp.time_since_epoch();
+	auto durS = std::chrono::duration_cast<std::chrono::seconds>(dur).count();
+	auto durMs = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
 
-	return tbuf;
+	std::ostringstream str;
+	str << std::put_time(std::localtime(&durS),"%Y-%m-%d %H:%M:%S.");
+	str << std::setw(3) << std::setfill('0') << int(durMs - durS * 1000);
+
+	return str.str();
 }
 
-String debugTimestamp() {
-	return debugTimestamp(std::chrono::system_clock::now());
+String debugTimeStamp() {
+	return debugTimeStamp(Clock::now());
 }
 
 void defaultDebugOutputFunc(CString str) {
@@ -34,23 +39,19 @@ void defaultDebugOutputFunc(CString str) {
 
 thread_local DebugOutputFunc debugOutputFunc(&defaultDebugOutputFunc);
 
-DebugStream::DebugStream(Emit emit) : m_rep(new Rep(std::move(emit))) {
+DebugStream::DebugStream(DebugOutputFunc outputFunc, String separator)
+	: m_rep(new Rep(std::move(outputFunc), std::move(separator))) {
 }
 
 DebugStream::~DebugStream() {
-
-	if (m_rep && m_rep->emit) m_rep->emit(m_rep->buf.str());
-
+	if (!m_rep) return;
+	m_rep->outputFunc(m_rep->buf.str());
 	delete m_rep;
 }
 
 DebugStream debug(const char* file, int line) {
-
-	auto now = debugTimestamp();
-
-	return {[file, line, now](CString str) {
+	return {[file, line, now = debugTimeStamp()](CString str) {
 		String fileinfo = file ? (String("[") + file + ":" + std::to_string(line) + "]") : String();
-
 		debugOutputFunc(now + " : " + str); //+" "+fileinfo);
 	}};
 }

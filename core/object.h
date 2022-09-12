@@ -54,6 +54,11 @@ public:
 		return instanceOf<ObjTy>() ? static_cast<ObjTy*>(this) : nullptr;
 	}
 
+	friend std::ostream& operator<<(std::ostream& ostream, const Object* object) {
+		ostream << object->dynamicType()->name << "@" << (const void*)object;
+		return ostream;
+	}
+
 private:
 };
 

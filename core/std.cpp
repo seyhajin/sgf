@@ -1,6 +1,10 @@
 ﻿
 #include "std.h"
 
+#if COMPILER_MSVC
+#include <cfloat>
+#endif
+
 #ifndef OS_EMSCRIPTEN
 #include <thread>
 #endif
@@ -21,6 +25,8 @@ namespace {
 std::thread::id g_mainThreadId = std::this_thread::get_id();
 #endif
 
+Vector<String> g_appArgs;
+
 } // namespace
 
 String replace(CString str, CString find, CString rep) {
@@ -35,18 +41,27 @@ String replace(CString str, CString find, CString rep) {
 }
 
 Vector<String> split(CString str, CString sep) {
-	Vector<String> bits;
-	for (size_t i0 = 0; i0 < str.size();) {
-		size_t i = str.find(sep, i0);
-		if (i != String::npos) {
-			bits.push_back(str.substr(i0, i - i0));
-			i0 = i + sep.size();
-			continue;
+	Vector<String> fields;
+	for (size_t i = 0; i < str.size();) {
+		size_t e = str.find(sep, i);
+		if (e == String::npos) {
+			fields.push_back(str.substr(i));
+			break;
 		}
-		bits.push_back(str.substr(i0));
-		break;
+		fields.push_back(str.substr(i, e - i));
+		i = e + sep.size();
 	}
-	return bits;
+	return fields;
+}
+
+String join(CVector<String> fields, CString sep) {
+	if (fields.empty()) return {};
+	String str;
+	for (auto field : fields) {
+		if (!str.empty()) str += sep;
+		str += field;
+	}
+	return str;
 }
 
 String toUpper(CString cstr) {
@@ -66,7 +81,7 @@ bool startsWith(CString string, CString substr) {
 }
 
 bool endsWith(CString string, CString substr) {
-	return string.size() >= substr.size() && string.compare(string.size()-substr.size(), substr.size(), substr) == 0;
+	return string.size() >= substr.size() && string.compare(string.size() - substr.size(), substr.size(), substr) == 0;
 }
 
 bool mainThread() {
@@ -75,6 +90,32 @@ bool mainThread() {
 #else
 	return true;
 #endif
+}
+
+void enableNaNExceptions() {
+#if COMPILER_MSVC
+	uint current;
+	_controlfp_s(&current, 0, _EM_INVALID);
+#endif
+}
+
+void disableNaNExceptions() {
+#if COMPILER_MSVC
+	uint current;
+	_controlfp_s(&current, _EM_INVALID, _EM_INVALID);
+#endif
+}
+
+void sgfMain(int argc, const char* argv[]) {
+	g_appArgs.resize(argc);
+	for (int i = 0; i < argc; ++i) { //
+		g_appArgs[i] = argv[i];
+	}
+	enableNaNExceptions();
+}
+
+CVector<String> appArgs() {
+	return g_appArgs;
 }
 
 } // namespace sgf

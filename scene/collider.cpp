@@ -1,20 +1,23 @@
 #include "collider.h"
 
+#include "collisionspace.h"
 #include "scene.h"
 
 namespace sgf {
 
 void Collider::onEnable() {
-	scene()->addCollider(this);
+	Super::onEnable();
+	scene->collisionSpace()->addCollider(this);
 }
 
 void Collider::onDisable() {
-	scene()->removeCollider(this);
+	Super::onDisable();
+	scene->collisionSpace()->removeCollider(this);
 }
 
 void Collider::onUpdate() {
-	scene()->updateCollider(this);
-
+	Super::onUpdate();
+	scene->collisionSpace()->updateCollider(this);
 }
 
 } // namespace sgf

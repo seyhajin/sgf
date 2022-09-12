@@ -7,7 +7,6 @@
 namespace sgf {
 
 template <class T> struct Quat;
-
 template <class T> struct Mat3;
 template <class T> using CMat3 = const Mat3<T>&;
 
@@ -27,16 +26,17 @@ template <class T> struct Mat3 {
 	Mat3(T s) : i(s, 0, 0), j(0, s, 0), k(0, 0, s) {
 	}
 
-	Mat3(CVec3<T> s) : i(s.x, 0, 0), j(0, s.y, 0), k(0, 0, s.z) {
-	}
-
 	Mat3(CVec3<T> i, CVec3<T> j, CVec3<T> k) : i(i), j(j), k(k) {
 	}
 
 	Mat3(T ix, T iy, T iz, T jx, T jy, T jz, T kx, T ky, T kz) : i{ix, iy, iz}, j{jx, jy, jz}, k{kx, ky, kz} {
 	}
 
-	Mat3(const Quat<T>& q);
+	explicit Mat3(CVec3<T> s) : i(s.x, 0, 0), j(0, s.y, 0), k(0, 0, s.z) {
+	}
+
+	// implemented in quat.h
+	explicit Mat3(const Quat<T>& quat);
 
 	bool operator==(CMat3 that) const {
 		return i == that.i && j == that.j && k == that.k;
@@ -74,14 +74,14 @@ template <class T> struct Mat3 {
 				t * (j.x * k.y - j.y * k.x),  -t * (i.x * k.y - i.y * k.x), t * (i.x * j.y - i.y * j.x)};
 	}
 
+	Mat3 transpose() const {
+		return {i.x, j.x, k.x, i.y, j.y, k.y, i.z, j.z, k.z};
+	}
+
 	Mat3 cofactor() const {
 		return {(j.y * k.z - j.z * k.y),  -(j.x * k.z - j.z * k.x), (j.x * k.y - j.y * k.x),
 				-(i.y * k.z - i.z * k.y), (i.x * k.z - i.z * k.x),	-(i.x * k.y - i.y * k.x),
 				(i.y * j.z - i.z * j.y),  -(i.x * j.z - i.z * j.x), (i.x * j.y - i.y * j.x)};
-	}
-
-	Mat3 transpose() const {
-		return {i.x, j.x, k.x, i.y, j.y, k.y, i.z, j.z, k.z};
 	}
 
 	T yaw() const {

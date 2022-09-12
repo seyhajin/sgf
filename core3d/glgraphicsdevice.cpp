@@ -155,123 +155,12 @@ void GLGraphicsContext::setViewport(CRecti viewport) {
 }
 
 void GLGraphicsContext::validate() {
-	glAssert();
-
-	if (bool(m_dirty & Dirty::frameBuffer)) {
-		glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer ? m_frameBuffer->glFramebuffer : 0);
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::viewport)) {
-		glViewport(m_viewport.x(), m_viewport.y(), m_viewport.width(), m_viewport.height());
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::vertexState)) {
-		glBindVertexArray(m_vertexState ? m_vertexState->glVertexArray : glNullVertexArray);
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::shader)) {
-		glUseProgram(m_shader ? m_shader->glProgram : 0);
-		m_dirty |= Dirty::uniformBlockBindings | Dirty::textureBindings | Dirty::uniformBindings;
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::uniformBlockBindings) && m_shader) {
-		for (uint id : m_shader->uniformBlocks) {
-			auto buffer = m_uniformBuffers[id].value();
-			glBindBufferBase(GL_UNIFORM_BUFFER, id, buffer->glBuffer);
-		}
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::textureBindings) && m_shader) {
-		GLint texUnit = GL_TEXTURE0;
-		for (uint id : m_shader->textures) {
-			auto texture = m_textures[id].value();
-			assert(texture);
-			glActiveTexture(texUnit++);
-			glBindTexture(GL_TEXTURE_2D, texture->glTexture);
-		}
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::uniformBindings) && m_shader) {
-		for (auto& uniform : m_shader->uniforms) {
-			assert(m_uniforms[uniform.id].exists());
-			bindGLUniform(uniform.glType, uniform.glLocation, m_uniforms[uniform.id]);
-		}
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::depthMode)) {
-		switch (m_depthMode) {
-		case DepthMode::disable:
-			glDisable(GL_DEPTH_TEST);
-			glDepthMask(GL_FALSE);
-			break;
-		case DepthMode::enable:
-			glEnable(GL_DEPTH_TEST);
-			glDepthFunc(GL_LEQUAL);
-			glDepthMask(GL_TRUE);
-			break;
-		case DepthMode::compare:
-			glEnable(GL_DEPTH_TEST);
-			glDepthFunc(GL_LEQUAL);
-			glDepthMask(GL_FALSE);
-			break;
-		}
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::blendMode)) {
-		switch (m_blendMode) {
-		case BlendMode::disable:
-			glDisable(GL_BLEND);
-			break;
-		case BlendMode::alpha:
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-			break;
-		case BlendMode::additive:
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ONE); //_MINUS_SRC_ALPHA);
-			break;
-		case BlendMode::multiply:
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
-			break;
-		}
-		glAssert();
-	}
-
-	if (bool(m_dirty & Dirty::cullMode)) {
-		switch (m_cullMode) {
-		case CullMode::disable:
-			glDisable(GL_CULL_FACE);
-			break;
-		case CullMode::front:
-			glEnable(GL_CULL_FACE);
-			glCullFace(GL_BACK);
-			break;
-		case CullMode::back:
-			glEnable(GL_CULL_FACE);
-			glCullFace(GL_FRONT);
-			break;
-		case CullMode::all:
-			glEnable(GL_CULL_FACE);
-			glCullFace(GL_FRONT_AND_BACK);
-			break;
-		}
-		glAssert();
-	}
-	m_dirty = Dirty::none;
+	static_cast<GLGraphicsDevice*>(graphicsDevice)->bindAndValidate(this);
 }
 
 void GLGraphicsContext::clear(CVec4f color) {
 
-	// TODO: We only really need to validate framebuffer and viewport?
+	// TODO: We only really need to validate framebuffer and viewport params?
 	validate();
 
 	glEnable(GL_SCISSOR_TEST);
@@ -383,6 +272,7 @@ Texture* GLGraphicsDevice::createTexture(uint width, uint height, TextureFormat 
 	setGLTextureData(width, height, format, flags, data);
 
 	glBindTexture(glTarget, 0);
+	m_dirty |= Dirty::textureBindings;
 
 	glAssert();
 
@@ -397,11 +287,16 @@ GraphicsBuffer* GLGraphicsDevice::createGraphicsBuffer(BufferType type, uint siz
 		break;
 	case BufferType::vertex:
 		glTarget = GL_ARRAY_BUFFER;
+		glBindVertexArray(glNullVertexArray);
+		m_dirty |= Dirty::vertexState;
 		break;
 	case BufferType::index:
 		glTarget = GL_ELEMENT_ARRAY_BUFFER;
+		glBindVertexArray(glNullVertexArray);
+		m_dirty |= Dirty::vertexState;
 		break;
 	}
+
 	GLuint glBuffer;
 	glGenBuffers(1, &glBuffer);
 	glBindBuffer(glTarget, glBuffer);
@@ -441,6 +336,9 @@ VertexState* GLGraphicsDevice::createVertexState(CVector<GraphicsBuffer*> vertex
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibuffer->glBuffer);
 		constexpr GLenum glTypes[] = {GL_NONE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT};
 	}
+
+	glBindVertexArray(glNullVertexArray);
+	m_dirty |= Dirty::vertexState;
 
 	Vector<SharedPtr<GraphicsBuffer>> sharedBuffers;
 	for (auto vbuffer : vertexBuffers) sharedBuffers.push_back(vbuffer);
@@ -498,6 +396,7 @@ FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture*
 	if (err) panic(String("glCheckFramebufferStatus failed:") + err);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	m_dirty |= Dirty::frameBuffer;
 
 	glAssert();
 
@@ -506,6 +405,7 @@ FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture*
 
 	auto fbuffer = new GLFrameBuffer(this, colorTexture, depthTexture, width, height, glFramebuffer);
 
+	// TODO: All graphics resources should do this.
 	fbuffer->deleted.connect([glFramebuffer] { glDeleteFramebuffers(1, &glFramebuffer); });
 
 	return fbuffer;
@@ -642,6 +542,7 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 	}
 
 	glUseProgram(0);
+	m_dirty |= Dirty::shader;
 
 	glAssert();
 
@@ -661,6 +562,125 @@ Texture* GLGraphicsDevice::wrapGLTexture(uint width, uint height, TextureFormat 
 	glAssert();
 
 	return new GLTexture(this, width, height, format, flags | TextureFlags::unmanaged, texture);
+}
+
+void GLGraphicsDevice::bindAndValidate(GLGraphicsContext* gc) {
+
+	auto dirty = (gc != m_boundContext.value()) ? m_dirty = Dirty::all : gc->m_dirty | m_dirty;
+	m_boundContext = gc;
+	gc->m_dirty = m_dirty = Dirty::none;
+
+	glAssert();
+
+	if (bool(dirty & Dirty::frameBuffer)) {
+		glBindFramebuffer(GL_FRAMEBUFFER, gc->m_frameBuffer ? gc->m_frameBuffer->glFramebuffer : 0);
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::viewport)) {
+		glViewport(gc->m_viewport.x(), gc->m_viewport.y(), gc->m_viewport.width(), gc->m_viewport.height());
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::vertexState)) {
+		glBindVertexArray(gc->m_vertexState ? gc->m_vertexState->glVertexArray : glNullVertexArray);
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::shader)) {
+		glUseProgram(gc->m_shader ? gc->m_shader->glProgram : 0);
+		dirty |= Dirty::uniformBlockBindings | Dirty::textureBindings | Dirty::uniformBindings;
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::uniformBlockBindings) && gc->m_shader) {
+		for (uint id : gc->m_shader->uniformBlocks) {
+			auto buffer = gc->m_uniformBuffers[id].value();
+			assert(buffer);
+			glBindBufferBase(GL_UNIFORM_BUFFER, id, buffer->glBuffer);
+		}
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::textureBindings) && gc->m_shader) {
+		GLint texUnit = GL_TEXTURE0;
+		for (uint id : gc->m_shader->textures) {
+			auto texture = gc->m_textures[id].value();
+			assert(texture);
+			glActiveTexture(texUnit++);
+			glBindTexture(GL_TEXTURE_2D, texture->glTexture);
+		}
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::uniformBindings) && gc->m_shader) {
+		for (auto& uniform : gc->m_shader->uniforms) {
+			bindGLUniform(uniform.glType, uniform.glLocation, gc->m_uniforms[uniform.id]);
+		}
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::depthMode)) {
+		switch (gc->m_depthMode) {
+		case DepthMode::disable:
+			glDisable(GL_DEPTH_TEST);
+			glDepthMask(GL_FALSE);
+			break;
+		case DepthMode::enable:
+			glEnable(GL_DEPTH_TEST);
+			glDepthFunc(GL_LEQUAL);
+			glDepthMask(GL_TRUE);
+			break;
+		case DepthMode::compare:
+			glEnable(GL_DEPTH_TEST);
+			glDepthFunc(GL_LEQUAL);
+			glDepthMask(GL_FALSE);
+			break;
+		}
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::blendMode)) {
+		switch (gc->m_blendMode) {
+		case BlendMode::disable:
+			glDisable(GL_BLEND);
+			break;
+		case BlendMode::alpha:
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			break;
+		case BlendMode::additive:
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE); //_MINUS_SRC_ALPHA);
+			break;
+		case BlendMode::multiply:
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+			break;
+		}
+		glAssert();
+	}
+
+	if (bool(dirty & Dirty::cullMode)) {
+		switch (gc->m_cullMode) {
+		case CullMode::disable:
+			glDisable(GL_CULL_FACE);
+			break;
+		case CullMode::front:
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_BACK);
+			break;
+		case CullMode::back:
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT);
+			break;
+		case CullMode::all:
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT_AND_BACK);
+			break;
+		}
+		glAssert();
+	}
 }
 
 } // namespace sgf

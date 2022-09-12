@@ -25,6 +25,10 @@ struct Vertex {
 		  color(color), morph(morph) {
 	}
 
+	Vertex(CVec3f position, CVec2f texCoords0, CVec4f color = {1})
+		: position(position), normal(position.normalized()), texCoords0(texCoords0), color(color) {
+	}
+
 	bool operator<(const Vertex& that) const {
 		if (position != that.position) return position < that.position;
 		if (normal != that.normal) return normal < that.normal;
@@ -95,6 +99,10 @@ public:
 
 	void addVertex(CVec3f position, CVec3f normal, CVec2f texCoords0) {
 		m_vertices.emplace_back(position, normal, texCoords0);
+	}
+
+	void addVertex(CVec3f position, CVec2f texCoords0) {
+		m_vertices.emplace_back(position, texCoords0);
 	}
 
 	void addTriangle(CTriangle triangle) {

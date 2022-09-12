@@ -105,6 +105,7 @@ ModelRenderData* createModelRenderData(const Mesh* mesh, CVertexAttribs attribs)
 		}
 
 		Material* material = (matId < mesh->materials().size() ? mesh->materials()[matId].value() : errorMaterial());
+		if(!material) material = defaultMaterial();
 
 		auto& surfaces = (material->blendMode == BlendMode::disable) ? opaqueSurfaces : blendedSurfaces;
 
@@ -112,6 +113,7 @@ ModelRenderData* createModelRenderData(const Mesh* mesh, CVertexAttribs attribs)
 
 		firstIndex += numIndices;
 	}
+
 	auto indexBuffer =
 		graphicsDevice()->createGraphicsBuffer(BufferType::index, indexData.size() * 4, indexData.data());
 

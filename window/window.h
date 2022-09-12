@@ -3,8 +3,7 @@
 #include "keycodes.h"
 
 #include <geom/geom.hh>
-
-#include <GLFW/glfw3.h>
+#include <glfw/glfw.hh>
 
 namespace sgf {
 

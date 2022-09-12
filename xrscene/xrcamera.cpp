@@ -21,7 +21,7 @@ Vector<CameraView> XRCamera::validateViews() const {
 
 	if (!m_frame) {
 		// Default to plain perspective camera if not inside an XRFrame...
-		Recti viewport{0, scene()->graphicsDevice->window->size()};
+		Recti viewport{0, scene->window->size()};
 
 		float yh = std::tan(fovY * degreesToRadians) * zNear;
 		float ar = float(viewport.width()) / float(viewport.height());
@@ -29,7 +29,7 @@ Vector<CameraView> XRCamera::validateViews() const {
 
 		// Attempt a coolio 'neos vr' style mouse->eye effect.
 		//
-		auto coords = scene()->graphicsDevice->window->mouse()->position();
+		auto coords = scene->window->mouse()->position();
 		Vec2f tcoords = coords - viewport.origin();
 		tcoords = tcoords / viewport.size() * 2 - 1;
 		tcoords.y = -tcoords.y;
@@ -52,7 +52,7 @@ Vector<CameraView> XRCamera::validateViews() const {
 	for (uint eye = 0; eye < 2; ++eye) {
 		auto& vview = viewerPose->views[eye];
 		auto& cview = cameraViews[eye];
-		cview.cameraMatrix = worldMatrix() * vview.transform;
+		cview.cameraMatrix = matrix() * vview.transform;
 		cview.projectionMatrix = vview.projectionMatrix;
 		cview.viewport = vview.viewport;
 	}

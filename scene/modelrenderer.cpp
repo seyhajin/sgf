@@ -5,6 +5,8 @@
 
 #include "shaderasset.h"
 
+#include <imgui/imgui.hh>
+
 namespace sgf {
 
 namespace {

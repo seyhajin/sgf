@@ -21,13 +21,13 @@ int main() {
 	scene = new Scene(grdevice);
 
 	// Create camera, move it back a bit.
-	auto camera = new PerspectiveCamera(scene);
+	auto camera = new PerspectiveCamera();
 	camera->translate({0, 1, -2.5f});
 	camera->lookAt({0,0,0});
 	camera->enable();
 
 	// Create light, move it up and back a bit.
-	auto light = new Light(scene);
+	auto light = new Light();
 	light->translate({0, 2, -.5f});
 	light->enable();
 
@@ -44,7 +44,7 @@ int main() {
 		auto mousePos = window->mouse()->position();
 
 		auto collider = scene->intersectEyeRay(mousePos, 0);
-		ImGuiEx::Debug("Collided?") << (collider ? "YES!" : "NO");
+		ImGuiEx::Debug() << (collider ? "YES!" : "NO");
 
 		model->rotate({0,.1f,0});
 

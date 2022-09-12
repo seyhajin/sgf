@@ -41,11 +41,11 @@ void createScene() {
 	scene->directionalLightColor = Vec3f(0);
 
 	// Create camera.
-	camera = new XRCamera(scene);
+	camera = new XRCamera();
 	camera->enable();
 
 	// Create dining room light.
-	auto light = new Light(scene);
+	auto light = new Light();
 	light->setPosition({0, 2, -2});
 	light->color = {1, 0, 0};
 	light->enable();
@@ -54,7 +54,7 @@ void createScene() {
 	auto material = new Material();
 	material->emissiveTexture = loadTexture("images/clion.png");
 	auto mesh = createBoxMesh(.64f, .38f, .05f, material);
-	auto model = new Model(scene);
+	auto model = new Model();
 	model->renderData=createModelRenderData(mesh);
 	model->color = {.1f, .1f, .1f, 1};
 	model->translate({0, -.14f, .58f});

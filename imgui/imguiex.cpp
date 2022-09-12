@@ -29,12 +29,22 @@ void Render() {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-DebugStream Debug(CString label) {
-	return {[label](CString str){
-		if(!label.empty()) ImGui::Begin(label.c_str());
-		ImGui::Text("%s",str.c_str());
-		if(!label.empty()) ImGui::End();
+DebugStream Debug() {
+	return {[](CString output) { //
+		ImGui::TextUnformatted(output.c_str(), nullptr);
 	}};
+}
+
+DebugStream DebugRow() {
+	return {[](CString output) {
+				ImGui::TableNextRow();
+				auto fields = split(output, "|");
+				for (auto field : fields) {
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(field.c_str(), nullptr);
+				}
+			},
+			"|"};
 }
 
 bool Checkbox(const char* label, Property<bool>& v) {
@@ -93,4 +103,4 @@ bool ColorPicker4(const char* label, sgf::Property<sgf::Vec4f>& v, ImGuiColorEdi
 	return true;
 }
 
-} // namespace ImGuiEx
+} // namespace sgf::ImGuiEx

@@ -26,15 +26,15 @@
 #pragma warning(disable : 4267)
 #endif
 
-// TODO: Move me
+// TODO: Move me somewhere.
 #define SGF_ASSERT_ALIGNED16(T) static_assert((sizeof(T) & 15) == 0);
 
 namespace sgf {
 
-using ::std::nullptr_t;
+using std::nullptr_t;
 
 using uchar = unsigned char;
-#if defined(OS_EMSCRIPTEN) || defined(OS_WINDOWS)
+#if OS_EMSCRIPTEN || OS_WINDOWS
 using ulong = unsigned long;
 using ushort = unsigned short;
 using uint = unsigned int;
@@ -73,9 +73,14 @@ template <class C, class V> bool remove(C& container, const V& value) {
 	return true;
 }
 
-//! return -1 if value < 0, 0 if value ==0, or 1 if value > 0.
-template <class T> T sgn(T val) {
-	return (T(0) < val) - (val < T(0));
+//! return -1 if value < 0, 0 if value == 0, or 1 if value > 0.
+template <class NumTy> NumTy sgn(NumTy val) {
+	return (NumTy(0) < val) - (val < NumTy(0));
+}
+
+//! Convert a value to a string.
+template <class ValueTy> String toString(const ValueTy& value) {
+	return (std::stringstream() << value).str();
 }
 
 //! Replace all occurances of a substring.
@@ -83,6 +88,9 @@ String replace(CString string, CString find, CString replace);
 
 //! Split a string into an array of substrings.
 Vector<String> split(CString string, CString separator);
+
+//! Join an array of substrings into a string.
+String join(CVector<String> fields, CString separator);
 
 //! Convert string to uppercase.
 String toUpper(CString string);
@@ -98,5 +106,15 @@ bool endsWith(CString string, CString substr);
 
 //! True if we're on the main thread.
 bool mainThread();
+
+//! Enable exceptions for NaN FP results. NaN exceptions are disabled by default.
+void enableNaNExceptions();
+
+//! Disable exceptions for NaN FP results. This is the default.
+void disableNaNExceptions();
+
+void sgfMain(int argc, const char* argv[]);
+
+CVector<String> appArgs();
 
 } // namespace sgf

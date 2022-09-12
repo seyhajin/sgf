@@ -3,49 +3,58 @@
 #include "scene.h"
 
 namespace sgf {
-bool Entity::g_worldMatrixUpdated;
 
-void Entity::addChild(Entity* child) {
-	assert(!child->m_parent);
-	m_children.push_back(child);
-	child->m_parent = this;
-	child->setEnabled(enabled());
+Entity::Entity() : scene(defaultScene()) {
 }
 
-void Entity::removeChild(Entity* child) {
-	assert(child->m_parent == this);
-	bool wasEnabled = child->enabled();
-	child->disable();
-	remove(m_children, child);
-	child->m_parent = nullptr;
-	child->setEnabled(wasEnabled);
-}
+void Entity::setParent(Entity* parent) {
+	assert(!m_enabled);
 
-void Entity::setMatrix(CAffineMat4f matrix) {
-	m_matrix = matrix;
-	m_rotation = matrix.m.rotation(); // Cache me?
-	m_scale = matrix.m.scale();		  // Cache me?
+	if (parent == m_parent) return;
+
+	if (m_parent) remove(m_parent->m_children, this);
+
+	m_parent = parent;
+
+	if (m_parent) m_parent->m_children.push_back(this);
 }
 
 void Entity::enable() {
-	if (m_enabled) return;
+
+	assert(!m_enabled && (!m_parent || m_parent->m_enabled));
+
 	m_enabled = true;
+	Entity::onUpdate();
 	onEnable();
-	for (auto e : m_children) e->enable();
+
+	for (auto child : m_children) child->enable();
 }
 
 void Entity::disable() {
-	if (!m_enabled) return;
+	assert(m_enabled);
+
+	for (auto child : m_children) child->disable();
+
 	m_enabled = false;
 	onDisable();
-	for (auto e : m_children) e->disable();
 }
 
 void Entity::update() {
+	if (!m_enabled) return;
+
 	g_worldMatrixUpdated = false;
 	onUpdate();
-	if (!g_worldMatrixUpdated) Entity::onUpdate();
-	for (auto e : m_children) e->update();
+	if(!g_worldMatrixUpdated) Entity::onUpdate();
+
+	for (auto child : m_children) child->update();
+}
+
+void Entity::onEnable() {
+	scene->addEntity(this);
+}
+
+void Entity::onDisable() {
+	scene->removeEntity(this);
 }
 
 void Entity::onUpdate() {
@@ -57,7 +66,6 @@ void Entity::lookAt(CVec3f target, CVec3f up) {
 	Vec3f i = up.cross(k);
 	Vec3f j = k.cross(i).normalized();
 	m_matrix.m = Mat3f(i.normalized(), j.normalized(), k.normalized());
-	m_rotation = m_matrix.m.rotation();
 }
 
 } // namespace sgf

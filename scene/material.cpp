@@ -51,7 +51,7 @@ void Material::bind(GraphicsContext* gc) {
 	gc->setCullMode(cullMode);
 }
 
-Material* matteMaterial(CVec4f color) {
+Material* createMatteMaterial(CVec4f color) {
 
 	auto it = g_matteCache.find(color);
 	if (it != g_matteCache.end()) return it->second;
@@ -62,8 +62,19 @@ Material* matteMaterial(CVec4f color) {
 	return material;
 }
 
+Material* loadMatteMaterial(CString path, TextureFormat format, TextureFlags flags) {
+	auto texture = loadTexture(path, format, flags);
+	auto material = new Material();
+	material->baseColorTexture = texture;
+	return material;
+}
+
+Material* defaultMaterial() {
+	return createMatteMaterial(Vec4f(1));
+}
+
 Material* errorMaterial() {
-	return matteMaterial(Vec4f(1, 0, 1, 1));
+	return createMatteMaterial(Vec4f(1, 0, 1, 1));
 }
 
 } // namespace sgf

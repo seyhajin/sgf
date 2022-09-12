@@ -23,6 +23,8 @@ add_library(geom
         quat.h
         rect.cpp
         rect.h
+        util.cpp
+        util.h
         vec2.cpp
         vec2.h
         vec3.cpp
@@ -32,3 +34,5 @@ add_library(geom
         )
 
 target_link_libraries(geom core)
+
+add_subdirectory(tests)

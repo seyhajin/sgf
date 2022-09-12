@@ -191,7 +191,7 @@ bool intersectRayTriangle(CLinef ray, float radius, CVec3f v0, CVec3f v1, CVec3f
 		// debug() << "### RayTriangle plane" << Contact.normal.length() << Contact.time;
 		return true;
 	}
-	
+
 	bool collision = false;
 	if (!f0) collision |= intersectRayEdge(ray, radius, v0, v1, contact);
 	if (!f1) collision |= intersectRayEdge(ray, radius, v1, v2, contact);

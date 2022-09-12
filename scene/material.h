@@ -33,6 +33,9 @@ private:
 	SharedPtr<GraphicsBuffer> m_uniformBuffer;
 };
 
+Material* createMatteMaterial(CVec4f color);
+Material* loadMatteMaterial(CString colorTexture,TextureFormat format = TextureFormat::srgba32, TextureFlags flags = TextureFlags::mipmap);
+Material* defaultMaterial();
 Material* errorMaterial();
 
 } // namespace sgf

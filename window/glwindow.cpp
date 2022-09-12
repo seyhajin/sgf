@@ -129,7 +129,7 @@ GLWindow::GLWindow(CString title, uint width, uint height) {
 
 	// Focus handling
 	{
-#ifdef __EMSCRIPTEN__
+#ifdef OS_EMSCRIPTEN
 		auto focuscb = [](int type, const EmscriptenFocusEvent* event, void* user) -> int {
 			auto window = static_cast<GLWindow*>(user);
 			window->m_hasFocus = (type == EMSCRIPTEN_EVENT_FOCUS);

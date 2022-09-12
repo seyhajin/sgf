@@ -62,7 +62,7 @@ Image* loadImage(CString assetPath, ImageFormat format) {
 	int width, height, n;
 
 	auto data = stbi_load(path.c_str(), &width, &height, &n, bpp);
-	if (!data) panic("Can't load image:" + path);
+	if (!data) panic("Can't load image " + path);
 
 	auto image = new Image(data, width, height, width * bpp, format);
 
