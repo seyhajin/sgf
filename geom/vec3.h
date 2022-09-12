@@ -169,7 +169,7 @@ template <class T> struct Vec3 {
 	}
 
 	T pitch() const {
-		return -std::atan2(y, std::sqrtf(x * x + z * z));
+		return -std::atan2(y, std::sqrt(x * x + z * z));
 	}
 
 	friend std::ostream& operator<<(std::ostream& str, CVec3 v) {
