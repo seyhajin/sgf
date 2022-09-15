@@ -1,6 +1,8 @@
-Simple Game Framework
+Simple Game Framework.
 
 A simple C++ framework for writing games for Windows, Linux and WebAssembly.
+
+> NOTE: SGF is definitely not recommended for general use yet, as it is still very much undergoing it's own invention. I am aiming for a V1.0 'stable API' release by end of 2022.
 
 SGF is a simple CMake based project so you should be able to build it using any CMake compatible C++ IDE such as MSVC C/C++ 2022, QtCreator or CLion.
 
@@ -22,3 +24,5 @@ OpenAL
 GLFW3
 OpenGLES
 OpenGL
+OpenSS
+OpenXR
