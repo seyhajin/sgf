@@ -16,18 +16,22 @@ using CRectf = CRect<float>;
 
 template <class T> struct Rect {
 
+	using Vec2 = Vec2<T>;
+	using CVec2 = const Vec2&;
+	using CRect = const Rect&;
+
 	using Limits = std::numeric_limits<T>;
 
-	Vec2<T> min{Limits::max(), Limits::max()};
+	Vec2 min{Limits::max(), Limits::max()};
 
-	Vec2<T> max{Limits::min(), Limits::min()};
+	Vec2 max{Limits::min(), Limits::min()};
 
 	Rect() = default;
 
-	explicit Rect(CVec2<T> v) : min(v), max(v) {
+	explicit Rect(CVec2 v) : min(v), max(v) {
 	}
 
-	Rect(CVec2<T> min, CVec2<T> max) : min(min), max(max) {
+	Rect(CVec2 min, CVec2 max) : min(min), max(max) {
 	}
 
 	Rect(T x0, T y0, T x1, T y1) : min(x0, y0), max(x1, y1) {
@@ -37,11 +41,15 @@ template <class T> struct Rect {
 		return max.x <= min.x || max.y <= min.y;
 	}
 
-	Vec2<T> origin() const {
+	Vec2 center() const {
+		return (min + max) / 2;
+	}
+
+	Vec2 origin() const {
 		return min;
 	}
 
-	Vec2<T> size() const {
+	Vec2 size() const {
 		return Vec2(max.x - min.x, max.y - min.y);
 	}
 
@@ -61,47 +69,79 @@ template <class T> struct Rect {
 		return max.y - min.y;
 	}
 
-	bool contains(CVec2<T> v) const {
+	T left() const {
+		return min.x;
+	}
+
+	T right() const {
+		return max.x;
+	}
+
+	T top() const {
+		return min.y;
+	}
+
+	T bottom() const {
+		return max.y;
+	}
+
+	bool contains(CVec2 v) const {
 		return v.x >= min.x && v.y >= min.y && v.x < max.x && v.y < max.y;
 	}
 
-	bool contains(CRect<T> r) const {
+	bool contains(CRect r) const {
 		return min.x <= r.min.x && max.x >= r.max.x && min.y <= r.min.y && max.y >= r.max.y;
 	}
 
-	bool intersects(CRect<T> r) const {
+	bool intersects(CRect r) const {
 		return max.x >= r.min.x && min.x <= r.max.x && max.y >= r.min.y && min.y <= r.max.y;
 	}
 
-	Rect operator+(CVec2<T> v) const {
-		return Rect{min + v, max + v};
+	Rect operator&(CRect r) const {
+		return {min.max(r.min), max.min(r.max)};
 	}
 
-	Rect operator-(CVec2<T> v) const {
-		return Rect{min - v, max - v};
+	Rect operator|(CRect r) const {
+		return {min.min(r.min), max.max(r.max)};
 	}
 
-	Rect& operator+=(CVec2<T> v) {
-		min += v;
-		max += v;
+	Rect operator+(CVec2 v) const {
+		return {min + v, max + v};
+	}
+
+	Rect operator-(CVec2 v) const {
+		return {min - v, max - v};
+	}
+
+	Rect& operator&=(CRect r) {
+		*this = *this & r;
 		return *this;
 	}
 
-	Rect& operator-=(CVec2<T> v) {
-		min -= v;
-		max -= v;
+	Rect& operator|=(CRect r) {
+		*this = *this | r;
 		return *this;
 	}
 
-	bool operator==(CRect<T> r) const {
+	Rect& operator+=(CVec2 v) {
+		*this = *this + v;
+		return *this;
+	}
+
+	Rect& operator-=(CVec2 v) {
+		*this = *this - v;
+		return *this;
+	}
+
+	bool operator==(CRect r) const {
 		return min == r.min && max == r.max;
 	}
 
-	bool operator!=(CRect<T> r) const {
-		return !operator==(r);
+	bool operator!=(CRect r) const {
+		return !*this == r;
 	}
 
-	friend std::ostream& operator<<(std::ostream& str, CRect<T>& r) {
+	friend std::ostream& operator<<(std::ostream& str, CRect& r) {
 		return str << "Rect(" << r.min.x << ',' << r.min.y << ',' << r.max.x << ',' << r.max.y << ')';
 	}
 };

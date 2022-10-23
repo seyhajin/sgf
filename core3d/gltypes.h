@@ -40,8 +40,6 @@ constexpr GLint glAttribSizes[] = {0,1,2,3,4,4,4,2};
 constexpr GLenum glAttribTypes[] = {GL_NONE,	GL_FLOAT, GL_FLOAT,			GL_FLOAT,
 						  GL_FLOAT, GL_BYTE,  GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE};
 
-void setGLTextureData(uint width, uint height, TextureFormat format, TextureFlags flags, const void* data);
-
 void bindGLUniform(GLenum glType, GLint glLocation, CAny value);
 
 void glAssert();

@@ -8,10 +8,10 @@ namespace sgf {
 String resolveAssetPath(CString assetPath);
 
 //! Load raw data from a filesystem path.
-Vector<uchar> loadData(CString path);
+Vector<uint8_t> loadData(CString path);
 
 //! Save raw data from to filesystem path.
-void saveData(CVector<uchar> data, CString path);
+void saveData(CVector<uint8_t> data, CString path);
 
 //! Load a string from a filesystem path.
 String loadString(CString path);

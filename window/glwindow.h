@@ -12,8 +12,6 @@ public:
 
 	static constexpr uint maxGamepads=4;
 
-	GLWindow(CString title, uint width, uint height);
-
 	~GLWindow() override;
 
 	CVec2i size() const override{
@@ -38,7 +36,7 @@ public:
 
 	void endFrame() override;
 
-	void run(Function<void()> frameFunc) override;
+	void run(FrameFunc frameFunc) override;
 
 	void stop() override;
 
@@ -62,6 +60,8 @@ private:
 	Vec2i m_restorePosition;
 	Vec2i m_restoreSize;
 
+	Function<void()> m_frameFunc;
+
 	double m_idleTime;
 	double m_fpsTime;
 	uint m_cpuIdle{};
@@ -69,7 +69,9 @@ private:
 	uint m_fpsTicks{};
 	uint m_fps{};
 
-	Function<void()> m_runFunc;
+	GLWindow(CString title, uint width, uint height);
+
+	friend Window* createMainWindow(CString title,uint width,uint height);
 
 	void updateFPS();
 	void updateIdleStats();

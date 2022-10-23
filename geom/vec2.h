@@ -7,8 +7,10 @@ namespace sgf {
 
 template <class T> struct Vec2;
 template <class T> using CVec2 = const Vec2<T>&;
+
 using Vec2f = Vec2<float>;
 using CVec2f = const Vec2f&;
+
 using Vec2i = Vec2<int>;
 using CVec2i = const Vec2i&;
 
@@ -43,54 +45,75 @@ template <class T> struct Vec2 {
 	Vec2 operator*(CVec2 v) const {
 		return {x * v.x, y * v.y};
 	}
+
 	Vec2 operator/(CVec2 v) const {
 		return {x / v.x, y / v.y};
 	}
+
 	Vec2 operator+(CVec2 v) const {
 		return {x + v.x, y + v.y};
 	}
+
 	Vec2 operator-(CVec2 v) const {
 		return {x - v.x, y - v.y};
 	}
 
-	Vec2 operator*(float s) const {
+	Vec2 operator*(T s) const {
 		return {x * s, y * s};
 	}
-	Vec2 operator/(float s) const {
+
+	Vec2 operator/(T s) const {
 		return {x / s, y / s};
 	}
-	Vec2 operator+(float s) const {
+
+	Vec2 operator+(T s) const {
 		return {x + s, y + s};
 	}
-	Vec2 operator-(float s) const {
+
+	Vec2 operator-(T s) const {
 		return {x - s, y - s};
 	}
 
 	// clang-format off
-	Vec2& operator*=(CVec2 v) { x *= v.x; y *= v.y; return *this; }
-	Vec2& operator/=(CVec2 v) { x /= v.x; y /= v.y; return *this; }
-	Vec2& operator+=(CVec2 v) { x += v.x; y += v.y; return *this;	}
-	Vec2& operator-=(CVec2 v) { x -= v.x; y -= v.y; return *this;	}
+	Vec2& operator*=(CVec2 v) { x *= v.x; y *= v.y; return *this;}
+	Vec2& operator/=(CVec2 v) { x /= v.x; y /= v.y; return *this;}
+	Vec2& operator+=(CVec2 v) { x += v.x; y += v.y; return *this;}
+	Vec2& operator-=(CVec2 v) { x -= v.x; y -= v.y; return *this;}
 
-	Vec2& operator*=(float s) { x *= s; y *= s; return *this; }
-	Vec2& operator/=(float s) { x /= s; y /= s; return *this; }
-	Vec2& operator+=(float s) { x += s; y += s; return *this; }
-	Vec2& operator-=(float s) { x -= s; y -= s; return *this; }
+	Vec2& operator*=(T s) { x *= s; y *= s; return *this; }
+	Vec2& operator/=(T s) { x /= s; y /= s; return *this; }
+	Vec2& operator+=(T s) { x += s; y += s; return *this; }
+	Vec2& operator-=(T s) { x -= s; y -= s; return *this; }
 	// clang-format on
 
 	bool operator==(CVec2 v) const {
 		return x == v.x && y == v.y;
 	}
+
 	bool operator!=(CVec2 v) const {
 		return !operator==(v);
+	}
+
+	Vec2 min(CVec2 v) const {
+		return {std::min(x, v.x), std::min(y, v.y)};
+	}
+
+	Vec2 max(CVec2 v) const {
+		return {std::max(x, v.x), std::max(y, v.y)};
+	}
+
+	Vec2 mid(CVec2 v) const {
+		return {(x + v.x) / 2, (y + v.y) / 2};
 	}
 
 	T length() const {
 		return std::sqrt(x * x + y * y);
 	}
+
 	T distance(CVec2 v) {
 		return operator-(v).length();
 	}
+
 	Vec2 normalized() const {
 		return operator/(length());
 	}

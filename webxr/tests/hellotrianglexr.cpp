@@ -129,9 +129,10 @@ void renderFrame(double millis, XRFrame* frame) {
 
 int main() {
 
-	window = createWindow("Skirmish 2022!", 640, 480);
+	window = createMainWindow("Skirmish 2022!", 640, 480);
 
 	device = createGraphicsDevice(window);
+
 	gc = graphicsDevice()->createGraphicsContext();
 
 	VertexLayout vertexLayout{

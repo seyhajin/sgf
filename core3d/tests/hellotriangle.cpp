@@ -60,7 +60,7 @@ int main() {
 	uint width = 1280;
 	uint height = 720;
 
-	auto window = createWindow("Skirmish 2022!", width, height);
+	auto window = createMainWindow("Skirmish 2022!", width, height);
 
 	auto device = createGraphicsDevice(window);
 

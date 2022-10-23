@@ -72,12 +72,17 @@ public:
 		return *this;
 	}
 
-	void resolve(ValueTy value) {
-		if (m_rep->resolveFun) m_rep->resolveFun(value);
-	}
-
 	void resolveAsync(ValueTy value) {
 		postAppEvent([promise = *this, value]() mutable { promise.resolve(value); });
+	}
+
+	void resolve(ValueTy value) {
+		if(!mainThread() || !m_rep->resolveFun) {
+			resolveAsync(value);
+			return;
+		}
+		//assert(m_rep->resolveFun);
+		m_rep->resolveFun(value);
 	}
 
 	// 'then' function that returns a promise.

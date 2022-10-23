@@ -40,7 +40,7 @@ private:
 
 	Gamepad(uint id);
 
-	void poll(const float* axes, int numAxes, const uchar* buttons, int numButtons, const uchar* hats, int numHats);
+	void poll(const float* axes, int numAxes, const uint8_t* buttons, int numButtons, const uint8_t* hats, int numHats);
 
 	void onPoll() override;
 };

@@ -11,8 +11,8 @@
 
 namespace sgf {
 
-using Clock = std::chrono::steady_clock;
-//using Clock = std::chrono::system_clock;
+using Clock = std::chrono::system_clock;
+//using Clock = std::chrono::steady_clock;
 //using Clock = std::chrono::high_resolution_clock;
 
 static String debugTimeStamp(const Clock::time_point& tp) {
@@ -51,6 +51,9 @@ DebugStream::~DebugStream() {
 
 DebugStream debug(const char* file, int line) {
 	return {[file, line, now = debugTimeStamp()](CString str) {
+#if OS_EMSCRIPTEN
+		if(!mainThread()) return;
+#endif
 		String fileinfo = file ? (String("[") + file + ":" + std::to_string(line) + "]") : String();
 		debugOutputFunc(now + " : " + str); //+" "+fileinfo);
 	}};

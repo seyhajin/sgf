@@ -33,14 +33,22 @@ String dequote(CString str) {
 void startServer(CString root, CString host, int port) {
 	std::thread([root, host, port] {
 		httplib::Server server;
+
 		server.set_mount_point("/", root);
+
+		server.set_file_request_handler([](const httplib::Request &req, httplib::Response &res) {
+			res.set_header("Cross-Origin-Opener-Policy","same-origin");
+			res.set_header("Cross-Origin-Embedder-Policy", "require-corp");
+		});
+
 		server.listen(host, port);
+
 	}).detach();
 }
 
 void startBrowser(CString url) {
 #if OS_WINDOWS
-	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 	ShellExecute(HWND_DESKTOP, 0, url.c_str(), 0, 0, SW_SHOWNORMAL);
 #endif
 }

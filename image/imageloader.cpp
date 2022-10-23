@@ -8,17 +8,16 @@ namespace {
 
 Image* loadImageR32f(CString path) {
 
-	int width, height, n;
+	int width, height, chans;
 
-	auto srcData = static_cast<ushort*>(stbi_load_16(path.c_str(), &width, &height, &n, 1));
+	auto srcData = static_cast<ushort*>(stbi_load_16(path.c_str(), &width, &height, &chans, 1));
 	if (!srcData) panic("Can't load image:" + path);
 
-	auto data = static_cast<ushort*>(malloc(width * 4 * height));
-	for (int y = 0; y < height; ++y) {
-		const ushort* src = srcData + y * width;
-		auto dst = data + y * width;
-		for (int x = 0; x < width; ++x) { *dst++ = ushort(float(*src++) / 65536.0f); }
-	}
+	auto data = static_cast<float*>(malloc(width * height * sizeof(float)));
+
+	auto src=srcData;
+	auto dst=data;
+	for(size_t i=0;i<width*height;++i) *dst++ = float(*src++) / 65536.0f;
 
 	stbi_image_free(srcData);
 

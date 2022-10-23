@@ -33,7 +33,6 @@ enum struct TextureFlags {
 	clampST = 3,
 	linear = 4,
 	mipmap = 8, // also implies linear
-	unmanaged = 16
 };
 
 enum struct AttribFormat { none, float1, float2, float3, float4, sbyte4, ubyte4, ubyte2 };

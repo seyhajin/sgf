@@ -14,7 +14,7 @@ inline uint bytesPerPixel(ImageFormat format) {
 
 class Image : public Shared {
 public:
-	uchar* const data;
+	uint8_t* const data;
 	uint const width;
 	uint const height;
 	uint const pitch;

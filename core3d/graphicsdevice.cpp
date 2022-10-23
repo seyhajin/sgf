@@ -7,9 +7,11 @@
 namespace sgf {
 
 GraphicsDevice* createGraphicsDevice(Window* window) {
-	assert(window->instanceOf<GLWindow>());
+	assert(!GraphicsDevice::g_graphicsDevice && window && window->instanceOf<GLWindow>());
 
-	return new GLGraphicsDevice(window->cast<GLWindow>());
+	GraphicsDevice::g_graphicsDevice = new GLGraphicsDevice(window->cast<GLWindow>());
+
+	return GraphicsDevice::g_graphicsDevice;
 }
 
 }

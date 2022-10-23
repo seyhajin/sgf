@@ -26,9 +26,7 @@ namespace sgf {
 
 namespace {
 
-GLWindow* g_mainWindow;
 GLWindow* g_running;
-Function<void()> g_runFunc;
 
 } // namespace
 
@@ -37,9 +35,6 @@ GLWindow* GLWindow::getWindow(GLFWwindow* glfwWindow) {
 }
 
 GLWindow::GLWindow(CString title, uint width, uint height) {
-	assert(!g_mainWindow);
-	g_mainWindow = this;
-
 	// Init GLFW and GLFWwindow
 	{
 		glfwSetErrorCallback([](int err, const char* desc) {
@@ -97,7 +92,7 @@ GLWindow::GLWindow(CString title, uint width, uint height) {
 	// Fullscreen mode handling
 	{
 #ifndef OS_EMSCRIPTEN
-		fullScreenMode.valueChanged.connect(this, [this](bool fullScreen) {
+		fullScreen.valueChanged.connect(this, [this](bool fullScreen) {
 			if (fullScreen) {
 				glfwGetWindowPos(m_glfwWindow, &m_restorePosition.x, &m_restorePosition.y);
 				glfwGetWindowSize(m_glfwWindow, &m_restoreSize.x, &m_restoreSize.y);
@@ -109,7 +104,7 @@ GLWindow::GLWindow(CString title, uint width, uint height) {
 									 m_restoreSize.y, 0);
 			}
 		});
-		if (fullScreenMode) {
+		if(fullScreen) {
 			m_restorePosition = Vec2i(16, 16);
 			m_restoreSize -= Vec2i(32, 32);
 		} else {
@@ -175,11 +170,10 @@ void GLWindow::close() {
 
 	if (!m_glfwWindow) return;
 
-	if (this == g_mainWindow) g_mainWindow = nullptr;
-
 	if (this == g_running) g_running = nullptr;
 
 	glfwDestroyWindow(m_glfwWindow);
+
 	m_glfwWindow = nullptr;
 
 	glfwTerminate();
@@ -270,18 +264,18 @@ void GLWindow::singleStep() {
 
 	beginFrame();
 
-	if (m_glfwWindow) m_runFunc();
+	if (m_glfwWindow) m_frameFunc();
 
 	endFrame();
 
 	swapBuffers();
 }
 
-void GLWindow::run(Function<void()> runFunc) {
+void GLWindow::run(FrameFunc frameFunc) {
 
 	assert(!g_running);
 	g_running = this;
-	m_runFunc = runFunc;
+	m_frameFunc = std::move(frameFunc);
 
 #ifdef __EMSCRIPTEN__
 	auto stepper = [] {
@@ -297,7 +291,7 @@ void GLWindow::stop() {
 
 	assert(g_running);
 	g_running = nullptr;
-	m_runFunc = {};
+	m_frameFunc = {};
 };
 
 } // namespace sgf

@@ -4,9 +4,6 @@
 
 using namespace sgf;
 
-GLWindow* window;
-
-GraphicsDevice* device;
 Scene* scene;
 XRCamera* camera;
 
@@ -16,26 +13,26 @@ void renderFrame(double time, XRFrame* frame) {
 
 	scene->frameBuffer = frame->session->frameBuffer();
 
-	window->beginFrame();
+	mainWindow()->beginFrame();
 	camera->beginFrame(frame);
 
 	scene->update();
 	scene->render();
 
 	camera->endFrame();
-	window->endFrame();
+	mainWindow()->endFrame();
 }
 
 void createScene() {
 
 	// Create window.
-	window = new GLWindow("Hello Box XR!", 1280, 720);
+	createMainWindow("Hello Box XR!", 1280, 720);
 
 	// Create graphics device.
-	device = new GLGraphicsDevice(window);
+	createGraphicsDevice(mainWindow());
 
 	// Create scene.
-	scene = new Scene(device);
+	scene = new Scene(graphicsDevice());
 	scene->clearColor = Vec4f(.9f, .9f, .7f, 1);
 	scene->ambientLightColor = Vec3f(0);
 	scene->directionalLightColor = Vec3f(0);
@@ -57,8 +54,8 @@ void createScene() {
 	auto model = new Model();
 	model->renderData=createModelRenderData(mesh);
 	model->color = {.1f, .1f, .1f, 1};
-	model->translate({0, -.14f, .58f});
-	model->rotate({.2f, 0, 0});
+	model->translate({0, 0, 1});
+	model->rotate({0, 0, 0});
 	model->enable();
 }
 
@@ -66,7 +63,7 @@ int main() {
 
 	createScene();
 
-	auto xrSystem = createXRSystem(device);
+	auto xrSystem = createXRSystem(graphicsDevice());
 
 	xrSystem->requestSession() | [](XRSession* session) {
 		if (!session) {
@@ -77,12 +74,12 @@ int main() {
 		// scene->frameBuffer = session->frameBuffer();
 		session->requestFrame(&renderFrame);
 
-		window->stop();
+		mainWindow()->stop();
 
 		runAppEventLoop();
 	};
 
-	window->run([] {
+	mainWindow()->run([] {
 		scene->update();
 		scene->render();
 	});
