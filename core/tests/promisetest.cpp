@@ -2,10 +2,6 @@
 
 #include <thread>
 
-#if OS_EMSCRIPTEN
-#error OOPS
-#endif
-
 using namespace sgf;
 
 Promise<bool> delay(double seconds) {
@@ -14,11 +10,13 @@ Promise<bool> delay(double seconds) {
 
 	std::thread thread([promise, seconds]() mutable {
 
-		sgf::debug() << "sleeping...";
+		debug() << "Main thread"<<mainThread();
+
+		debug() << "sleeping...";
 
 		std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
 
-		sgf::debug() << "...awake!";
+		debug() << "...awake!";
 
 		promise.resolveAsync(true);
 	});
@@ -29,6 +27,8 @@ Promise<bool> delay(double seconds) {
 }
 
 int main() {
+
+	debug() << "Main thread"<<mainThread();
 
 	delay(2) | [](bool) {
 		sgf::debug() << "Done1!";

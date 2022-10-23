@@ -15,8 +15,10 @@ class Window : public Object {
 public:
 	SGF_OBJECT_TYPE(Window, Object);
 
+	using FrameFunc = Function<void()>;
+
 	Property<bool> vsyncEnabled{true};
-	Property<bool> fullScreenMode{false};
+	Property<bool> fullScreen{false};
 	Property<bool> inputEventsEnabled{true};
 
 	Signal<uint, bool> gamepadConnectedChanged;
@@ -33,13 +35,29 @@ public:
 
 	virtual void close() = 0;
 
-	virtual void run(Function<void()> frameFunc) = 0;
+	virtual void run(FrameFunc frameFunc) = 0;
 	virtual void stop() = 0;
 
 	virtual void beginFrame() = 0;
 	virtual void endFrame() = 0;
+
+protected:
+	Window() = default;
+
+	~Window() override = default;
+
+private:
+	static inline Window* g_mainWindow;
+
+	friend Window* createMainWindow(CString title,uint width, uint height);
+
+	friend Window* mainWindow();
 };
 
-Window* createWindow(CString title,uint width, uint height);
+Window* createMainWindow(CString title,uint width, uint height);
+
+inline Window* mainWindow() {
+	return Window::g_mainWindow;
+}
 
 } // namespace sgf

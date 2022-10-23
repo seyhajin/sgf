@@ -80,9 +80,9 @@ void ModelRenderer::onUpdate() {
 
 void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
-	if (!m_instances.size()) return;
+	if (m_instances.empty()) return;
 
-	if (m_renderData->hasBlendedSurfaces()) { sortInstances(rc.renderParams()->camera.cameraMatrix.t.xyz()); }
+	if (m_renderData->hasBlendedSurfaces()) sortInstances(rc.renderParams()->camera.cameraMatrix.t.xyz());
 
 	updateInstanceBuffer();
 
@@ -96,7 +96,7 @@ void ModelRenderer::onRender(RenderContext& rc, RenderPassType pass) {
 
 	for (auto& surf : surfaces) {
 
-		surf.material->bind(gc);
+		surf.material->bindShaderParams(gc);
 
 		gc->drawIndexedGeometry(3, surf.firstIndex, surf.numIndices, m_instances.size());
 	}

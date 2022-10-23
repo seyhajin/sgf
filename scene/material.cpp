@@ -29,10 +29,11 @@ Material::Material(CVec4f baseColor) {
 	m_uniformBuffer = graphicsDevice()->createGraphicsBuffer(BufferType::uniform, sizeof(m_materialParams), nullptr);
 }
 
-void Material::bind(GraphicsContext* gc) {
+void Material::bindShaderParams(GraphicsContext* gc) {
 
 	gc->setTexture("baseColorTexture", baseColorTexture.value().open());
 	gc->setTexture("emissiveTexture", emissiveTexture.value().open());
+
 #if 0
 	gc->setTexture("metallicRoughnessTexture", metallicRoughnessTexture.value().open());
 	gc->setTexture("occlusionTexture", occlusionTexture.value().open());
@@ -45,6 +46,7 @@ void Material::bind(GraphicsContext* gc) {
 		m_uniformBuffer->updateData(0, sizeof(m_materialParams), &m_materialParams);
 		m_dirtyParams = false;
 	}
+
 	gc->setUniformBuffer("materialParams", m_uniformBuffer);
 
 	gc->setBlendMode(blendMode);

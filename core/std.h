@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
+#include <cstdint>
 
 #include <algorithm>
 #include <functional>
@@ -26,14 +27,10 @@
 #pragma warning(disable : 4267)
 #endif
 
-// TODO: Move me somewhere.
-#define SGF_ASSERT_ALIGNED16(T) static_assert((sizeof(T) & 15) == 0);
-
 namespace sgf {
 
 using std::nullptr_t;
 
-using uchar = unsigned char;
 #if OS_EMSCRIPTEN || OS_WINDOWS
 using ulong = unsigned long;
 using ushort = unsigned short;
@@ -53,14 +50,14 @@ using CString = const String&;
 template <class T> using Vector = std::vector<T>;
 template <class T> using CVector = const Vector<T>&;
 
-template <class T> using Set = std::set<T>;
-template <class T> using CSet = const Set<T>&;
-
 template <class K, class V, class C = std::less<K>> using Map = std::map<K, V, C>;
 template <class K, class V, class C = std::less<K>> using CMap = const Map<K, V, C>&;
 
 template <class V> using StringMap = Map<String, V>;
 template <class V> using CStringMap = const StringMap<V>&;
+
+template <class T> using Set = std::set<T>;
+template <class T> using CSet = const Set<T>&;
 
 template <class C, class V> bool contains(const C& container, const V& value) {
 	return std::find(container.begin(), container.end(), value) != container.end();
@@ -78,9 +75,19 @@ template <class NumTy> NumTy sgn(NumTy val) {
 	return (NumTy(0) < val) - (val < NumTy(0));
 }
 
+inline int floorMod(int x, int y) {
+	return x >= 0 ? x % y : x - ((x - y + 1) / y) * y;
+}
+
+inline float floorMod(float x, float y) {
+	return x - std::floor(float(x) / float(y)) * y;
+}
+
 //! Convert a value to a string.
 template <class ValueTy> String toString(const ValueTy& value) {
-	return (std::stringstream() << value).str();
+	std::stringstream os;
+	os<<value;
+	return os.str();
 }
 
 //! Replace all occurances of a substring.
@@ -114,6 +121,18 @@ void enableNaNExceptions();
 void disableNaNExceptions();
 
 void sgfMain(int argc, const char* argv[]);
+
+// How long app has been running for approx.
+int64_t nanoseconds();
+
+// How long app has been running for approx.
+int64_t microseconds();
+
+// How long app has been running for approx.
+int64_t milliseconds();
+
+// How long app has been running for approx.
+int64_t seconds();
 
 CVector<String> appArgs();
 

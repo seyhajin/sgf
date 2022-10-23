@@ -9,18 +9,36 @@ namespace sgf {
 class GLWindow;
 class GLGraphicsDevice;
 
-// ***** GLFrameBuffer *****
+// ***** GLTexture *****
 
-class GLFrameBuffer : public FrameBuffer {
+class GLTexture : public Texture {
 public:
-	SGF_OBJECT_TYPE(GLFrameBuffer, FrameBuffer)
+	SGF_OBJECT_TYPE(GLTexture, Texture)
 
-	GLuint const glFramebuffer;
+	GLuint const glTexture;
 
-	GLFrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture, uint width, uint height,
-				  GLuint glFramebuffer)
-		: FrameBuffer(device, colorTexture, depthTexture, width, height), glFramebuffer(glFramebuffer) {
+	GLTexture(GraphicsDevice* device, uint width, uint height, TextureFormat format, TextureFlags flags,
+			  GLuint glTexture)
+		: Texture(device, width, height, format, flags), glTexture(glTexture) {
 	}
+
+	void updateData(uint mipLevel, uint x, uint y, uint width, uint height, const void* data) override;
+};
+
+// ***** GLArrayTexture *****
+
+class GLArrayTexture : public ArrayTexture {
+public:
+	SGF_OBJECT_TYPE(GLArrayTexture, ArrayTexture)
+
+	GLuint const glTexture;
+
+	GLArrayTexture(GraphicsDevice* device, uint width, uint height, uint depth, TextureFormat format,
+				   TextureFlags flags, GLuint glTexture)
+		: ArrayTexture(device, width, height, depth, format, flags), glTexture(glTexture) {
+	}
+
+	void updateData(uint mipLevel, uint x, uint y, uint z, uint width, uint height, uint depth, const void* data) override;
 };
 
 // ***** GLGraphicsBuffer *****
@@ -42,11 +60,25 @@ public:
 	void unlockData() override;
 
 private:
-	Vector<uchar> m_lockedData;
+	Vector<uint8_t> m_lockedData;
 	uint m_lockedOffset = 0;
 	uint m_lockedSize = 0;
 	bool m_mapped = false;
 	bool m_locked = false;
+};
+
+// ***** GLFrameBuffer *****
+
+class GLFrameBuffer : public FrameBuffer {
+public:
+	SGF_OBJECT_TYPE(GLFrameBuffer, FrameBuffer)
+
+	GLuint const glFramebuffer;
+
+	GLFrameBuffer(GraphicsDevice* device, Texture* colorTexture, Texture* depthTexture, uint width, uint height,
+				  GLuint glFramebuffer)
+		: FrameBuffer(device, colorTexture, depthTexture, width, height), glFramebuffer(glFramebuffer) {
+	}
 };
 
 // ***** GLVertexState *****
@@ -60,24 +92,6 @@ public:
 	GLVertexState(GraphicsDevice* device, Vector<SharedPtr<GraphicsBuffer>> vertexBuffers, GraphicsBuffer* indexBuffer,
 				  VertexLayout layout, GLuint glVertexArray)
 		: VertexState(device, std::move(vertexBuffers), indexBuffer, std::move(layout)), glVertexArray(glVertexArray) {
-	}
-};
-
-// ***** GLTexture *****
-
-class GLTexture : public Texture {
-public:
-	SGF_OBJECT_TYPE(GLTexture, Texture)
-
-	GLuint const glTexture;
-
-	GLTexture(GraphicsDevice* device, uint width, uint height, TextureFormat format, TextureFlags flags,
-			  GLuint glTexture)
-		: Texture(device, width, height, format, flags), glTexture(glTexture) {
-	}
-
-	~GLTexture() override {
-		if (!bool(flags & TextureFlags::unmanaged)) glDeleteTextures(1, &glTexture);
 	}
 };
 
@@ -96,10 +110,6 @@ public:
 			 Vector<GLUniform> uniforms, Vector<uint> textures)
 		: Shader(device, std::move(source)), glProgram(glProgram), uniformBlocks(std::move(uniformBlocks)),
 		  uniforms(std::move(uniforms)), textures(std::move(textures)) {
-	}
-
-	~GLShader() override {
-		glDeleteProgram(glProgram);
 	}
 };
 
@@ -120,7 +130,7 @@ public:
 	void setVertexState(VertexState* vertexState) override;
 
 	void setUniformBuffer(CString name, GraphicsBuffer* buffer) override;
-	void setTexture(CString name, Texture* texture) override;
+	void setTexture(CString name, TextureResource* texture) override;
 	void setUniform(CString name, CAny any) override;
 
 	void setShader(Shader* shader) override;
@@ -130,11 +140,10 @@ public:
 	void drawGeometry(uint order, uint firstVertex, uint numVertices, uint numInstances) override;
 
 private:
-
 	friend class GLGraphicsDevice;
 
-		enum struct Dirty {
-			// clang-format off
+	enum struct Dirty {
+		// clang-format off
 			none = 					0x0000,
 			frameBuffer = 			0x0001,
 			viewport =				0x0002,
@@ -147,8 +156,8 @@ private:
 			textureBindings = 		0x0100,
 			uniformBindings =		0x0200,
 			all = 					0x03ff,
-			// clang-format on
-		};
+		// clang-format on
+	};
 
 	Dirty m_dirty = Dirty::all;
 
@@ -161,7 +170,7 @@ private:
 	SharedPtr<GLShader> m_shader;
 
 	SharedPtr<GLGraphicsBuffer> m_uniformBuffers[32]{};
-	SharedPtr<GLTexture> m_textures[64]{};
+	SharedPtr<TextureResource> m_textures[64]{};
 	Any m_uniforms[64]{};
 
 	void validate();
@@ -171,27 +180,37 @@ private:
 
 class GLGraphicsDevice : public GraphicsDevice {
 	using Dirty = GLGraphicsContext::Dirty;
+
 public:
 	SGF_OBJECT_TYPE(GLGraphicsDevice, GraphicsDevice)
 
-	GLGraphicsDevice(GLWindow* window);
-
-	FrameBuffer* createFrameBuffer(Texture* colorTexture, Texture* depthTexture) override;
-	GraphicsBuffer* createGraphicsBuffer(BufferType type, uint size, const void* data) override;
-	VertexState* createVertexState(CVector<GraphicsBuffer*> vertexBuffers, GraphicsBuffer* indexBuffer,
-								   VertexLayout layout) override;
 	Texture* createTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
 						   const void* data) override;
+	ArrayTexture* createArrayTexture(uint width, uint height, uint depth, TextureFormat format, TextureFlags flags,
+									 const void* data) override;
+	GraphicsBuffer* createGraphicsBuffer(BufferType type, uint size, const void* data) override;
+
+	FrameBuffer* createFrameBuffer(Texture* colorTexture, Texture* depthTexture) override;
+	VertexState* createVertexState(CVector<GraphicsBuffer*> vertexBuffers, GraphicsBuffer* indexBuffer,
+								   VertexLayout layout) override;
 	Shader* createShader(CString source) override;
 	GraphicsContext* createGraphicsContext() override;
 
-	Texture* wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags, GLuint texture);
+	Texture* wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags, GLuint glTexture);
 
-	void bindAndValidate(GLGraphicsContext* gc);
+	void bindTexture(GLenum glTarget, GLuint glTexture);
+	void bindBuffer(GLenum glTarget, GLuint glBuffer);
+	void bind(GLGraphicsContext* gc);
 
 private:
 	SharedPtr<GLGraphicsContext> m_boundContext;
 	Dirty m_dirty = Dirty::none;
+
+	GLGraphicsDevice(GLWindow* window);
+
+	GLuint createTexture(GLenum glTarget, TextureFlags flags);
+
+	friend GraphicsDevice*  createGraphicsDevice(Window* window);
 };
 
 } // namespace sgf

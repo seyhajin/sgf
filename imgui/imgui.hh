@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef IMGUI_CMAKE_LISTS_INCLUDED
+#error CMakeLists.txt for imgui module not processed
+#endif
+
 #include "ImGuiFileDialog.h"
 #include "imguiex.h"
 #include "imguilog.h"

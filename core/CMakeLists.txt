@@ -43,7 +43,7 @@ add_library(core
         )
 
 if (OS_EMSCRIPTEN)
-    target_link_options(core PUBLIC "SHELL:-s NO_EXIT_RUNTIME=1 -s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=['main','free','sgfRegistry','sgfRegisterObject','sgfGetObject','sgfDeregisterObject']")
+    target_link_options(core PUBLIC "SHELL:-sNO_EXIT_RUNTIME=1 -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=['sgfRegistry','sgfRegisterObject','sgfGetObject','sgfDeregisterObject']")
     em_link_js_library(core "${PROJECT_SOURCE_DIR}/jsutils.js")
 elseif (OS_LINUX)
     target_link_libraries(core pthread)

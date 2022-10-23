@@ -20,20 +20,53 @@ protected:
 	}
 };
 
+// ***** TextureResource *****
+
+class TextureResource : public GraphicsResource {
+public:
+	SGF_OBJECT_TYPE(TextureResource, GraphicsResource)
+
+protected:
+	TextureResource(GraphicsDevice* device) : GraphicsResource(device) {
+	}
+};
+
 // ***** Texture *****
 
-class Texture : public GraphicsResource {
+class Texture : public TextureResource {
 public:
-	SGF_OBJECT_TYPE(Texture, GraphicsResource)
+	SGF_OBJECT_TYPE(Texture, TextureResource)
 
 	uint const width;
 	uint const height;
 	TextureFormat const format;
 	TextureFlags const flags;
 
+	virtual void updateData(uint mipLevel,uint x, uint y, uint width, uint height, const void* data) = 0;
+
 protected:
 	Texture(GraphicsDevice* device, uint width, uint height, TextureFormat format, TextureFlags flags)
-		: GraphicsResource(device), width(width), height(height), format(format), flags(flags) {
+		: TextureResource(device), width(width), height(height), format(format), flags(flags) {
+	}
+};
+
+// ***** ArrayTexture *****
+
+class ArrayTexture : public TextureResource {
+public:
+	SGF_OBJECT_TYPE(ArrayTexture, TextureResource)
+
+	uint const width;
+	uint const height;
+	uint const depth;
+	TextureFormat const format;
+	TextureFlags const flags;
+
+	virtual void updateData(uint mipLevel, uint x, uint y, uint z, uint width, uint height, uint depth, const void* data) = 0;
+
+protected:
+	ArrayTexture(GraphicsDevice* device, uint width, uint height, uint depth, TextureFormat format, TextureFlags flags)
+		: TextureResource(device), width(width), height(height), depth(depth), format(format), flags(flags) {
 	}
 };
 
@@ -121,7 +154,7 @@ public:
 	virtual void setVertexState(VertexState* vertexState) = 0;
 
 	virtual void setUniformBuffer(CString name, GraphicsBuffer* buffer) = 0;
-	virtual void setTexture(CString name, Texture* texture) = 0;
+	virtual void setTexture(CString name, TextureResource* texture) = 0;
 	virtual void setUniform(CString name, CAny any) = 0;
 	virtual void setShader(Shader* shader) = 0;
 
@@ -144,6 +177,8 @@ public:
 
 	virtual Texture* createTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
 								   const void* data) = 0;
+	virtual ArrayTexture* createArrayTexture(uint width, uint height, uint depth, TextureFormat format, TextureFlags flags,
+								   const void* data) = 0;
 	virtual GraphicsBuffer* createGraphicsBuffer(BufferType type, uint size, const void* data) = 0;
 	virtual FrameBuffer* createFrameBuffer(Texture* colorTexture, Texture* depthTexture) = 0;
 	virtual VertexState* createVertexState(CVector<GraphicsBuffer*> vertexBuffers, GraphicsBuffer* indexBuffer,
@@ -153,19 +188,20 @@ public:
 
 protected:
 	GraphicsDevice(Window* window) : window(window) {
-		assert(!g_instance);
-		g_instance = this;
 	}
 
 private:
-	static inline GraphicsDevice* g_instance;
-	friend GraphicsDevice* graphicsDevice() {
-		return g_instance;
-	}
+	static inline GraphicsDevice* g_graphicsDevice;
+
+	friend GraphicsDevice* createGraphicsDevice(Window* window);
+
+	friend GraphicsDevice* graphicsDevice();
 };
 
 GraphicsDevice* createGraphicsDevice(Window* window);
 
-GraphicsDevice* graphicsDevice();
+inline GraphicsDevice* graphicsDevice() {
+	return GraphicsDevice::g_graphicsDevice;
+}
 
 } // namespace sgf

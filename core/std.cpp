@@ -5,13 +5,10 @@
 #include <cfloat>
 #endif
 
-#ifndef OS_EMSCRIPTEN
 #include <thread>
-#endif
 
 #ifdef ASAN_ENABLED
-// The mere presence of this magic bit of code causes debugger to popup when address sanitizer detects corruption at
-// runtime.
+// The mere presence of this magic bit of code causes debugger to popup when address sanitizer detects corruption at runtime.
 extern "C" const char* __asan_default_options() { // NOLINT (unused function)
 	return "abort_on_error=1:detect_leaks=0";
 }
@@ -21,9 +18,11 @@ namespace sgf {
 
 namespace {
 
-#ifndef OS_EMSCRIPTEN
+using Clock = std::chrono::system_clock;
+
+const Clock::time_point g_timerStart = Clock::now();
+
 std::thread::id g_mainThreadId = std::this_thread::get_id();
-#endif
 
 Vector<String> g_appArgs;
 
@@ -57,7 +56,7 @@ Vector<String> split(CString str, CString sep) {
 String join(CVector<String> fields, CString sep) {
 	if (fields.empty()) return {};
 	String str;
-	for (auto field : fields) {
+	for (const auto& field : fields) {
 		if (!str.empty()) str += sep;
 		str += field;
 	}
@@ -85,11 +84,7 @@ bool endsWith(CString string, CString substr) {
 }
 
 bool mainThread() {
-#ifndef OS_EMSCRIPTEN
 	return std::this_thread::get_id() == g_mainThreadId;
-#else
-	return true;
-#endif
 }
 
 void enableNaNExceptions() {
@@ -116,6 +111,22 @@ void sgfMain(int argc, const char* argv[]) {
 
 CVector<String> appArgs() {
 	return g_appArgs;
+}
+
+int64_t nanoseconds() {
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - g_timerStart).count();
+}
+
+int64_t microseconds() {
+	return std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - g_timerStart).count();
+}
+
+int64_t milliseconds() {
+	return std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - g_timerStart).count();
+}
+
+int64_t seconds() {
+	return std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - g_timerStart).count();
 }
 
 } // namespace sgf

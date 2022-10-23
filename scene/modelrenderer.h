@@ -29,11 +29,11 @@ private:
 	SharedPtr<GraphicsBuffer> m_instanceBuffer;
 	SharedPtr<VertexState> m_vertexState;
 
-	Vector<RenderPassType> renderPasses() const override;
-
 	void sortInstances(CVec3f eyePos);
 
 	void updateInstanceBuffer();
+
+	Vector<RenderPassType> renderPasses() const override;
 
 	void onUpdate() override;
 

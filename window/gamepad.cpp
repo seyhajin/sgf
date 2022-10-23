@@ -13,7 +13,7 @@ namespace sgf {
 Gamepad::Gamepad(uint id) : UIDevice(numButtons), m_id(id) {
 }
 
-void Gamepad::poll(const float* axes, int numDevAxes, const uchar* buttons, int numDevButtons, const uchar* hats,
+void Gamepad::poll(const float* axes, int numDevAxes, const uint8_t* buttons, int numDevButtons, const uint8_t* hats,
 				   int numDevHats) {
 
 	for (uint i = 0; i < Gamepad::numAxes; ++i) {
@@ -78,7 +78,7 @@ void Gamepad::onPoll() {
 		float axes[16];
 		for (uint i = 0; i < std::min(state.numAxes, 16); ++i) axes[i] = state.axis[i];
 
-		uchar buttons[64];
+		uint8_t buttons[64];
 		for (uint i = 0; i < std::min(state.numButtons, 64); ++i) buttons[i] = state.digitalButton[i];
 
 		poll(axes, state.numAxes, buttons, state.numButtons, nullptr, 0);

@@ -9,40 +9,38 @@ namespace sgf {
 template <class ValueTy> class Property : public Object {
 public:
 	using CValueTy = const ValueTy&;
+	using CProperty = const Property&;
 
 	Signal<CValueTy> valueChanged; //(newValue)
 
 	Property() = default;
 
-	Property(CValueTy value) : m_value(value) { // NOLINT
+	explicit Property(CValueTy value) : m_value(value) {
 	}
 
-	Property(const Property& prop) : m_value(prop.value) {
-	}
+	Property(CProperty value) = delete;//: m_value(value.m_value) {}
 
-	Property(Property&& prop) noexcept : m_value(std::move(prop.value)) {
-	}
+	Property(Property&& value) noexcept = delete; //noexcept : m_value(std::move(value.m_value)) {}
 
-	Property& operator=(CValueTy newValue) {
-		if (newValue == m_value) return *this;
-		m_value = newValue;
-		valueChanged.emit(newValue);
+	Property& operator=(CValueTy value) {
+		if (m_value == value) return *this;
+		m_value = value;
+		valueChanged.emit(m_value);
 		return *this;
 	}
 
-	Property& operator=(Property&& newValue) noexcept {
-		if (newValue == m_value) return *this;
-		m_value = std::move(newValue);
-		valueChanged.emit(newValue);
+	Property& operator=(CProperty value) {
+		if (m_value == value.m_value) return *this;
+		m_value = value.m_value;
+		valueChanged.emit(m_value);
 		return *this;
 	}
 
-	operator CValueTy() const { // NOLINT
-		return m_value;
-	}
-
-	CValueTy value() const {
-		return m_value;
+	Property& operator=(Property&& value) noexcept {
+		if (m_value == value.m_value) return *this;
+		m_value = std::move(value.m_value);
+		valueChanged.emit(m_value);
+		return *this;
 	}
 
 	bool operator==(CValueTy value) const {
@@ -57,12 +55,20 @@ public:
 		return m_value < value;
 	}
 
+	operator CValueTy() const { //NOLINT
+		return m_value;
+	}
+
+	CValueTy value() const {
+		return m_value;
+	}
+
 	friend std::ostream& operator<<(std::ostream& str, const Property& property) {
 		return str << property.m_value;
 	}
 
 private:
-	ValueTy m_value = {};
+	ValueTy m_value{};
 };
 
 } // namespace sgf

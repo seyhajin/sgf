@@ -4,8 +4,12 @@
 
 namespace sgf {
 
-Window* createWindow(CString title, uint width, uint height) {
-	return new GLWindow(title,width,height);
+Window* createMainWindow(CString title, uint width, uint height) {
+	if(Window::g_mainWindow) panic("Main window already created");
+
+	Window::g_mainWindow = new GLWindow(title,width,height);
+
+	return Window::g_mainWindow;
 }
 
 }

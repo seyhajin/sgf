@@ -3,7 +3,7 @@
 namespace sgf {
 
 Image::Image(void* data, uint width, uint height, uint pitch, ImageFormat format)
-	: data((uchar*)data), width(width), height(height), pitch(pitch), format(format) {
+	: data((uint8_t*)data), width(width), height(height), pitch(pitch), format(format) {
 	assert(data);
 }
 
@@ -13,7 +13,7 @@ Vec4f Image::getPixel(int x, int y) const {
 
 	static constexpr float sc = 1.0f / 255.0f;
 
-	uchar* p = data + y * pitch + x * bytesPerPixel(format);
+	auto p = data + y * pitch + x * bytesPerPixel(format);
 	switch (format) {
 	case ImageFormat::alpha8:
 		return {0, 0, 0, p[0] * sc};
@@ -49,7 +49,7 @@ void Image::setPixel(int x, int y, CVec4f pixel) const {
 
 	if (uint(x) >= width || uint(y) >= height) return;
 
-	uchar* p = data + y * pitch + x * bytesPerPixel(format);
+	auto p = data + y * pitch + x * bytesPerPixel(format);
 	switch (format) {
 	case ImageFormat::alpha8:
 		p[0] = std::round(pixel.w * 255.0f);

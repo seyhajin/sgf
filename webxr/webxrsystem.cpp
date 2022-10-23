@@ -278,7 +278,7 @@ EM_JS(void, sgfXRRequestSession, (Promise<XRSession*> * promise_ptr, XRSession* 
 
 				Module.ctx.makeXRCompatible().then(() => {
 
-					const state = {baseLayer: new XRWebGLLayer(session, Module.ctx), depthNear: .1, depthFar: 100.0};
+					const state = {baseLayer: new XRWebGLLayer(session, Module.ctx), depthNear: .1, depthFar: 4096.0};
 
 					session.updateRenderState(state);
 

@@ -4,7 +4,7 @@
 
 namespace sgf {
 
-struct MaterialParams {
+struct alignas(16) MaterialParams {
 	// sampler2D baseColorTexture
 	// sampler2D metallicRoughnessTexture
 	// sampler2D emissiveTexture
@@ -12,11 +12,8 @@ struct MaterialParams {
 	// sampler2D normalTexture
 	Vec4f baseColorFactor;
 	Vec3f emissiveFactor;
-	float metallicFactor;
-	float roughnessFactor;
-	char _pad[12];
+	float metallicFactor{0};
+	float roughnessFactor{0};
 };
-
-SGF_ASSERT_ALIGNED16(MaterialParams);
 
 } // namespace sgf

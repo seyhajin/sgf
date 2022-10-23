@@ -102,8 +102,10 @@ elseif (DEBUG)
     if (OS_EMSCRIPTEN)
 #        add_compile_options(-gsource-map)
 #        add_link_options(-gsource-map)
-        add_compile_options(-g3)
-        add_link_options(-g3)
+#       Note: Install this chrome browser plugin for improved runtime debugging.
+#       https://chrome.google.com/webstore/detail/cc%20%20-devtools-support-dwa/pdcpmagijalfljmkmjngeonclgbbannb
+        add_compile_options(-g)
+        add_link_options(-g)
     endif ()
 endif ()
 
@@ -128,9 +130,10 @@ endif()
 # Some miscellaneous emscripten settings.
 #
 if (OS_EMSCRIPTEN)
+    add_compile_options(-pthread)
+    add_link_options(-sPTHREAD_POOL_SIZE=4 --emrun -sTOTAL_MEMORY=512Mb)
+    add_link_options(-pthread --emrun --shell-file "${CMAKE_SOURCE_DIR}/embuild/index_template.html")
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    add_link_options(--shell-file "${CMAKE_SOURCE_DIR}/embuild/index_template.html")
-    add_link_options("SHELL:--emrun -s TOTAL_MEMORY=64mb -s ASSERTIONS=1 -s EXPORTED_FUNCTIONS=_main,_free")
 endif ()
 
 # Copy assets from 'source' target to 'target' target (usually an exe)
@@ -188,20 +191,30 @@ endfunction()
 
 include_directories(${CMAKE_SOURCE_DIR})
 
+# OK, this a list all SGF modules and their *immediate* dependencies.
+#
+# The CMakeLists.txt for each module should include a target_link_libraries() directive that
+# list *at least* these dependencies, or you'll get link errors and, quite possibly, a TON of
+# very confusing compile errors!
+#
+# Note we only need to worry about immediate dependencies, cmake will make sure they add *their*
+# dependencies recursively etc.
+
+add_subdirectory(core)          # no deps
 add_subdirectory(audio)         # deps: core
-add_subdirectory(core)
-add_subdirectory(core3d)        # deps: window
 add_subdirectory(emgdb)         # deps: core
 add_subdirectory(fetch)         # deps: core
 add_subdirectory(geom)          # deps: core
-add_subdirectory(glfw)          # deps: opengl
-add_subdirectory(image)         # deps: geom, stb
-add_subdirectory(imgui)         # deps: window
 add_subdirectory(opengl)        # deps: core
-add_subdirectory(scene)         # deps: imgui, core3d
 add_subdirectory(stb)           # deps: core
-add_subdirectory(gltf)          # deps: scene stb
-add_subdirectory(window)        # deps: glfw, image
 add_subdirectory(websockets)    # deps: core
+add_subdirectory(image)         # deps: geom stb
+add_subdirectory(glfw)          # deps: opengl
+add_subdirectory(window)        # deps: glfw image
+add_subdirectory(core3d)        # deps: window
+add_subdirectory(imgui)         # deps: window
+add_subdirectory(scene)         # deps: core3d imgui
 add_subdirectory(webxr)         # deps: core3d
-add_subdirectory(xrscene)       # deps: scene, webxr
+add_subdirectory(xrscene)       # deps: scene webxr
+add_subdirectory(gltf)          # deps: scene
+add_subdirectory(orkland)       # deps: scene

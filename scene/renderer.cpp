@@ -2,6 +2,10 @@
 
 namespace sgf {
 
+Vector<RenderPassType> Renderer::renderPasses() const {
+	return {RenderPassType::opaque};
+}
+
 void Renderer::attach(Scene* scene) {
 	assert(scene && !m_scene);
 	m_scene = scene;

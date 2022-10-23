@@ -5,7 +5,7 @@ namespace sgf {
 struct GamepadMapping {
 
 	uint32_t deviceId;
-	uchar mappings[21];
+	uint8_t mappings[21];
 };
 
 namespace {
@@ -45,8 +45,8 @@ const GamepadMapping* findGamepadMapping(ushort vendorId, ushort productId) {
 	return &defaultMapping;
 }
 
-float getGamepadInput(const GamepadMapping* gpmapping, uint index, bool isButton, const float* axes, uint numAxes, const uchar* buttons,
-					  uint numButtons, const uchar* hats, uint numHats) {
+float getGamepadInput(const GamepadMapping* gpmapping, uint index, bool isButton, const float* axes, uint numAxes, const uint8_t* buttons,
+					  uint numButtons, const uint8_t* hats, uint numHats) {
 
 	uint mapping = gpmapping->mappings[index + (isButton ? 4 : 0)];
 

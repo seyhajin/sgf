@@ -14,12 +14,23 @@ struct IdMap {
 
 	uint next = 0;
 	StringMap<uint> map;
+	Map<uint, String> rmap;
 
 	uint get(CString name) {
 		auto it = map.find(name);
 		if (it != map.end()) return it->second;
-		map.insert(it, std::make_pair(name, ++next));
+		++next;
+#if DEBUG
+		debug() << "### Binding name"<<name<<"to id"<<next;
+#endif
+		map.insert(it, std::make_pair(name, next));
+		rmap.insert(std::make_pair(next, name));
 		return next;
+	}
+
+	String name(uint id) {
+		auto it = rmap.find(id);
+		return it != rmap.end() ? it->second : "?????";
 	}
 };
 
@@ -29,17 +40,60 @@ IdMap uniformIds;
 
 GLuint glNullVertexArray;
 
+int mipLevels(int width, int height) {
+	int n = 1;
+	while (width > 1 || height > 1) {
+		if (width > 1) width >>= 1;
+		if (height > 1) height >>= 1;
+		++n;
+	}
+	return n;
+}
+
 } // namespace
 
-// ***** GLGraphicsBuffer *****
+// ***** GLTexture *****
 
-void GLGraphicsBuffer::updateData(uint loffset, uint lsize, const void* data) {
-	assert(loffset + lsize <= this->size);
+void GLTexture::updateData(uint mipLevel, uint x, uint y, uint width, uint height, const void* data) {
+	assert(x + width <= this->width && y + height <= this->height);
 
 	glAssert();
 
+	static_cast<GLGraphicsDevice*>(graphicsDevice)->bindTexture(GL_TEXTURE_2D, glTexture);
+
+	auto& glFormat = glPixelFormats[int(format)];
+	glTexSubImage2D(GL_TEXTURE_2D, mipLevel, x, y, width, height, glFormat.format, glFormat.type, data);
+
+	glAssert();
+}
+
+// ***** GLArrayTexture *****
+
+void GLArrayTexture::updateData(uint mipLevel, uint x, uint y, uint z, uint width, uint height, uint depth,
+								const void* data) {
+	assert(x + width <= this->width && y + height <= this->height && z + depth <= this->depth);
+
+	glAssert();
+
+	static_cast<GLGraphicsDevice*>(graphicsDevice)->bindTexture(GL_TEXTURE_2D_ARRAY, glTexture);
+
+	auto& glFormat = glPixelFormats[int(format)];
+	glTexSubImage3D(GL_TEXTURE_2D_ARRAY, mipLevel, x, y, z, width, height, depth, glFormat.format, glFormat.type, data);
+
+	glAssert();
+}
+
+// ***** GLGraphicsBuffer *****
+
+void GLGraphicsBuffer::updateData(uint offset, uint size, const void* data) {
+	assert(offset + size <= this->size);
+
+	glAssert();
+
+	static_cast<GLGraphicsDevice*>(graphicsDevice)->bindBuffer(glTarget, glBuffer);
+
 	glBindBuffer(glTarget, glBuffer);
-	glBufferSubData(glTarget, loffset, lsize, data);
+	glBufferSubData(glTarget, offset, size, data);
 
 	glAssert();
 }
@@ -98,10 +152,10 @@ void GLGraphicsContext::setUniformBuffer(CString name, GraphicsBuffer* graphicsB
 	m_dirty |= Dirty::uniformBlockBindings;
 }
 
-void GLGraphicsContext::setTexture(CString name, Texture* texture) {
+void GLGraphicsContext::setTexture(CString name, TextureResource* texture) {
 	uint id = textureIds.get(name);
-	if (texture == m_textures[id]) return;
-	m_textures[id] = static_cast<GLTexture*>(texture);
+	if (texture == m_textures[id].value()) return;
+	m_textures[id] = texture;
 	m_dirty |= Dirty::textureBindings;
 }
 
@@ -155,7 +209,7 @@ void GLGraphicsContext::setViewport(CRecti viewport) {
 }
 
 void GLGraphicsContext::validate() {
-	static_cast<GLGraphicsDevice*>(graphicsDevice)->bindAndValidate(this);
+	static_cast<GLGraphicsDevice*>(graphicsDevice)->bind(this);
 }
 
 void GLGraphicsContext::clear(CVec4f color) {
@@ -226,18 +280,15 @@ glEnable(GL_DEBUG_OUTPUT);
 
 	glGenVertexArrays(1, &glNullVertexArray);
 	glBindVertexArray(glNullVertexArray);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
-Texture* GLGraphicsDevice::createTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
-										 const void* data) {
-
-	glAssert();
-
-	GLenum glTarget = GL_TEXTURE_2D;
+GLuint GLGraphicsDevice::createTexture(GLenum glTarget, TextureFlags flags) {
 
 	GLuint glTexture;
 	glGenTextures(1, &glTexture);
-	glBindTexture(glTarget, glTexture);
+	bindTexture(glTarget, glTexture);
 
 	float aniso = 0.0f;
 
@@ -248,7 +299,7 @@ Texture* GLGraphicsDevice::createTexture(uint width, uint height, TextureFormat 
 	if (bool(flags & TextureFlags::mipmap)) {
 		glTexParameteri(glTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(glTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		if (aniso) glTexParameterf(glTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+		if (aniso != 0.0f) glTexParameterf(glTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
 	} else if (bool(flags & TextureFlags::linear)) {
 		glTexParameteri(glTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(glTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -266,17 +317,60 @@ Texture* GLGraphicsDevice::createTexture(uint width, uint height, TextureFormat 
 	} else {
 		glTexParameteri(glTarget, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
+	return glTexture;
+}
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	setGLTextureData(width, height, format, flags, data);
-
-	glBindTexture(glTarget, 0);
-	m_dirty |= Dirty::textureBindings;
+Texture* GLGraphicsDevice::createTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
+										 const void* data) {
 
 	glAssert();
 
-	return new GLTexture(this, width, height, format, flags, glTexture);
+	GLenum glTarget = GL_TEXTURE_2D;
+	GLuint glTexture = createTexture(glTarget, flags);
+
+	auto& glFormat = glPixelFormats[int(format)];
+
+	if (data) {
+		glTexImage2D(glTarget, 0, glFormat.internalFormat, int(width), int(height), 0, glFormat.format, glFormat.type,
+					 data);
+		if (bool(flags & TextureFlags::mipmap)) glGenerateMipmap(glTarget);
+	} else {
+		int levels = bool(flags & TextureFlags::mipmap) ? mipLevels(int(width),int(height)) : 1;
+		glTexStorage2D(glTarget, levels, glFormat.internalFormat, int(width), int(height));
+	}
+
+	glAssert();
+
+	auto texture = new GLTexture(this, width, height, format, flags, glTexture);
+	texture->deleted.connect([glTexture] { glDeleteTextures(1, &glTexture); });
+	return texture;
+}
+
+ArrayTexture* GLGraphicsDevice::createArrayTexture(uint width, uint height, uint depth, TextureFormat format,
+												   TextureFlags flags, const void* data) {
+
+	glAssert();
+
+	GLenum glTarget = GL_TEXTURE_2D_ARRAY;
+	GLuint glTexture = createTexture(glTarget, flags);
+
+	auto& glFormat = glPixelFormats[int(format)];
+
+	if (data) {
+		glTexImage3D(glTarget, 0, glFormat.internalFormat, int(width), int(height), int(depth), 0, glFormat.format,
+					 glFormat.type, data);
+		if (bool(flags & TextureFlags::mipmap)) glGenerateMipmap(glTarget);
+	}else{
+		int levels = bool(flags & TextureFlags::mipmap) ? mipLevels(int(width),int(height)) : 1;
+
+		glTexStorage3D(glTarget,levels,glFormat.internalFormat,int(width),int(height),int(depth));
+	}
+
+	glAssert();
+
+	auto texture = new GLArrayTexture(this, width, height, depth, format, flags, glTexture);
+	texture->deleted.connect([glTexture] { glDeleteTextures(1, &glTexture); });
+	return texture;
 }
 
 GraphicsBuffer* GLGraphicsDevice::createGraphicsBuffer(BufferType type, uint size, const void* data) {
@@ -302,7 +396,9 @@ GraphicsBuffer* GLGraphicsDevice::createGraphicsBuffer(BufferType type, uint siz
 	glBindBuffer(glTarget, glBuffer);
 	glBufferData(glTarget, size, data, data ? GL_STATIC_DRAW : GL_STREAM_DRAW);
 
-	return new GLGraphicsBuffer(this, type, size, glTarget, glBuffer);
+	auto buffer = new GLGraphicsBuffer(this, type, size, glTarget, glBuffer);
+	buffer->deleted.connect([glBuffer] { glDeleteBuffers(1, &glBuffer); });
+	return buffer;
 }
 
 VertexState* GLGraphicsDevice::createVertexState(CVector<GraphicsBuffer*> vertexBuffers, GraphicsBuffer* indexBuffer,
@@ -345,7 +441,9 @@ VertexState* GLGraphicsDevice::createVertexState(CVector<GraphicsBuffer*> vertex
 
 	glAssert();
 
-	return new GLVertexState(this, std::move(sharedBuffers), indexBuffer, std::move(layout), glVertexArray);
+	auto vertexState = new GLVertexState(this, std::move(sharedBuffers), indexBuffer, std::move(layout), glVertexArray);
+	vertexState->deleted.connect([glVertexArray] { glDeleteVertexArrays(1, &glVertexArray); });
+	return vertexState;
 }
 
 FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture* depthTexture) {
@@ -403,12 +501,9 @@ FrameBuffer* GLGraphicsDevice::createFrameBuffer(Texture* colorTexture, Texture*
 	uint width = colorTexture ? colorTexture->width : depthTexture->width;
 	uint height = colorTexture ? colorTexture->height : depthTexture->height;
 
-	auto fbuffer = new GLFrameBuffer(this, colorTexture, depthTexture, width, height, glFramebuffer);
-
-	// TODO: All graphics resources should do this.
-	fbuffer->deleted.connect([glFramebuffer] { glDeleteFramebuffers(1, &glFramebuffer); });
-
-	return fbuffer;
+	auto frameBuffer = new GLFrameBuffer(this, colorTexture, depthTexture, width, height, glFramebuffer);
+	frameBuffer->deleted.connect([glFramebuffer] { glDeleteFramebuffers(1, &glFramebuffer); });
+	return frameBuffer;
 }
 
 Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
@@ -422,6 +517,7 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 	header = "#version 450\n";
 #endif
 	header += "precision mediump float;\n";
+	header += "precision mediump sampler2DArray;\n";
 	header += "precision highp int;\n";
 
 	String source = header + shaderSrc;
@@ -531,13 +627,14 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 			uniforms.push_back(GLUniform{name, uniformIds.get(name), glSize, glType, glLocation});
 			break;
 		case GL_SAMPLER_2D:
+		case GL_SAMPLER_2D_ARRAY:
 		case GL_SAMPLER_3D:
 		case GL_SAMPLER_CUBE:
 			glUniform1i(glLocation, GLint(textures.size()));
 			textures.push_back(textureIds.get(name));
 			break;
 		default:
-			panic("OOPS");
+			panic("Unrecognized texture uniform type");
 		}
 	}
 
@@ -546,7 +643,9 @@ Shader* GLGraphicsDevice::createShader(CString shaderSrc) {
 
 	glAssert();
 
-	return new GLShader(this, source, program, uniformBlocks, uniforms, textures);
+	auto shader = new GLShader(this, source, program, uniformBlocks, uniforms, textures);
+	shader->deleted.connect([program] { glDeleteProgram(program); });
+	return shader;
 }
 
 GraphicsContext* GLGraphicsDevice::createGraphicsContext() {
@@ -557,14 +656,33 @@ GraphicsContext* GLGraphicsDevice::createGraphicsContext() {
 }
 
 Texture* GLGraphicsDevice::wrapGLTexture(uint width, uint height, TextureFormat format, TextureFlags flags,
-										 GLuint texture) {
+										 GLuint glTexture) {
 
 	glAssert();
 
-	return new GLTexture(this, width, height, format, flags | TextureFlags::unmanaged, texture);
+	return new GLTexture(this, width, height, format, flags, glTexture);
 }
 
-void GLGraphicsDevice::bindAndValidate(GLGraphicsContext* gc) {
+void GLGraphicsDevice::bindTexture(GLenum glTarget, GLuint glTexture) {
+	m_dirty |= Dirty::textureBindings;
+	glBindTexture(glTarget, glTexture);
+}
+
+void GLGraphicsDevice::bindBuffer(GLenum glTarget, GLuint glBuffer) {
+
+	switch (glTarget) {
+	case GL_ARRAY_BUFFER:
+	case GL_ELEMENT_ARRAY_BUFFER:
+		glBindVertexArray(glNullVertexArray);
+		m_dirty |= Dirty::vertexState;
+		break;
+	default:
+		break;
+	}
+	glBindBuffer(glTarget, glBuffer);
+}
+
+void GLGraphicsDevice::bind(GLGraphicsContext* gc) {
 
 	auto dirty = (gc != m_boundContext.value()) ? m_dirty = Dirty::all : gc->m_dirty | m_dirty;
 	m_boundContext = gc;
@@ -596,7 +714,7 @@ void GLGraphicsDevice::bindAndValidate(GLGraphicsContext* gc) {
 	if (bool(dirty & Dirty::uniformBlockBindings) && gc->m_shader) {
 		for (uint id : gc->m_shader->uniformBlocks) {
 			auto buffer = gc->m_uniformBuffers[id].value();
-			assert(buffer);
+			if (!buffer) panic("Uniform buffer not set:" + uniformIds.name(id));
 			glBindBufferBase(GL_UNIFORM_BUFFER, id, buffer->glBuffer);
 		}
 		glAssert();
@@ -605,10 +723,14 @@ void GLGraphicsDevice::bindAndValidate(GLGraphicsContext* gc) {
 	if (bool(dirty & Dirty::textureBindings) && gc->m_shader) {
 		GLint texUnit = GL_TEXTURE0;
 		for (uint id : gc->m_shader->textures) {
-			auto texture = gc->m_textures[id].value();
-			assert(texture);
+			auto texres = gc->m_textures[id].value();
+			assert(texres);
 			glActiveTexture(texUnit++);
-			glBindTexture(GL_TEXTURE_2D, texture->glTexture);
+			if(auto gltexture = texres->cast<GLTexture>()) {
+				glBindTexture(GL_TEXTURE_2D, gltexture->glTexture);
+			}else if(auto gltexture = texres->cast<GLArrayTexture>()) {
+				glBindTexture(GL_TEXTURE_2D_ARRAY, gltexture->glTexture);
+			}
 		}
 		glAssert();
 	}

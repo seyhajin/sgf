@@ -1,15 +1,8 @@
 #pragma once
 
-#include <core3d/core3d.hh>
+#include "textureloader.h"
 
 namespace sgf {
-
-Texture* createTexture(uint rgba);
-Texture* createTexture(CVec4f color);
-Texture* loadTexture(CString assetPath, TextureFormat format = TextureFormat::srgba32,
-					 TextureFlags flags = TextureFlags::none);
-
-String assetPath(Texture* texture);
 
 class TextureAsset;
 using CTextureAsset = const TextureAsset&;

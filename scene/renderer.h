@@ -10,7 +10,7 @@ class Renderer : public Object {
 public:
 	SGF_OBJECT_TYPE(Renderer, Object);
 
-	virtual Vector<RenderPassType> renderPasses() const = 0;
+	virtual Vector<RenderPassType> renderPasses() const;
 
 	Scene* scene() const {
 		return m_scene;

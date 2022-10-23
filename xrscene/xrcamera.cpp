@@ -27,6 +27,8 @@ Vector<CameraView> XRCamera::validateViews() const {
 		float ar = float(viewport.width()) / float(viewport.height());
 		auto projMatrix = Mat4f::frustum(-yh * ar, yh * ar, -yh, yh, zNear, zFar);
 
+//		return {{viewport, projMatrix, worldMatrix()}};
+
 		// Attempt a coolio 'neos vr' style mouse->eye effect.
 		//
 		auto coords = scene->window->mouse()->position();
@@ -38,11 +40,11 @@ Vector<CameraView> XRCamera::validateViews() const {
 
 		Mat3f r;
 		r.k = (tv.xyz() / tv.w).normalized();
-		r.j = Vec3f{0,1,0};
+		r.j = Vec3f{0, 1, 0};
 		r.i = r.j.cross(r.k).normalized();
 		r.j = r.k.cross(r.i).normalized();
 
-		return {{viewport, projMatrix, {r, position()}}};
+		return {{viewport, projMatrix, worldMatrix() * AffineMat4f{r, position()}}};
 	}
 
 	auto viewerPose = m_frame->getViewerPose();
@@ -50,9 +52,9 @@ Vector<CameraView> XRCamera::validateViews() const {
 	Vector<CameraView> cameraViews(2);
 
 	for (uint eye = 0; eye < 2; ++eye) {
-		auto& vview = viewerPose->views[eye];
+		auto vview = viewerPose->views[eye];
 		auto& cview = cameraViews[eye];
-		cview.cameraMatrix = matrix() * vview.transform;
+		cview.cameraMatrix = worldMatrix() * vview.transform;
 		cview.projectionMatrix = vview.projectionMatrix;
 		cview.viewport = vview.viewport;
 	}

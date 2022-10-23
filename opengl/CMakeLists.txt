@@ -11,7 +11,7 @@ project(opengl)
 set(SOURCES opengl.cpp opengl.hh)
 
 if (NOT USE_OPENGLES)
-    set(SOURCES ${SOURCES} "libglew/src/glew.c")
+    set(SOURCES ${SOURCES} libglew/src/glew.c)
 endif ()
 
 add_library(opengl ${SOURCES})

@@ -30,7 +30,10 @@ add_library(imgui
         "${SOURCE_DIR}/ImGuiFileDialog/ImGuiFileDialog.h"
         )
 
+target_compile_definitions(imgui PUBLIC IMGUI_CMAKE_LISTS_INCLUDED)
+
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_CUSTOM=<opengl/opengl.hh>)
+
 if(USE_OPENGLES)
     target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3=1)
 endif()

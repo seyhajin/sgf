@@ -47,6 +47,8 @@ template <class RetTy, class... ArgTys> class Function<RetTy(ArgTys...)> {
 public:
 	using FunPtrTy = RetTy (*)(ArgTys...);
 
+	using CFunction = const Function&;
+
 	template <class ObjTy> using MemFunTy = RetTy (ObjTy::*)(ArgTys...);
 
 	Function() = default;
@@ -62,7 +64,7 @@ public:
 		: m_rep(makeRep([obj, fun](ArgTys&&... args) -> RetTy { return (obj->*fun)(std::forward<ArgTys>(args)...); })) {
 	}
 
-	Function(const Function& fun) : m_rep(fun.m_rep) {
+	Function(CFunction fun) : m_rep(fun.m_rep) {
 		retain();
 	}
 

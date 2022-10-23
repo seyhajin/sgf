@@ -60,7 +60,7 @@ int testQuatOps() {
 		Mat3f m0=Mat3f(q0) * Mat3f(q1);
 		Mat3f m1=Mat3f(q0*q1);
 
-		if (approxEqual(m0, m1, 1e-6)) continue;
+		if (approxEqual(m0, m1, 1e-6f)) continue;
 
 		debug() << "### OOPS:\n" << q0 << q1 << "\n" << m0 << "\n" << m1;
 		++errs;

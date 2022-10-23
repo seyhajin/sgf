@@ -187,8 +187,6 @@ void Scene::update() {
 
 void Scene::render() {
 
-	debugEntities();
-
 	float elapsed = 1.0f / 60.0f;
 	m_renderTime += elapsed;
 
@@ -261,8 +259,6 @@ void Scene::render() {
 
 			m_renderContext.beginScene(gc, &renderParams, size.x, size.y);
 
-			ImGuiEx::Debug() << "### setting viewport" << viewport << "size" << size;
-
 			gc->setViewport({0, viewport.size()});
 
 			gc->clear(rscene.clearColor);
@@ -288,7 +284,7 @@ void Scene::render() {
 		// Little hack to show last rendered eye to window
 		if (frameBuffer.value()) {
 
-			exit(1);
+//			exit(1);
 
 			auto viewport = Recti(0, window->size());
 
