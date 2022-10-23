@@ -16,7 +16,7 @@ using CRectf = CRect<float>;
 
 template <class T> struct Rect {
 
-	using Vec2 = Vec2<T>;
+	using Vec2 = sgf::Vec2<T>;
 	using CVec2 = const Vec2&;
 	using CRect = const Rect&;
 

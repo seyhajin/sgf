@@ -293,7 +293,7 @@ bool TextureStreamer::decompressTopoData(CString topoFile) {
 	}
 
 	auto src = (const int16_t*)topoFile.c_str();
-	auto dst = new float[m_tileTextureSize * m_tileTextureSize];
+	auto dst = (float*)malloc(m_tileTextureSize * m_tileTextureSize * sizeof(float));
 
 	constexpr int seaLevel = 186 * 16;
 	constexpr int topoLevel = 0x4000;
