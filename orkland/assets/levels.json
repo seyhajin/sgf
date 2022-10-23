@@ -1,0 +1,122 @@
+{
+  "levels": [
+    {
+      "name": "Auckland",
+      "aerialServer": "https://roa.nz/sd-aerialgrid/aerial-auckland2017/1/",
+      "topoServer": "https://roa.nz/topogrid/topo-auckland-north/1/",
+      "aerialBounds": [
+        3340,
+        3567,
+        11467,
+        11696
+      ],
+      "topoBounds": [
+        3325,
+        3573,
+        11517,
+        11738
+      ],
+      "origin": [
+        3432,
+        11556
+      ],
+      "aerialResolution": 0.5,
+      "atlasSize": 17
+    },
+    {
+      "name": "Wellington",
+      "aerialServer": "https://roa.nz/sd-aerialgrid/aerial-wellingtoncity2021/1/",
+      "topoServer": "https://roa.nz/topogrid/topo-wellington-city/1/",
+      "aerialBounds": [
+        3402,
+        3430,
+        10583,
+        10631
+      ],
+      "topoBounds": [
+        3402,
+        3430,
+        10583,
+        10631
+      ],
+      "aerialResolution": 0.5,
+      "atlasSize": 17
+    },
+    {
+      "name": "Hamilton",
+      "aerialServer": "https://roa.nz/sd-aerialgrid/aerial-hamilton2017/1/",
+      "topoServer": "https://roa.nz/topogrid/topo-waikato-hamilton/1/",
+      "aerialBounds": [
+        3498,
+        3534,
+        11340,
+        11384
+      ],
+      "topoBounds": [
+        3492,
+        3533,
+        11336,
+        11388
+      ],
+      "aerialResolution": 0.5,
+      "atlasSize": 17
+    },
+    {
+      "name": "Christchurch",
+      "aerialServer": "https://roa.nz/sd-aerialgrid/aerial-christchurch2021/1/",
+      "topoServer": "https://roa.nz/topogrid/topo-christchurch/1/",
+      "aerialBounds": [
+        3063,
+        3070,
+        10114,
+        10119
+      ],
+      "topoBounds": [
+        2915,
+        3094,
+        10035,
+        10173
+      ],
+      "aerialResolution": 0.5,
+      "atlasSize": 17
+    },
+    {
+      "name": "Tasman",
+      "aerialServer": "https://roa.nz/sd-aerialgrid/aerial-tasman2021/1/",
+      "topoServer": "https://roa.nz/topogrid/topo-tasman-tasman-south/1/",
+      "aerialBounds": [
+        3145,
+        3162,
+        10585,
+        10599
+      ],
+      "topoBounds": [
+        2985,
+        3174,
+        10422,
+        10602
+      ],
+      "aerialResolution": 0.5,
+      "atlasSize": 17
+    },
+    {
+      "name": "Marlborough",
+      "aerialServer": "https://roa.nz/sd-aerialgrid/aerial-marlborough2017/1/",
+      "topoServer": "https://roa.nz/topogrid/topo-marlborough-marlborough-north/1/",
+      "aerialBounds": [
+        3206,
+        3313,
+        10481,
+        10655
+      ],
+      "topoBounds": [
+        3178,
+        3363,
+        10502,
+        10741
+      ],
+      "aerialResolution": 0.5,
+      "atlasSize": 17
+    }
+  ]
+}
