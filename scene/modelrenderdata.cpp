@@ -64,7 +64,7 @@ ModelRenderData* createModelRenderData(const Mesh* mesh, CVertexAttribs attribs)
 	//
 	uint pitch = bytesPerVertex(attribs);
 
-	Vector<uchar> vertexData(mesh->vertices().size() * pitch);
+	Vector<uint8_t> vertexData(mesh->vertices().size() * pitch);
 	{
 		auto dst = vertexData.data();
 

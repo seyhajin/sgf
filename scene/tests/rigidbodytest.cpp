@@ -42,7 +42,7 @@ Model* createRoomModel(float size, Material* material) {
 
 int main() {
 
-	window = createWindow("Hello Box!", 1280, 720);
+	window = createMainWindow("Hello Box!", 1280, 720);
 
 	device = createGraphicsDevice(window);
 

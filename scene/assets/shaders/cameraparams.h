@@ -4,7 +4,7 @@
 
 namespace sgf {
 
-struct CameraParams {
+struct alignas(16) CameraParams {
 	Mat4f projMatrix;
 	Mat4f invProjMatrix;
 	Mat4f cameraMatrix;
@@ -14,9 +14,6 @@ struct CameraParams {
 	Vec4f lightPositions[maxLights];
 	float clipNear = 0;
 	float clipFar = 1000;
-	char _pad[8];
 };
-
-SGF_ASSERT_ALIGNED16(CameraParams);
 
 } // namespace sgf

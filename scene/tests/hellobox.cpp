@@ -10,10 +10,10 @@ Scene* scene;
 
 int main() {
 
-	window = createWindow("Hello Box!", 1280, 720);
+	window = createMainWindow("Hello Box!", 1280, 720);
 
 	window->keyboard()->key(SGF_KEY_V).pressed.connect([] { window->vsyncEnabled = !window->vsyncEnabled; });
-	window->keyboard()->key(SGF_KEY_F).pressed.connect([] { window->fullScreenMode = !window->fullScreenMode; });
+	window->keyboard()->key(SGF_KEY_F).pressed.connect([] { window->fullScreen = !window->fullScreen; });
 
 	device = createGraphicsDevice(window);
 
@@ -84,7 +84,7 @@ int main() {
 
 		ImGui::Begin("Window settings");
 		ImGuiEx::Checkbox("vsyncEnabled", window->vsyncEnabled);
-		ImGuiEx::Checkbox("fullScreenMode", window->fullScreenMode);
+		ImGuiEx::Checkbox("fullScreen", window->fullScreen);
 		ImGui::End();
 
 		ImGuiEx::Debug() << window->size();

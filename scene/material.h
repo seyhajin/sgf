@@ -24,7 +24,7 @@ public:
 
 	Material(CVec4f baseColor={1});
 
-	void bind(GraphicsContext* gc);
+	void bindShaderParams(GraphicsContext* gc);
 
 private:
 	mutable bool m_dirtyParams = true;

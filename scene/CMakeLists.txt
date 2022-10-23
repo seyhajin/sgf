@@ -21,6 +21,8 @@ add_library(scene
         debugrenderer.h
         entity.cpp
         entity.h
+        envrenderer.cpp
+        envrenderer.h
         intersect.cpp
         intersect.h
         light.cpp
@@ -63,6 +65,8 @@ add_library(scene
         renderparams.h
         renderpass.cpp
         renderpass.h
+        rigidbody.cpp
+        rigidbody.h
         scene.cpp
         scene.h
         scene.hh
@@ -70,10 +74,20 @@ add_library(scene
         shaderasset.h
         spherecollider.cpp
         spherecollider.h
+        terraindata.cpp
+        terraindata.h
+        terrainrenderer.cpp
+        terrainrenderer.h
         textureasset.cpp
         textureasset.h
-        rigidbody.cpp
-        rigidbody.h
+        textureloader.cpp
+        textureloader.h
+        assets/shaders/cameraparams.h
+        assets/shaders/envparams.h
+        assets/shaders/lightparams.h
+        assets/shaders/materialparams.h
+        assets/shaders/sceneparams.h
+        assets/shaders/terrainparams.h
         )
 
 target_link_libraries(scene imgui core3d)

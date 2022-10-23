@@ -18,5 +18,9 @@ layout (std140) uniform cameraParams {
 
 // Convert depth from texture to view space coords.
 float depthToViewZ(float depth){
-    return camera.clipNear * camera.clipFar / ((camera.clipNear - camera.clipFar) * depth + camera.clipFar);
+
+    //return camera.clipNear * camera.clipFar / ((camera.clipNear - camera.clipFar) * depth + camera.clipFar);
+
+    //return Projection._43 / (zw - Projection._33);
+    return camera.projMatrix[3][2] / (depth - camera.projMatrix[2][2]);
 }
