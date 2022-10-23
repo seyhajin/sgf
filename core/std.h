@@ -85,7 +85,9 @@ inline float floorMod(float x, float y) {
 
 //! Convert a value to a string.
 template <class ValueTy> String toString(const ValueTy& value) {
-	return (std::stringstream() << value).str();
+	std::stringstream os;
+	os<<value;
+	return os.str();
 }
 
 //! Replace all occurances of a substring.
