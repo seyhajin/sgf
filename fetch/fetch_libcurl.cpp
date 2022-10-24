@@ -37,6 +37,7 @@ Promise<FetchResponse> fetch(CString url) {
 			curl_easy_setopt(g_curl, CURLOPT_WRITEFUNCTION, &writeFunc);
 //			curl_easy_setopt(g_curl, CURLOPT_BUFFERSIZE, 512 * 1024);
 			curl_easy_setopt(g_curl, CURLOPT_ACCEPT_ENCODING, ""); // Important! Should be the default!
+			curl_easy_setopt(g_curl, CURLOPT_HTTP_CONTENT_DECODING, 0);
 
 			// curl_easy_setopt(g_curl,CURLOPT_VERBOSE,1 );
 

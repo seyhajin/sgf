@@ -72,17 +72,37 @@ CVector<Level> levels() {
 }
 
 void scrapeTiles(int levelIndex, int x, int y, int type, CString outDir) {
+
+	type = 1;
+
 	auto& level = levels()[levelIndex];
 	auto path =
 		toString(x + level.bounds.min.x) + "/" + toString(y + level.bounds.min.y) + (type == 0 ? ".jpg" : ".raw");
-	auto url = (type == 0 ? level.aerialServer : level.topoServer) + path;
-	fetch(url) | [levelIndex, x, y, type, outDir, path](CFetchResponse r) mutable {
-		saveString(r.text, outDir + "/" + path);
+
+	auto url = replace((type == 0 ? level.aerialServer : level.topoServer), "roa.nz", "skid.nz") + path;
+
+	String dir = outDir + level.name + "/";
+	if (x == 0 && y == 0 && type == 1) {
+		createDir(dir);
+		assert(isDir(dir));
+	}
+	String outPath = dir + replace(path, "/", ",");
+
+	fetch(url) | [levelIndex, x, y, type, outDir, url, outPath](CFetchResponse r) mutable {
+		auto& level = levels()[levelIndex];
+
+		if (r.httpStatus != 200) { //
+//			debug() << "Error scraping" << url << r.httpStatus;
+		} else {
+			debug() << "Scraping tile " << url;
+			saveString(r.text, outPath);
+		}
+
 		if (type == 0) {
 			scrapeTiles(levelIndex, x, y, 1, outDir);
 			return;
 		}
-		auto& level = levels()[levelIndex];
+
 		if (++x >= level.bounds.width()) {
 			if (++y >= level.bounds.height()) {
 				if (++levelIndex >= levels().size()) {

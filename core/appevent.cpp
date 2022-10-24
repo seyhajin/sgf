@@ -94,9 +94,11 @@ void runAppEventLoop() {
 	emscripten_exit_with_live_runtime();
 #else
 	for (;;) {
-		// Must use unique_lock for condvars apparently.
-		std::unique_lock<std::mutex> lock(g_dequeMutex);
-		g_dequeCondVar.wait(lock, [] { return !g_deque.empty(); });
+		{
+			// Must use unique_lock for condvars apparently.
+			std::unique_lock<std::mutex> lock(g_dequeMutex);
+			g_dequeCondVar.wait(lock, [] { return !g_deque.empty(); });
+		}
 		pollAppEvents();
 	}
 #endif

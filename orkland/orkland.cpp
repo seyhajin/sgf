@@ -1,5 +1,7 @@
 #include "orkland.h"
 
+#include <iostream>
+
 namespace orkland {
 
 using namespace sgf;
@@ -14,6 +16,17 @@ using namespace sgf;
  *
  */
 void Orkland::run() {
+
+	String outDir="roa-tiles/";
+
+	createDir(outDir);
+	assert(isDir(outDir));
+
+	scrapeTiles(0,0,0,0,outDir);
+
+	runAppEventLoop();
+
+	return;
 
 	m_window = createMainWindow("Orkland", 1280, 720);
 

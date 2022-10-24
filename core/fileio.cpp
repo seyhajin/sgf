@@ -6,6 +6,7 @@
 
 #if OS_WINDOWS
 #include <windows.h>
+#include <direct.h>
 #endif
 
 namespace sgf {
@@ -60,11 +61,27 @@ void saveString(CString str, CString path) {
 	panic("!!! Failed save string to '"+path+"'");
 }
 
-void openURL(CString url) {
 #if OS_WINDOWS
+void createDir(CString path) {
+	_mkdir(path.c_str());
+}
+
+bool isFile(CString path) {
+	struct _stat stat;
+	_stat(path.c_str(),&stat);
+	return stat.st_mode & _S_IFREG;
+}
+
+bool isDir(CString path) {
+	struct _stat stat;
+	_stat(path.c_str(),&stat);
+	return stat.st_mode & _S_IFDIR;
+}
+
+void openURL(CString url) {
 	CoInitializeEx( NULL,COINIT_APARTMENTTHREADED|COINIT_DISABLE_OLE1DDE );
 	ShellExecute( HWND_DESKTOP,0,url.c_str(),0,0,SW_SHOWNORMAL );
-#endif
 }
+#endif
 
 } // namespace sgf
