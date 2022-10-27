@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <sys/stat.h>
 
 #if OS_WINDOWS
 #include <windows.h>
@@ -83,5 +84,25 @@ void openURL(CString url) {
 	ShellExecute( HWND_DESKTOP,0,url.c_str(),0,0,SW_SHOWNORMAL );
 }
 #endif
+
+#if OS_LINUX
+void createDir(CString path) {
+	assert(!mkdir(path.c_str(), 0777));
+}
+
+bool isFile(CString path) {
+	struct stat st;
+	assert(!stat(path.c_str(), &st));
+	return st.st_mode & S_IFREG;
+}
+
+bool isDir(CString path) {
+	struct stat st;
+	assert(!stat(path.c_str(), &st));
+	return st.st_mode & S_IFDIR;
+}
+#endif
+
+
 
 } // namespace sgf
